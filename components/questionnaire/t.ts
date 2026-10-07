@@ -41,3 +41,8 @@ export function useKeyT(): KeyT {
     [m, locale],
   );
 }
+
+/** Caregiver wording: a sibling key `<key>For` (third person) when one exists, else the normal key. */
+export function variantKey(t: KeyT, key: MessageKey, caregiver: boolean): MessageKey {
+  return caregiver && t.has(`${key}For`) ? `${key}For` : key;
+}

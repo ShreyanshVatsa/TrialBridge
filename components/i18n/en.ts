@@ -196,7 +196,6 @@ export const en = {
   },
   questionnaire: {
     ui: {
-      intro: "Hi. I'll start with four quick questions, then a few more that can sharpen your matches. “Not sure” is always a fine answer. Your answers stay in this browser tab.",
       tiers: { essential: "Essentials", helpful: "Helpful", deep: "Extra detail" },
       tierBadge: {
         essential: "Essential",
@@ -207,28 +206,68 @@ export const en = {
       stepOf: "Step {step}: {tier}",
       remaining: { one: "About 1 more question", other: "About {count} more questions" },
       remainingNone: "Almost done",
+      remainingFew: "Just a couple more",
+      remainingRange: "About {low} to {high} more questions",
+      stepDone: "(done)",
+      essentialStep: "Question {step} of {total}",
       counter: { one: "{count} possible trial near you", other: "{count} possible trials near you" },
-      counterNoConflict: "{count} with no likely conflicts",
+      counterNoConflict: "{count} with nothing in the way so far",
+      counterWaiting: "Your count appears here after the first four questions.",
       counterLoading: "Counting trials near you…",
       counterLabel: "Possible trials so far",
       whyAsk: "Why we're asking",
+      whyAskAbout: "What is this? Why we're asking",
+      aboutTitle: "What is this?",
+      intro: "Hi. I'll start with four quick questions, then a few more that can sharpen your matches. “Not sure” is always a fine answer. Your answers stay in this browser tab.",
+      introTitle: "Let's look for studies near you",
+      introLead: "A cancer diagnosis is a lot. Take this at your own pace. There are no wrong answers.",
+      introTime: "It takes about 2 to 4 minutes.",
+      introSkip: "You can skip anything except the first four questions, and “Not sure” is always okay.",
+      introPrivate: "Your answers stay on your device. If you choose AI explanations later, only broad answers are shared.",
+      introFree: "Free to use. Nobody pays to be shown first.",
+      caregiverToggle: "I'm answering for someone else",
+      caregiverHelp: "Questions will say “they” instead of “you”. We don't ask for any names.",
+      biomarkerCount: "{answered} of {total} answered. Leave the rest as “Don't know”.",
+      biomarkerSearch: "Search test names",
+      biomarkerNone: "No test matches that. Try a different word.",
+      onYourList: "On your list",
+      searching: "Searching…",
+      about: {
+        spread: "The “stage” tells how far the cancer has grown. You can find it in your pathology or scan report, or ask your oncologist.",
+        disease_status: "This is about where you are in your care. Your oncologist can tell you. Your visit notes may say “new”, “recurrent” or “progression”.",
+        daily_activity: "Doctors use this to see how well you can do daily tasks. It is sometimes called “ECOG” or “performance status”. Pick what sounds closest to now.",
+        biomarkers: "A biomarker is a lab test on your tumor, such as HER2 or EGFR. Results are in your pathology report or a “genomic” or “biomarker” test report, often in your patient portal under Test Results or Documents.",
+        deep_biomarkers: "These are extra lab tests on your tumor. Look in your pathology or genomic test report, often in your patient portal under Test Results.",
+        lines: "A “line” of treatment is one plan, like one chemo regimen. Your medication list or infusion history shows them.",
+        subtype: "Your exact cancer type is in your pathology report under “Final diagnosis”.",
+        brain_mets: "This means cancer that started elsewhere and traveled to the brain. Your latest brain scan (MRI) report says so.",
+        measurable: "A measurable tumor is one doctors can track on a scan. Your scan report may say “measurable disease” or list sizes in centimeters.",
+        prior_drugs: "Your medication list or infusion history in your patient portal shows the names of past medicines.",
+      },
+      summaryGroup: {
+        you: "About you",
+        answered: "About your cancer and health",
+        later: "To find out later",
+        laterNote: "These never lower your matches. They're on your list for your next appointment.",
+      },
       narrow: "Answering this could narrow {total} trials to about {count}.",
       notSure: "Not sure",
       skip: "Skip",
       preferNot: "Prefer not to say",
       doctorLater: "My doctor can fill this in later",
-      nonResponseHint: "Any of these is a fine answer. It never lowers your matches.",
+      nonResponseHint: "“Not sure” and “Skip” are always okay. They never lower your matches.",
+      shortcutHint: "Tip: press a number from 1 to {max} to choose.",
       nonResponseGroup: "Other ways to answer",
-      reassure: "That's okay. We'll keep all {count} trials and note this as something to ask your care team.",
-      reassureNoCount: "That's okay. Nothing is ruled out, and we'll note this as something to ask your care team.",
+      reassure: "That's okay. Many people don't know this yet. We're keeping all {count} trials and adding this to your list of things to ask your care team.",
+      reassureNoCount: "That's okay. Many people don't know this yet. Nothing is ruled out, and we'll add this to your list of things to ask your care team.",
       reassureDeferred: "Got it. This is saved under “Questions waiting for your doctor” so you can fill it in later in this tab.",
-      afterEssentials: "Thanks. You can see matches now, or answer a few more questions to sharpen them.",
+      afterEssentials: "Thank you. You can see possible trials now, or answer a few more questions to make them more specific. Both are fine.",
       showNow: "Show my matches now",
       modeLabel: "How many questions?",
       modeQuick: "Quick",
-      modeQuickHelp: "A few key questions",
+      modeQuickHelp: "About 5 questions. A good first look.",
       modeThorough: "Thorough",
-      modeThoroughHelp: "More detail for better matches",
+      modeThoroughHelp: "Up to 20 questions. More detail, closer matches.",
       modeNote: "You can switch at any time.",
       chooseOne: "Choose an answer, or choose “Not sure”.",
       chooseAtLeastOne: "Choose at least one, or choose “Not sure”.",
@@ -249,7 +288,7 @@ export const en = {
       answerPreferNot: "Prefer not to say",
       answerDeferred: "Waiting for your doctor",
       summaryTitle: "Check your answers",
-      summaryIntro: "Here's what you told me. You can edit anything before I search.",
+      summaryIntro: "Here's what you shared. Change anything you like before we look for trials.",
       summaryUnknownNote: "“Not sure” and skipped answers never lower your matches. They're on your list of things to ask your care team.",
       waitingTitle: "Questions waiting for your doctor",
       waitingIntro: "Fill these in during or after your appointment, in this same browser tab.",
@@ -274,26 +313,31 @@ export const en = {
     },
     cancer_type: {
       label: "What type of cancer do you have?",
+      labelFor: "What type of cancer do they have?",
       help: "Pick the closest match. You can choose \"Other / not sure\".",
       why: "Studies are for specific cancers, so this decides which studies we look at.",
     },
     age: {
       label: "How old are you?",
+      labelFor: "How old are they?",
       help: "Enter your age in years.",
       why: "Many studies have age limits. We only use your age on this device.",
     },
     zip: {
       label: "What is your ZIP code?",
+      labelFor: "What ZIP code should we search near?",
       help: "We use it to find study sites near you. It stays on this device.",
       why: "Half of the studies have only one site, so distance matters a lot.",
     },
     travel: {
       label: "How far could you travel for a study?",
+      labelFor: "How far could they travel for a study?",
       help: "Think about visits every week or two.",
       why: "We hide studies that are farther away than you can go.",
     },
     spread: {
       label: "Has your cancer spread?",
+      labelFor: "Has the cancer spread?",
       help: "Your doctor may call this the stage.",
       why: "Most studies are only for one stage. About 7 in 10 solid-tumor studies have a rule about this.",
       options: {
@@ -305,6 +349,7 @@ export const en = {
     },
     disease_status: {
       label: "Where are you with treatment?",
+      labelFor: "Where are they with treatment?",
       help: "Pick the one that fits best right now.",
       why: "Some studies are only for new cancers. Others are only for cancer that came back.",
       options: {
@@ -315,6 +360,7 @@ export const en = {
     },
     treatments: {
       label: "Which treatments have you had for this cancer?",
+      labelFor: "Which treatments have they had for this cancer?",
       help: "Choose all that apply.",
       why: "About half of studies have rules about past treatment.",
       options: {
@@ -330,6 +376,7 @@ export const en = {
     },
     lines: {
       label: "How many treatment plans have you had?",
+      labelFor: "How many treatment plans have they had?",
       help: "A treatment plan is one set of medicines given together, like \"chemo for 4 months.\" Count each new plan after the cancer grew.",
       why: "Some studies need a certain number of past treatment plans.",
       options: {
@@ -340,6 +387,7 @@ export const en = {
     },
     daily_activity: {
       label: "How much can you do in a normal day?",
+      labelFor: "How much can they do in a normal day?",
       help: "Doctors call this \"performance status.\" Many studies only include people who are up and about most of the day.",
       why: "About 2 in 3 studies have a rule about this.",
       options: {
@@ -350,6 +398,7 @@ export const en = {
     },
     biomarkers: {
       label: "Do you know your tumor's test results?",
+      labelFor: "Do you know the tumor's test results?",
       help: "These are gene or protein tests on your tumor. It is fine if you don't know.",
       why: "Many studies are only for tumors with a certain test result.",
       options: {
@@ -371,6 +420,7 @@ export const en = {
     },
     brain_mets: {
       label: "Has the cancer spread to your brain?",
+      labelFor: "Has the cancer spread to the brain?",
       help: "A brain scan (MRI or CT) shows this.",
       why: "About half of nearby lung and melanoma studies have a rule about this. Many allow spots that were treated and are stable.",
       options: {
@@ -418,6 +468,7 @@ export const en = {
     },
     sex: {
       label: "What sex is listed in your medical records?",
+      labelFor: "What sex is listed in their medical records?",
       help: "Some studies list one sex. We only use this on your device.",
       why: "Some studies are only for women or only for men.",
       options: {
@@ -436,6 +487,7 @@ export const en = {
     },
     measurable: {
       label: "Do your scans show a tumor doctors can measure?",
+      labelFor: "Do their scans show a tumor doctors can measure?",
       help: "Your scan report may say \"measurable disease\" or \"target lesion.\"",
       why: "About 4 in 10 studies need a tumor they can measure on scans.",
       options: {
@@ -445,6 +497,7 @@ export const en = {
     },
     other_cancer: {
       label: "Have you had a different cancer before?",
+      labelFor: "Have they had a different cancer before?",
       help: "Do not count the cancer you are looking for a study for. Most skin cancers do not count.",
       why: "About half of studies have a rule about other cancers, often only recent ones.",
       options: {
