@@ -1,4 +1,5 @@
 import type { MinimizedProfile } from "@/lib/types/analysis";
+import type { Language } from "@/lib/types/intake";
 import type { ServerTrial } from "../trials";
 
 export interface ChatMessage {
@@ -22,8 +23,10 @@ export class ProviderError extends Error {
 export interface CompletionRequest {
   messages: ChatMessage[];
   /** Structured context (used by the mock provider; real providers only see `messages`). */
-  profile: MinimizedProfile;
+  profile?: MinimizedProfile;
   trials: readonly ServerTrial[];
+  /** Present for Trial Q&A requests (mock provider uses it). */
+  ask?: { question: string; language: Language };
   signal?: AbortSignal;
 }
 
