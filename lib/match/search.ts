@@ -98,3 +98,25 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   report({ stage: "done" });
   return outcome;
 }
+
+/**
+ * Warm caches while the user is still answering intake questions: download the shard(s) for the
+ * chosen cancer type and load the embedding model in the worker. Safe to call repeatedly; never
+ * throws. Nothing about the user is sent anywhere (only static files are fetched).
+ */
+export function prefetchSearch(cancerType: IntakeAnswers["cancerType"]): void {
+  void (async () => {
+    try {
+      embedProfile("warm up", { timeoutMs: 120_000 }).catch(() => null);
+      const manifest = await loadManifest();
+      const ids = cancerType === "other" ? [manifest.allShard] : (manifest.groups[cancerType] ?? []);
+      await Promise.all(
+        manifest.shards
+          .filter((s) => ids.includes(s.id))
+          .map((info) => (info.kind === "lite" ? loadLiteShard(info, manifest.shardBase) : loadShard(info, manifest.shardBase))),
+      );
+    } catch {
+      /* best effort: the real search retries and reports errors */
+    }
+  })();
+}

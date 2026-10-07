@@ -120,3 +120,20 @@ describe("searchTrials orchestration", () => {
     await expect(searchTrials(makeAnswers(), { signal: ac.signal })).rejects.toThrow();
   });
 });
+
+import { prefetchSearch } from "@/lib/match/search";
+describe("prefetchSearch", () => {
+  it("warms shards and the model without throwing, even when loading fails", async () => {
+    const seen: string[] = [];
+    setFetchForTests((async (u: string) => {
+      seen.push(String(u));
+      return server(u);
+    }) as unknown as typeof fetch);
+    prefetchSearch("breast");
+    prefetchSearch("other");
+    await vi.waitFor(() => expect(seen).toContain(`${V}/_all/emb.bin`));
+    expect(seen).toContain(`${V}/breast/cards.json`);
+    setFetchForTests((async () => new Response("x", { status: 404 })) as unknown as typeof fetch);
+    expect(() => prefetchSearch("lung")).not.toThrow();
+  });
+});

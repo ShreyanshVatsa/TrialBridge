@@ -20,6 +20,7 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 - `searchTrials(answers: IntakeAnswers, opts?: { onProgress?: (p: SearchProgress) => void; signal?: AbortSignal }): Promise<SearchOutcome>`
   - Loads the shard(s), applies hard filters (group, age, distance), hybrid ranks (BM25 + embeddings via Web Worker, RRF k=60), rule pre-check. Returns top 15 `RankedTrial`s (show 10, "show more" for the rest).
   - `outcome.keywordOnly === true` => embeddings failed/timed out; show the "keyword-only ranking" notice.
+- `prefetchSearch(cancerType: CancerGroupId): void`: call as soon as the user picks a cancer type in intake. Downloads that type's shard(s) and loads the embedding model in the worker while the remaining questions are answered (static files only; nothing about the user is sent). Cuts first-search latency substantially.
 - `applyAnalysis(results: RankedTrial[], response: AnalyzeResponse): RankedTrial[]`: attaches AI analysis per trial and re-ranks with `lib/match/score.ts`.
 
 ## AI analysis (`lib/api/analyze.ts`)
