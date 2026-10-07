@@ -100,6 +100,7 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
       <div className="flex flex-wrap items-center gap-2">
         {trial.scores.fit && <FitBadge level={trial.scores.fit} />}
         <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
+        {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
         <span className="text-sm text-muted-foreground">{card.id}</span>
       </div>
 

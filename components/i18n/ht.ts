@@ -5,6 +5,7 @@ export const ht: Messages = {
   meta: {
     title: "TrialBridge: jwenn etid klinik sou kansè ki ka bon pou ou",
     description: "Rechèch gratis e prive pou etid klinik sou kansè k ap rekrite Ozetazini, eksplike nan langaj senp.",
+    pages: { offline: "San koneksyon", terms: "Kondisyon itilizasyon (bouyon)", privacyPolicy: "Politik konfidansyalite (bouyon)" },
   },
   common: {
     brand: "TrialBridge",
@@ -255,6 +256,8 @@ export const ht: Messages = {
     analyzed: "Nou ajoute eksplikasyon IA yo. Toujou konfime ak ekip etid la.",
     degraded: "Eksplikasyon IA yo okipe kounye a. Men koresponn ou yo selon kritè etid yo.",
     keywordOnly: "Rechèch entèlijan an pa t ka chaje sou aparèy sa a, kidonk rezilta yo klase sèlman selon mo kle.",
+    distanceUnavailable: "Nou pa t ka chèche kòd postal ou sou aparèy sa a, kidonk nou pa aplike distans vwayaj ou. Rezilta sa yo ka gen etid ki byen lwen ou. Tcheke koneksyon ou epi rechèche ankò.",
+    zipApproximate: "Nou pa t ka lokalize egzakteman kòd postal sa a, kidonk nou estime distans yo selon zòn jeneral la. Tcheke kòd postal ou si distans yo parèt pa bon.",
     experimental: "Eksplikasyon an kreyòl ayisyen yo eksperimantal. Kritè ki site yo rete an angle.",
     aiNote: "Se yon IA ki ekri eksplikasyon yo, epi yo ka gen erè. Kritè ki site yo se tèks ofisyèl etid la (an angle).",
     emptyTitle: "Pa gen etid ki koresponn ak filtè sa yo",

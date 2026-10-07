@@ -29,6 +29,13 @@ test.describe("guided intake to AI results (mock)", () => {
     await expect(page.getByRole("link", { name: /Full trial details/i }).first()).toBeVisible();
   });
 
+  test("distance filter dropped because the ZIP table failed shows a notice", async ({ page }) => {
+    await page.route("**/data/zip/**", (route) => route.abort("internetdisconnected"));
+    await completeIntake(page, { cancer: "Breast cancer", travel: "Up to 25 miles" });
+    await expect(page.getByText(RESULTS_HEADING)).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByText(/travel distance was not applied/i)).toBeVisible();
+  });
+
   test("data minimization: ZIP, exact age, and intake answers never reach the backend", async ({ page }) => {
     const sent: Request[] = [];
     page.on("request", (r) => {

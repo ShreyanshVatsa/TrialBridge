@@ -54,4 +54,8 @@ export interface SearchOutcome {
   searchedCount: number;
   /** True if embeddings failed or timed out and ranking fell back to keyword-only. */
   keywordOnly: boolean;
+  /** True when a travel limit was set but the ZIP location couldn't be found, so distance was NOT applied. */
+  distanceUnavailable?: boolean;
+  /** True when the ZIP isn't a known ZIP area, so distances use an approximate centre. */
+  zipApproximate?: boolean;
 }
