@@ -16,7 +16,9 @@ import MiniSearch from "minisearch";
 import { RawStudySchema } from "../../lib/ingest/raw";
 import { buildRecord, embeddingText } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
-import { ManifestSchema, MetaSchema, type Manifest, type Meta, type ShardInfo, type Site, type TrialCard } from "../../lib/types/trial";
+import { ManifestSchema, MetaSchema, trialBucketKey, type Fact, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
+import { AccessDataSchema } from "../../lib/types/access";
+import { aggregateAccess } from "../../lib/access/aggregate";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
 import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
 import { embedTexts } from "./embed";
@@ -132,7 +134,6 @@ async function main(): Promise<void> {
   await rm(TMP, { recursive: true, force: true });
   const shards: ShardInfo[] = [];
   const groups: Manifest["groups"] = {};
-  const lookup: Record<string, string> = {};
 
   const writeShard = async (id: string, group: CancerGroupId, list: TrialCard[]) => {
     const dir = path.join(TMP, "shards", dataVersion, id);
@@ -148,7 +149,7 @@ async function main(): Promise<void> {
     bytes += await writeJson(path.join(dir, "index.json"), index.toJSON());
     await writeFile(path.join(dir, "emb.bin"), emb);
     bytes += emb.byteLength;
-    shards.push({ id, group, count: list.length, files: { cards: "cards.json", sites: "sites.json", index: "index.json", embeddings: "emb.bin" }, bytes });
+    shards.push({ id, group, kind: "full", count: list.length, files: { cards: "cards.json", sites: "sites.json", index: "index.json", embeddings: "emb.bin" }, bytes });
   };
 
   for (const g of CANCER_GROUP_IDS) {
@@ -161,13 +162,55 @@ async function main(): Promise<void> {
       const part = list.slice(p * MAX_PER_SHARD, (p + 1) * MAX_PER_SHARD);
       await writeShard(id, g, part);
       ids.push(id);
-      for (const c of part) if (c.groups[0] === g) lookup[c.id] ??= id;
     }
     groups[g] = ids;
   }
-  // Cross-group index for "Other / not sure".
-  await writeShard(ALL_SHARD, "other", cards);
-  for (const c of cards) lookup[c.id] ??= ALL_SHARD;
+  // Cross-group LITE index for "Other / not sure": no criteria text, summaries, contacts, or
+  // site details; keyword index over title/conditions/MeSH only. Full cards for the final top
+  // results come from the per-trial buckets below.
+  {
+    const dir = path.join(TMP, "shards", dataVersion, ALL_SHARD);
+    const lite: LiteCard[] = cards.map((c) => ({
+      id: c.id,
+      title: c.title,
+      conditions: c.conditions,
+      groups: c.groups,
+      minAge: c.minAge,
+      maxAge: c.maxAge,
+      f: c.facts.filter((x) => x.value !== "mentioned").map((x) => [x.key, x.value] as [Fact["key"], Fact["value"]]),
+      b: [...new Set(c.barriers.map((x) => x.type))],
+    }));
+    const liteSites: Record<string, [number, number][]> = {};
+    for (const c of cards) {
+      const pts = new Set<string>();
+      for (const s of sitesById.get(c.id) ?? []) if (s.lat !== undefined && s.lon !== undefined) pts.add(`${s.lat.toFixed(2)},${s.lon.toFixed(2)}`);
+      liteSites[c.id] = [...pts].map((p) => p.split(",").map(Number) as [number, number]);
+    }
+    const index = new MiniSearch<SearchDoc>(MINISEARCH_OPTIONS);
+    index.addAll(cards.map((c) => ({ ...toSearchDoc(c), summary: "", criteria: "" })));
+    const emb = new Int8Array(cards.length * EMBEDDING_DIMS);
+    cards.forEach((c, i) => emb.set(quantized.get(c.id) as Int8Array, i * EMBEDDING_DIMS));
+    let bytes = 0;
+    bytes += await writeJson(path.join(dir, "cards.json"), lite);
+    bytes += await writeJson(path.join(dir, "sites.json"), liteSites);
+    bytes += await writeJson(path.join(dir, "index.json"), index.toJSON());
+    await writeFile(path.join(dir, "emb.bin"), emb);
+    bytes += emb.byteLength;
+    shards.push({ id: ALL_SHARD, group: "other", kind: "lite", count: cards.length, files: { cards: "cards.json", sites: "sites.json", index: "index.json", embeddings: "emb.bin" }, bytes });
+  }
+
+  // Per-trial buckets (last 3 digits of the NCT ID): trial detail page + "not sure" top results.
+  const buckets = new Map<string, TrialBucket>();
+  for (const c of cards) {
+    const k = trialBucketKey(c.id);
+    const b = buckets.get(k) ?? {};
+    b[c.id] = { card: c, sites: sitesById.get(c.id) ?? [] };
+    buckets.set(k, b);
+  }
+  for (const [k, b] of buckets) await writeJson(path.join(TMP, "shards", dataVersion, "trials", `${k}.json`), b);
+
+  // Access Intelligence aggregates (public).
+  await writeJson(path.join(TMP, "access.json"), AccessDataSchema.parse(aggregateAccess(cards, sitesById, dataDate, dataVersion)));
 
   // 5. ZIP tables by 3-digit prefix (loaded on demand by the browser).
   const byPrefix = new Map<string, Record<string, [number, number]>>();
@@ -187,6 +230,7 @@ async function main(): Promise<void> {
     groups,
     shards,
     allShard: ALL_SHARD,
+    trialBase: `/data/shards/${dataVersion}/trials`,
   };
   const countsByGroup: Meta["countsByGroup"] = {};
   for (const g of CANCER_GROUP_IDS) {
@@ -207,7 +251,6 @@ async function main(): Promise<void> {
   };
   await writeJson(path.join(TMP, "manifest.json"), ManifestSchema.parse(manifest));
   await writeJson(path.join(TMP, "meta.json"), MetaSchema.parse(meta));
-  await writeJson(path.join(TMP, "lookup.json"), lookup);
 
   // 7. Validate output, then atomically swap directories.
   for (const s of shards) {
@@ -237,12 +280,20 @@ async function main(): Promise<void> {
 
   // 9. Report.
   console.log(`\nData version ${dataVersion}: ${cards.length} trials, ${meta.statesCovered} states, ${shards.length} shards`);
+  const sizes: Record<string, { trials: number; raw: number; gzip: number }> = {};
   for (const s of shards) {
     const dir = path.join(OUT, "shards", dataVersion, s.id);
     let gz = 0;
     for (const f of await readdir(dir)) gz += gzipSync(await readFile(path.join(dir, f))).byteLength;
+    sizes[s.id] = { trials: s.count, raw: s.bytes, gzip: gz };
     console.log(`  ${s.id.padEnd(18)} ${String(s.count).padStart(5)} trials  ${(s.bytes / 1024).toFixed(0).padStart(6)} KB raw  ${(gz / 1024).toFixed(0).padStart(5)} KB gzip`);
   }
+  const bucketDir = path.join(OUT, "shards", dataVersion, "trials");
+  let maxBucketGz = 0;
+  for (const f of await readdir(bucketDir)) maxBucketGz = Math.max(maxBucketGz, gzipSync(await readFile(path.join(bucketDir, f))).byteLength);
+  const accessGz = gzipSync(await readFile(path.join(OUT, "access.json"))).byteLength;
+  console.log(`  trial buckets: ${buckets.size} files, largest ${(maxBucketGz / 1024).toFixed(0)} KB gzip; access.json ${(accessGz / 1024).toFixed(0)} KB gzip`);
+  await writeJson(path.join(BUILD, "shard-sizes.json"), { dataVersion, totalTrials: cards.length, skipped: failures.length, shards: sizes, buckets: buckets.size, maxBucketGzip: maxBucketGz, accessGzip: accessGz });
   console.log(`Done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 
