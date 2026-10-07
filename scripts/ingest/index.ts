@@ -14,7 +14,7 @@ import { gzipSync } from "node:zlib";
 import path from "node:path";
 import MiniSearch from "minisearch";
 import { RawStudySchema } from "../../lib/ingest/raw";
-import { buildRecord, embeddingText, OUT_OF_SCOPE } from "../../lib/ingest/record";
+import { buildRecord, embeddingText, NOT_CANCER, OUT_OF_SCOPE } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
 import { ManifestSchema, MetaSchema, trialBucketKey, type Fact, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
     const built = buildRecord(parsed.data, (z) => zips.get(z));
     if (!built.ok) {
       // Out-of-scope (no recruiting U.S. site) is a normal skip, not a validation failure.
-      if (built.reason === OUT_OF_SCOPE) outOfScope++;
+      if (built.reason === OUT_OF_SCOPE || built.reason === NOT_CANCER) outOfScope++;
       else failures.push(`${built.id}: ${built.reason}`);
       continue;
     }
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
     sitesById.set(built.card.id, built.sites);
   }
   const invalidFraction = failures.length / Math.max(1, raw.length);
-  console.log(`Built ${cards.length} trials; ${outOfScope} out of scope (no recruiting U.S. site); ${failures.length} failed validation (${(invalidFraction * 100).toFixed(1)}%)`);
+  console.log(`Built ${cards.length} trials; ${outOfScope} out of scope (no recruiting U.S. site, or not a cancer trial); ${failures.length} failed validation (${(invalidFraction * 100).toFixed(1)}%)`);
   for (const f of failures.slice(0, 10)) console.log(`  skipped ${f}`);
   const prev = await previousMeta();
   const abort = ingestAbortReason({ rawCount: raw.length, invalidCount: failures.length, builtCount: cards.length, previousCount: prev && prev.source === source ? prev.totalTrials : null });
@@ -175,10 +175,11 @@ async function main(): Promise<void> {
     const list = cards.filter((c) => c.groups.includes(g));
     if (list.length === 0) continue;
     const parts = Math.ceil(list.length / MAX_PER_SHARD);
+    const per = Math.ceil(list.length / parts); // balanced parts
     const ids: string[] = [];
     for (let p = 0; p < parts; p++) {
       const id = parts === 1 ? g : `${g}-${p + 1}`;
-      const part = list.slice(p * MAX_PER_SHARD, (p + 1) * MAX_PER_SHARD);
+      const part = list.slice(p * per, (p + 1) * per);
       await writeShard(id, g, part);
       ids.push(id);
     }

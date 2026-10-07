@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current checkpoint: 2 (end of P0). Agent A (data/matching/backend) done; Agent B owns app/ + components/.
+Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agent B owns app/ + components/.
 
 ## Done (P0, Agent A)
 - Scaffold: Next 16 static export, TS 5.9 strict, Tailwind 4, shadcn (base-ui), Vitest, Playwright deps, wrangler.jsonc (Workers + static assets + D1), .dev.vars (empty), .gitignore.
@@ -22,7 +22,19 @@ Current checkpoint: 2 (end of P0). Agent A (data/matching/backend) done; Agent B
 - Verified: "1 card after returning from trial page" was a test artifact (counted the trial page's own article); results persist (10/10).
 - Checks: lint + typecheck clean for app/ and components/; axe no serious/critical on all pages in en/es/pt/ht, light/dark, 390px; no horizontal overflow.
 
-## Next (P1)
+## Done (P1, Agent A)
+- Lite cross-group "not sure" index + per-trial buckets; Access Intelligence aggregates (/data/access.json) + helpers (lib/access).
+- POST /api/ask (crisis 988, refusals, PII scrub, grounded citations, cache, 30/h, Turnstile, mock) + client lib/api/ask.ts; API.md updated.
+- llama.cpp LLM fact layer (`npm run ingest:llm -- --limit=N`): tested on 4 seed trials (~13-35 s/trial); full run deferred.
+- `npm run eval`: 30 synthetic profiles; 0% hard-filter violations; full-pipeline nDCG@10 0.819; fact precision 66%; mock AI JSON 100%, quotes 99.8%.
+- E2E (Playwright, 11 tests): main flow x3 + mobile, AI fallback, data-minimization network test, Q&A safety UI + API. Pass on seed and national data.
+- National ingest: 5,888 fetched, 5,779 trials, 51 states, 107 out of scope, 2 invalid; resumable rerun uses cached pages + embeddings (8.6 s).
+
+## Next (P2)
+- Coverage to 90% (now 77% lines), axe suite, PWA, CI + monthly refresh workflow, Dependabot, SECURITY.md, README; npm audit (dev-tool advisories).
+- Full LLM fact extraction run (`npm run ingest:llm`, ~20+ h nationally at ~15-30 s/trial).
+
+## Previously planned for P1 (done)
 - National ingestion run (background); then make the `_all` "not sure" shard a lite cross-group index (full-card `_all` is ~4 MB raw for 302 trials, too big nationally).
 - Q&A endpoint, Access Intelligence, eval, e2e tests, remaining pages/translations (see PLAN.md P1).
 - llama.cpp (Qwen3-14B) LLM fact layer: code path + small-sample test (deferred full run).
@@ -34,7 +46,7 @@ Current checkpoint: 2 (end of P0). Agent A (data/matching/backend) done; Agent B
 - UI: set NEXT_PUBLIC_PARTNER_EMAIL at build time; without it the "Partner with us" mailto has no recipient.
 - UI: About page has no founder story yet (needs the founder's real text; none was invented).
 - UI: server-rendered HTML is English; a saved non-English language applies right after hydration (brief English flash).
-- `_all` shard scales poorly nationally (see Next). Coverage below 90% target (loader/search/embedder/api clients untested; P2).
+- Coverage below 90% target (loader/search/embedder untested; P2). Rule-fact precision 66% on hand-labeled sample (eval/RESULTS.md).
 - `npm audit --audit-level=high` fails on dev tooling only (braces 3.0.3 advisory with no patched release, via shadcn/eslint-config-next; sharp via miniflare). P2: overrides/upgrades.
 - Rule-layer facts are heuristic; some criteria still misread (LLM layer + eval in P1).
 
