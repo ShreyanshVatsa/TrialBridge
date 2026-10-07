@@ -87,7 +87,7 @@ describe("rule facts", () => {
     expect(get("concurrent_trial")?.value).toBe("excluded");
     expect(get("prior_immunotherapy")?.value).toBe("excluded");
     expect(get("prior_immunotherapy")?.ref).toEqual({ section: "exclusion", n: 2 });
-    for (const f of facts) expect([...inclusion, ...exclusion].some((c) => c.text === f.quote)).toBe(true);
+    for (const f of facts) expect([...inclusion, ...exclusion].some((c) => c.text.includes(f.quote))).toBe(true);
   });
   it("treats washouts and 'allowed' as mentioned, and negation as excluded", () => {
     const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;

@@ -16,7 +16,7 @@ import MiniSearch from "minisearch";
 import { RawStudySchema } from "../../lib/ingest/raw";
 import { buildRecord, embeddingText, NOT_CANCER, OUT_OF_SCOPE } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
-import { ManifestSchema, MetaSchema, trialBucketKey, type Fact, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
+import { ManifestSchema, MetaSchema, trialBucketKey, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
 import { aggregateAccess } from "../../lib/access/aggregate";
 import { BASKET_SHARD_ID, CANCER_GROUP_IDS, basketAppliesTo, isBasketOnly, type CancerGroupId } from "../../config/cancer-groups";
@@ -206,7 +206,9 @@ async function main(): Promise<void> {
       groups: c.groups,
       minAge: c.minAge,
       maxAge: c.maxAge,
-      f: c.facts.filter((x) => x.value !== "mentioned").map((x) => [x.key, x.value] as [Fact["key"], Fact["value"]]),
+      // Directional, non-review facts only, as [key, value] or [key, value, param] (v2 thresholds/carve-outs).
+      f: c.facts.filter((x) => x.value !== "mentioned" && !x.needsReview).map((x): LiteCard["f"][number] => (x.param !== undefined ? [x.key, x.value, x.param] : [x.key, x.value])),
+      ...(c.sex !== "ALL" ? { s: c.sex } : {}),
       b: [...new Set(c.barriers.map((x) => x.type))],
     }));
     const liteSites: Record<string, [number, number][]> = {};
