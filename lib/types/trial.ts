@@ -1,4 +1,8 @@
 import { z } from "zod";
+
+// No eval/new Function: our CSP (and Cloudflare Workers) disallow it; zod's JIT probe would trigger
+// a CSP violation report. Every schema module imports this file, so this runs before any parse.
+z.config({ jitless: true });
 import { CANCER_GROUP_IDS } from "@/config/cancer-groups";
 import { BIOMARKER_IDS } from "@/config/biomarkers";
 

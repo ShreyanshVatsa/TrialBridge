@@ -4,9 +4,12 @@ import { defineConfig, devices } from "@playwright/test";
  * End-to-end tests run against the real static export + Worker API via `wrangler dev`
  * (local D1, mock AI provider, Turnstile test keys). Build first: `npm run build`.
  */
-const PORT = 8788;
+const PORT = Number(process.env.PW_PORT ?? 8788);
+const ASSETS = process.env.PW_ASSETS ?? ".wrangler/e2e-out";
 export default defineConfig({
   testDir: "tests/e2e",
+  // Overridable so parallel local runs don't clobber each other's artifacts.
+  outputDir: process.env.PW_OUTPUT_DIR ?? "test-results",
   timeout: 120_000,
   expect: { timeout: 30_000 },
   fullyParallel: false,
@@ -20,7 +23,7 @@ export default defineConfig({
   ],
   webServer: {
     // Serves a snapshot of ./out (taken by `npm run test:e2e`) so a concurrent `next build` can't disturb the run.
-    command: `npx wrangler dev --port ${PORT} --assets .wrangler/e2e-out`,
+    command: `npx wrangler dev --port ${PORT} --assets ${ASSETS}`,
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
