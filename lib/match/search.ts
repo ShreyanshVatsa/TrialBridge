@@ -1,0 +1,91 @@
+/**
+ * Browser search orchestration (client-only): load shard(s) + ZIP centroid + profile embedding
+ * in parallel, then run the pure ranking pipeline (rank.ts). Nothing leaves the browser.
+ */
+import MiniSearch from "minisearch";
+import { IntakeAnswersSchema, type IntakeAnswers } from "@/lib/types/intake";
+import type { SearchOutcome, SearchProgress } from "@/lib/types/match";
+import { loadManifest, loadShard, lookupZip, type LoadedShard } from "@/lib/data/loader";
+import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisearch-config";
+import { buildProfileText } from "./query";
+import { embedProfile } from "./embedder";
+import { rankTrials, type RankEntry } from "./rank";
+
+export { applyAnalysis } from "./apply";
+
+const indexCache = new Map<string, MiniSearch<SearchDoc>>();
+function getIndex(shard: LoadedShard): MiniSearch<SearchDoc> {
+  let idx = indexCache.get(shard.info.id);
+  if (!idx) {
+    idx = MiniSearch.loadJSON<SearchDoc>(shard.indexJson, MINISEARCH_OPTIONS);
+    indexCache.set(shard.info.id, idx);
+  }
+  return idx;
+}
+
+export interface SearchOptions {
+  onProgress?: (p: SearchProgress) => void;
+  signal?: AbortSignal;
+}
+
+export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions = {}): Promise<SearchOutcome> {
+  const a = IntakeAnswersSchema.parse(answers);
+  const report = opts.onProgress ?? (() => undefined);
+  const queryText = buildProfileText(a);
+
+  report({ stage: "loading_shards", fraction: 0 });
+  const manifest = await loadManifest();
+  const dims = manifest.embedding.dims;
+  const shardIds = a.cancerType === "other" ? [manifest.allShard] : (manifest.groups[a.cancerType] ?? []);
+  const infos = manifest.shards.filter((s) => shardIds.includes(s.id));
+  if (infos.length === 0) return { results: [], candidateCount: 0, searchedCount: 0, keywordOnly: false };
+
+  // Start the embedding immediately; it runs in the worker while shards download.
+  let modelFraction = 0;
+  const vectorPromise = embedProfile(queryText, {
+    ...(opts.signal ? { signal: opts.signal } : {}),
+    onProgress: (f) => {
+      modelFraction = f;
+    },
+  });
+
+  const shardFractions = infos.map(() => 0);
+  const [shards, origin] = await Promise.all([
+    Promise.all(
+      infos.map((info, i) =>
+        loadShard(info, {
+          ...(opts.signal ? { signal: opts.signal } : {}),
+          onProgress: (f) => {
+            shardFractions[i] = f;
+            report({ stage: "loading_shards", fraction: shardFractions.reduce((x, y) => x + y, 0) / infos.length });
+          },
+        }),
+      ),
+    ),
+    lookupZip(a.zip, opts.signal ? { signal: opts.signal } : {}).catch(() => null),
+  ]);
+
+  report({ stage: "loading_model", fraction: modelFraction });
+  const vector = await vectorPromise;
+  if (opts.signal?.aborted) throw opts.signal.reason;
+
+  report({ stage: "ranking" });
+  const entries: RankEntry[] = shards.flatMap((s) =>
+    s.cards.map((card, i) => ({ card, sites: s.sites[card.id] ?? [], vector: s.embeddings.subarray(i * dims, (i + 1) * dims) })),
+  );
+  const indexes = shards.map(getIndex);
+  const keywordSearch = (ids: ReadonlySet<string>) => {
+    const scores = new Map<string, number>();
+    for (const idx of indexes) {
+      for (const r of idx.search(queryText, { ...MINISEARCH_SEARCH, filter: (res) => ids.has(String(res.id)) })) {
+        const id = String(r.id);
+        scores.set(id, Math.max(scores.get(id) ?? 0, r.score));
+      }
+    }
+    return [...scores.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([id]) => id);
+  };
+
+  const outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector });
+  report({ stage: "done" });
+  return outcome;
+}

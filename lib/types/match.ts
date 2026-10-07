@@ -29,6 +29,8 @@ export interface RankedTrial {
     keywordRank: number | null;
     vectorRank: number | null;
     rrf: number;
+    /** Normalized retrieval relevance 0..1 (RRF / max possible). */
+    retrieval: number;
     precheckPenalty: number;
     fit: FitLevel | null;
     final: number;
