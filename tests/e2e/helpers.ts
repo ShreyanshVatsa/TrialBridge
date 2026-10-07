@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export interface IntakeOptions {
   cancer: string;
@@ -14,30 +14,39 @@ export interface IntakeOptions {
 
 /** Walk the guided chat intake with quick replies and inputs (English UI labels). */
 export async function completeIntake(page: Page, o: IntakeOptions): Promise<void> {
-  const click = async (name: string) => {
-    await page.getByRole("button", { name, exact: true }).last().click();
+  const answered = page.getByRole("button", { name: /^Edit answer:/ });
+  // Answer the current step and wait until the chat records it (one more "Edit answer" button).
+  const advance = async (act: () => Promise<void>) => {
+    const n = await answered.count();
+    await act();
+    await expect(answered).toHaveCount(n + 1);
   };
+  const reply = (name: string) => advance(() => page.getByRole("button", { name, exact: true }).last().click());
+  const type = (value: string) =>
+    advance(async () => {
+      const input = page.locator("main input:visible").first();
+      await input.fill(value);
+      await input.press("Enter");
+    });
+
   await page.goto("/find/");
-  await click(o.cancer);
-  const zip = page.locator("main input:visible").first();
-  await zip.fill(o.zip ?? "02115");
-  await zip.press("Enter");
-  await click(o.travel ?? "Up to 250 miles");
-  const age = page.locator("main input:visible").first();
-  await age.fill(o.age ?? "52");
-  await age.press("Enter");
-  await click(o.language ?? "English");
-  await click(o.spread ?? "Not sure");
-  for (const t of o.treatments ?? ["Not sure"]) await click(t);
-  await click("Continue"); // treatments is multi-select
-  // Biomarkers step appears only for some cancer types.
+  await reply(o.cancer);
+  await type(o.zip ?? "02115");
+  await reply(o.travel ?? "Up to 250 miles");
+  await type(o.age ?? "52");
+  await reply(o.language ?? "English");
+  await reply(o.spread ?? "Not sure");
+  for (const t of o.treatments ?? ["Not sure"]) await page.getByRole("button", { name: t, exact: true }).last().click();
+  await reply("Continue"); // treatments is multi-select
+  // Biomarkers step appears only for some cancer types; otherwise the pregnancy question is next.
   const positive = page.getByRole("button", { name: "Positive", exact: true });
-  if (await positive.first().isVisible().catch(() => false)) {
+  await positive.first().or(page.getByRole("button", { name: "Prefer not to say", exact: true })).first().waitFor();
+  if (await positive.first().isVisible()) {
     if (o.biomarkerPositiveFirst) await positive.first().click();
-    await click("Continue");
+    await reply("Continue");
   }
-  await click("No"); // pregnant
-  await click("No"); // another trial
+  await reply("No"); // pregnant
+  await reply("No"); // another trial
   await page.getByRole("button", { name: "Search trials" }).click();
 }
 

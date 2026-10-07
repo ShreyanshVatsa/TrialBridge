@@ -1,7 +1,8 @@
 /**
  * postbuild (after `next build` writes ./out):
- * 1. Externalize inline <script> blocks into /_inline/<sha256>.js so the CSP needs no
- *    'unsafe-inline' or per-page hashes. Order and parser-blocking semantics are preserved.
+ * 1. Externalize inline <script> blocks into /_next/static/inline/<sha256>.js so the CSP needs no
+ *    'unsafe-inline' or per-page hashes. Classic scripts are merged into one deferred file per page
+ *    (relative order preserved, no render blocking, fewer requests).
  * 2. Fail if any inline event handler attributes exist (blocked by CSP anyway).
  * 3. Secret scan: fail if anything that looks like an API key or secret is in the build output.
  * 4. Remove ONNX Runtime .wasm copies the bundler emits into _next/static/media: the worker loads
@@ -13,7 +14,8 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 
 const OUT = "out";
-const INLINE_DIR = path.join(OUT, "_inline");
+// Must live under /_next/: Next's runtime checks document.currentScript.src contains "/_next/".
+const INLINE_DIR = path.join(OUT, "_next/static/inline");
 const SECRET_PATTERNS: [string, RegExp][] = [
   ["Groq key", /gsk_[A-Za-z0-9]{20,}/],
   ["Cerebras key", /csk-[A-Za-z0-9]{20,}/],
@@ -49,15 +51,29 @@ async function main(): Promise<void> {
     const ext = path.extname(file);
     if (ext === ".html") {
       let html = await readFile(file, "utf8");
+      // Classic inline scripts are concatenated (document order) into ONE deferred file per page:
+      // deferred scripts run in order after parsing, so merging them is equivalent and saves requests.
+      const classic: string[] = [];
+      const MARK = "\u0000TB_INLINE\u0000";
       html = await replaceAsync(html, /<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, async (whole, attrs = "", body) => {
         if (/\ssrc=/i.test(attrs) || !body.trim()) return whole;
         const type = /\stype=["']?([^"'\s>]+)/i.exec(attrs)?.[1];
         if (type && !/^(text\/javascript|module|application\/javascript)$/i.test(type)) return whole; // data blocks (JSON) are not executed
-        const hash = createHash("sha256").update(body).digest("hex").slice(0, 20);
-        await writeFile(path.join(INLINE_DIR, `${hash}.js`), body);
         externalized++;
-        return `<script${attrs} src="/_inline/${hash}.js"></script>`;
+        if (type === "module") {
+          const hash = createHash("sha256").update(body).digest("hex").slice(0, 20);
+          await writeFile(path.join(INLINE_DIR, `${hash}.js`), body);
+          return `<script${attrs} src="/_next/static/inline/${hash}.js"></script>`;
+        }
+        classic.push(body);
+        return classic.length === 1 ? MARK : "";
       });
+      if (classic.length) {
+        const combined = classic.join(";\n");
+        const hash = createHash("sha256").update(combined).digest("hex").slice(0, 20);
+        await writeFile(path.join(INLINE_DIR, `${hash}.js`), combined);
+        html = html.replace(MARK, `<script src="/_next/static/inline/${hash}.js" defer></script>`);
+      }
       if (/\son[a-z]+=["']/i.test(html.replace(/<script[\s\S]*?<\/script>/gi, ""))) problems.push(`inline event handler in ${file}`);
       await writeFile(file, html);
     }

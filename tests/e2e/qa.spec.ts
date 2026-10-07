@@ -43,8 +43,9 @@ test.describe("Trial page and Q&A safety (mock)", () => {
 });
 
 test.describe("Q&A API safety", () => {
+  const origin = `http://localhost:${process.env.PW_PORT ?? 8788}`;
   const post = (request: import("@playwright/test").APIRequestContext, question: string) =>
-    request.post("/api/ask", { headers: { Origin: "http://localhost:8788" }, data: { nctId: id, question, language: "en", turnstileToken: "XXXX.DUMMY.TOKEN.XXXX" } });
+    request.post("/api/ask", { headers: { Origin: origin }, data: { nctId: id, question, language: "en", turnstileToken: "XXXX.DUMMY.TOKEN.XXXX" } });
 
   test("eligibility, diagnosis, and treatment-advice refusals; cross-origin blocked", async ({ request }) => {
     for (const [q, reason] of [["Am I eligible for this trial?", "eligibility"], ["What does my biopsy result mean?", "diagnosis"], ["Should I stop my chemo?", "treatment_advice"]] as const) {
