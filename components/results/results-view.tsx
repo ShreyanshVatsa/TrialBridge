@@ -1,7 +1,7 @@
 "use client";
 
 import { Info, Pencil, Printer, RotateCcw, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
 import type { SearchSession } from "@/components/session/session-provider";
@@ -10,6 +10,10 @@ import { TypingDots } from "@/components/site/spinner";
 import { Button } from "@/components/ui/button";
 import type { SearchProgress } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { findOutList, getCatalog } from "@/components/questionnaire/engine";
+import { FindOutList } from "@/components/questionnaire/find-out-list";
+import { isEssential, isNonResponse } from "@/components/questionnaire/contract";
+import { useKeyT } from "@/components/questionnaire/t";
 import { ResultCard } from "./result-card";
 
 const INITIAL_VISIBLE = 10;
@@ -56,15 +60,19 @@ export function SearchProgressView({ progress }: { progress: SearchProgress }) {
 export function ResultsView({
   session,
   onEdit,
+  onFill,
   onNewSearch,
   onWiden,
 }: {
   session: SearchSession;
   onEdit: () => void;
+  /** Reopen the questions on the Find-out list ("Fill in what you found out"). */
+  onFill?: (questionIds: string[]) => void;
   onNewSearch: () => void;
   onWiden: () => void;
 }) {
   const m = useMessages();
+  const t = useKeyT();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
   const locale = localeFor(useLanguage());
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -73,6 +81,11 @@ export function ResultsView({
   const { results, outcome, analysis } = session;
   const shown = results.slice(0, visible);
   const today = formatDate(new Date(session.searchedAt).toISOString(), locale);
+  // Find-out list and unknown-answer note (browser-only; built from the questionnaire state).
+  const qState = session.answers.questionnaire;
+  const findOut = useMemo(() => (qState ? findOutList(qState, getCatalog("cancer", session.answers.cancerType)) : []), [qState, session.answers.cancerType]);
+  const sexAnswer = qState?.answers.sex;
+  const unknownCount = qState ? Object.entries(qState.answers).filter(([id, v]) => !isEssential(id) && (isNonResponse(v) || qState.deferred.includes(id))).length : 0;
 
   return (
     <div className="space-y-6">
@@ -126,6 +139,17 @@ export function ResultsView({
         {outcome.zipApproximate && <Notice>{m.results.zipApproximate}</Notice>}
         {outcome.keywordOnly && <Notice tone="warn">{m.results.keywordOnly}</Notice>}
       </div>
+      {unknownCount > 0 && <Notice>{t("results.findOutUnknownNote", { count: unknownCount })}</Notice>}
+      {(sexAnswer === "female" || sexAnswer === "male") && (
+        <Notice>
+          {t(`questionnaire.ui.sexHidden.${sexAnswer}`)}{" "}
+          {onFill && (
+            <Button variant="link" className="no-print h-auto min-h-0 p-0 align-baseline" onClick={() => onFill(["sex"])}>
+              {t("questionnaire.ui.sexHiddenChange")}
+            </Button>
+          )}
+        </Notice>
+      )}
 
       {results.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
@@ -156,6 +180,8 @@ export function ResultsView({
           )}
         </>
       )}
+
+      <FindOutList entries={findOut} onFill={onFill && findOut.length > 0 ? () => onFill(findOut.map((e) => e.question)) : undefined} className="find-out-print" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { completeIntake, RESULTS_HEADING, sampleTrialId } from "./helpers";
+import { answerCurrent, answerEssentials, completeIntake, freshFind, RESULTS_HEADING, sampleTrialId, SUMMARY_HEADING } from "./helpers";
 
 const id = sampleTrialId();
 
@@ -43,3 +43,35 @@ test("axe: results view and Spanish UI", async ({ page }) => {
   await expect(page.locator("h1")).toHaveText(/Encuentre/);
   await expectNoSeriousViolations(page, "landing-es");
 });
+
+/** Questionnaire views (first adaptive question, biomarker grid when asked, summary) at 320/390/1280 px, light and dark. */
+for (const width of [320, 390, 1280]) {
+  for (const theme of ["light", "dark"] as const) {
+    test(`axe: questionnaire views at ${width}px (${theme})`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+      await page.addInitScript((t) => localStorage.setItem("tb-theme", t), theme);
+      await freshFind(page);
+      await expectNoSeriousViolations(page, `q-start/${width}/${theme}`);
+      await answerEssentials(page, { cancer: "Breast cancer" });
+      const summary = page.getByRole("heading", { name: SUMMARY_HEADING });
+      const seen = new Set<string>();
+      for (let i = 0; i < 12 && !(await summary.isVisible()); i++) {
+        const card = page.locator("section[data-question]").last();
+        await expect(card).toBeVisible();
+        const type = (await card.getByRole("table").count()) > 0 ? "grid" : (await card.getByRole("checkbox").count()) > 0 ? "multi" : "single";
+        if (!seen.has(type)) {
+          seen.add(type);
+          await card.locator("details summary").first().click().catch(() => undefined);
+          await expectNoSeriousViolations(page, `q-${type}/${width}/${theme}`);
+        }
+        await answerCurrent(page, "unknown");
+        await expect(summary.or(page.locator("section[data-question]").last())).toBeVisible();
+      }
+      await expect(summary).toBeVisible();
+      await expectNoSeriousViolations(page, `q-summary/${width}/${theme}`);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+      expect(overflow).toBe(false);
+    });
+  }
+}
