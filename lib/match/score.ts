@@ -89,12 +89,12 @@ export function precheckBonus(notes: readonly NoteLike[]): number {
 }
 
 /**
- * Phase preference (questionnaire `phase_pref`): "phase1_ok" favors first-in-human studies slightly;
+ * Phase preference (questionnaire `phase_pref`): "open_phase1" favors first-in-human studies slightly;
  * "later_phase" favors phase 3 and disfavors phase 1-only studies. Anything else (no preference, unknown) is 0.
  */
 export function phaseBonus(pref: string | null | undefined, phases: readonly string[]): number {
   const isEarly = phases.length > 0 && phases.every((p) => p === "PHASE1" || p === "EARLY_PHASE1");
-  if (pref === "phase1_ok") return isEarly ? PHASE_PREF_BONUS : 0;
+  if (pref === "open_phase1") return isEarly ? PHASE_PREF_BONUS : 0;
   if (pref === "later_phase") {
     if (isEarly) return -PHASE_PREF_BONUS;
     return phases.includes("PHASE3") ? PHASE_PREF_BONUS : 0;

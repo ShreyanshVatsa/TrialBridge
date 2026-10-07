@@ -19,11 +19,11 @@ export function travelMiles(v: AnswerValue | undefined): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-/** spread option -> v1 spread ("yes" only for distant spread). */
+/** spread option -> v1 spread ("yes" only for distant spread: catalog id "distant"). */
 export function legacySpread(v: AnswerValue | undefined): IntakeAnswers["spread"] {
   const s = str(v);
   if (s === null) return "not_sure";
-  return s === "metastatic" ? "yes" : "no";
+  return s === "distant" || s === "metastatic" ? "yes" : "no";
 }
 
 const LEGACY_TREATMENTS: readonly string[] = TREATMENTS;
