@@ -7,6 +7,7 @@ import { en } from "@/components/i18n/en";
 import { SessionProvider } from "@/components/session/session-provider";
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
+import { SkipLink } from "@/components/site/skip-link";
 
 export const metadata: Metadata = {
   title: { default: en.meta.title, template: "%s · TrialBridge" },
@@ -29,12 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <body className="flex min-h-dvh flex-col">
         <Script src="/theme-init.js" strategy="beforeInteractive" />
-        <a
-          href="#main"
-          className="sr-only z-50 rounded-lg bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-        >
-          {en.common.skipToContent}
-        </a>
+        <SkipLink />
         <SessionProvider>
           <SiteHeader />
           {children}

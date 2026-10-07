@@ -32,6 +32,12 @@ export const en = {
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "System",
+    language: "Language",
+    accessIntel: "Access Intelligence",
+    forSites: "For research sites",
+    methodology: "How it works",
+    about: "About",
+    menu: "Menu",
   },
   disclaimer: {
     text: "TrialBridge doesn't give medical advice. Only the trial team and your doctor can decide if a trial is right for you.",
@@ -44,6 +50,12 @@ export const en = {
     privacy: "Privacy",
     find: "Find a trial",
     copyright: "© {year} TrialBridge",
+    translationNote: "Translations not yet reviewed by native speakers.",
+    product: "Product",
+    company: "Company",
+    legal: "Legal",
+    privacyPolicy: "Privacy policy (draft)",
+    terms: "Terms of use (draft)",
   },
   landing: {
     eyebrow: "Free for patients · Private by design",
@@ -84,6 +96,7 @@ export const en = {
     ],
     sitesTitle: "For research sites and sponsors",
     sitesBody: "Many trials struggle to enroll, especially from underserved communities. TrialBridge helps patients arrive better informed and shows where eligibility rules create access barriers. Partnerships never influence patient results.",
+    sitesLink: "Learn about partnering",
     finalTitle: "Ready when you are.",
     finalBody: "It takes about two minutes. You can change any answer before searching.",
   },
@@ -112,6 +125,11 @@ export const en = {
     noTrackingBody: "We don't use cookies for tracking, analytics, ads, or third-party scripts. To prevent abuse we use Cloudflare Turnstile, a privacy-focused bot check, and rate limits based on a salted, daily-rotating hash rather than your IP address.",
     storedTitle: "What we store",
     storedBody: "To save free AI capacity, AI outputs are cached by a one-way hash of the minimized profile and trial IDs for up to 30 days. We never log your answers.",
+    qaTitle: "Questions about a trial",
+    qaBody: "When you ask about a trial, only the trial ID, your question, and your language are sent. Before sending, we remove things that look like personal details (emails, phone numbers, ZIP codes, dates of birth, and long numbers). Please don't include personal details in questions.",
+    deviceTitle: "Saved on your device",
+    deviceBody: "Your color theme and display language are saved in your browser so the site remembers them. They are never sent to us.",
+    policyLink: "Read the full privacy policy draft",
   },
   chat: {
     title: "Find a trial",
@@ -285,6 +303,170 @@ export const en = {
     sitesAll: "Show all {count} sites",
     contact: "Contact",
     official: "View the official listing on ClinicalTrials.gov",
+  },
+  pages: {
+    draftBanner: "Draft, needs legal review. This document is not yet final.",
+    forSites: {
+      title: "For research sites and sponsors",
+      intro: "Many cancer trials struggle to reach their enrollment goals, and patients from underserved communities are often the hardest to reach. TrialBridge helps patients find and understand trials before they ever contact a site.",
+      sections: [
+        {
+          title: "The enrollment problem",
+          body: ["Eligibility criteria are long, technical, and written for clinicians. Patients who could take part often never hear about a trial, and many who do inquire are a poor fit. Requirements such as English-only consent or upper age limits quietly narrow who can join."],
+          items: [],
+        },
+        {
+          title: "What TrialBridge offers",
+          body: [],
+          items: [
+            "Better-informed patient inquiries: patients arrive having read the criteria that matter, with questions to discuss with their care team.",
+            "Access-barrier insights: transparent, rule-based analysis of English requirements, age limits, and disability exclusions across trials, states, and sites.",
+            "Multilingual reach: the patient experience works in English, Spanish, Portuguese, and Haitian Creole.",
+          ],
+        },
+        {
+          title: "Our independence promise",
+          body: ["Partners can never pay to change which trials patients see or how results are ranked. Patient-facing matching stays independent, always."],
+          items: [],
+        },
+      ],
+      cta: "Partner with us",
+      ctaNote: "Opens your email app. We don't collect information through forms.",
+      mailSubject: "TrialBridge partnership inquiry",
+    },
+    methodology: {
+      title: "How it works",
+      intro: "A plain-language look at where our data comes from, how matching works, how we use AI, and where the limits are.",
+      sections: [
+        {
+          title: "Data source",
+          body: ["All trial information comes from ClinicalTrials.gov, the public registry run by the U.S. National Library of Medicine. We include recruiting interventional cancer trials with at least one U.S. site. The data date is shown on the home page and on Access Intelligence."],
+          items: [],
+        },
+        {
+          title: "Processing pipeline",
+          body: ["Each trial record is validated, grouped into cancer types using its medical subject headings (MeSH), and its eligibility text is split into numbered inclusion and exclusion criteria. Records that fail validation are skipped and logged. Updates are rejected if the trial count drops sharply or too many records fail."],
+          items: [],
+        },
+        {
+          title: "Access-barrier rules",
+          body: ["Barrier flags are transparent rules, not AI guesses. For every flag we store the exact sentence that triggered it."],
+          items: [
+            "English required: the criteria require speaking or reading English, unless another language or an interpreter is offered.",
+            "Upper age limit: the trial's maximum age is below 75.",
+            "Disability exclusion: the criteria exclude people with a disability or impairment, including psychiatric conditions, without stating a medical reason.",
+          ],
+        },
+        {
+          title: "Hybrid retrieval, on your device",
+          body: ["Matching runs in your browser. We download only the data for your cancer type, then:"],
+          items: [
+            "Hard filters: cancer type, age range, and at least one site within your travel distance.",
+            "Keyword search (BM25) finds trials that use the same words as your profile.",
+            "Meaning-based search uses a small open-source embedding model running on your device to find trials that describe similar situations in different words.",
+            "Reciprocal Rank Fusion combines the two rankings, and a rule-based check lowers trials whose criteria likely conflict with your answers. “Not sure” never counts against you.",
+          ],
+        },
+        {
+          title: "How AI is used and checked",
+          body: ["For the top results, a minimized profile with no ZIP code, exact age, or name is sent with the trial IDs to a free, open-weight AI model. Our server loads each trial's official text from its own copy and never trusts text sent from the browser."],
+          items: [
+            "The AI must return strict, structured output, which we validate.",
+            "Every quoted criterion is checked word for word against the official trial text; quotes that don't match are removed.",
+            "If AI is unavailable, you still get results based on trial criteria.",
+            "AI never decides whether you can join a trial. Only the trial team and your doctor can.",
+          ],
+        },
+        {
+          title: "Limitations",
+          body: [],
+          items: [
+            "Rule-based facts and AI explanations can be wrong. Always read the official criteria with your care team.",
+            "Trial listings can change faster than our data refreshes.",
+            "Only U.S. sites are included, and official trial text is in English.",
+            "Translations have not yet been reviewed by native speakers.",
+          ],
+        },
+      ],
+      evalTitle: "Evaluation",
+      evalBody: "We measure retrieval quality and AI accuracy against synthetic, hand-labeled patient profiles. Results are published with the project's source code.",
+    },
+    about: {
+      title: "About TrialBridge",
+      intro: "TrialBridge exists so that anyone facing cancer can find out, in minutes and in their own language, which clinical trials might be worth asking about.",
+      sections: [
+        {
+          title: "Our mission",
+          body: ["Clinical trials can offer access to new treatments, yet most patients never learn which trials are open near them. Trial listings are long and technical, and many people face barriers they can't see until it's too late. We want every patient to walk into their next appointment informed."],
+          items: [],
+        },
+        {
+          title: "Why we built it",
+          body: ["Searching a trial registry today means reading pages of medical criteria, trial by trial. We built TrialBridge to do that reading with you: find recruiting trials near you, explain them in plain language, and show the exact criteria behind every explanation."],
+          items: [],
+        },
+        {
+          title: "The independence promise",
+          body: ["TrialBridge is free for patients. No sponsor, site, or partner can pay to change which trials you see or how they are ranked. If we ever offer services to research sites, those services will stay separate from patient results."],
+          items: [],
+        },
+        {
+          title: "How we use AI",
+          body: ["AI helps explain trial criteria in plain language, and every quote it uses is checked against the official text. Matching itself is rule-based and runs on your device. TrialBridge was built with the help of AI coding tools, and we review what we ship."],
+          items: [],
+        },
+      ],
+      methodologyLink: "Read how it works",
+    },
+    privacyPolicy: {
+      title: "Privacy policy",
+      intro: "Last updated {date}. This policy explains what information TrialBridge handles and why.",
+      sections: [
+        { title: "Information we don't collect", body: ["We don't offer accounts and don't ask for your name, email, or contact details. We don't use advertising, analytics, or tracking cookies."], items: [] },
+        {
+          title: "Information processed in your browser",
+          body: ["Your intake answers, including ZIP code and age, are processed only in your browser's memory and are discarded when you close or refresh the page."],
+          items: [],
+        },
+        {
+          title: "Information sent to our servers",
+          body: ["To provide AI explanations and answers, we receive a minimized profile (cancer type, age range by decade, spread status, treatments, biomarker answers, pregnancy answer, other-trial answer, and language), trial IDs, and questions you choose to ask. We process them to generate a response and do not log their contents."],
+          items: [],
+        },
+        {
+          title: "AI providers",
+          body: ["Minimized profiles and questions may be processed by third-party AI providers whose data terms we review before use. We do not use providers whose free tiers may use inputs for product improvement with human review."],
+          items: [],
+        },
+        {
+          title: "Security and abuse prevention",
+          body: ["We use Cloudflare to host the service and Cloudflare Turnstile to prevent automated abuse. Rate limits use a salted, daily-rotating hash instead of storing IP addresses. Cached AI outputs are stored under one-way hashes for up to 30 days."],
+          items: [],
+        },
+        { title: "Children", body: ["TrialBridge is intended for adults 18 and older."], items: [] },
+        { title: "Changes", body: ["We will update this page when our practices change."], items: [] },
+      ],
+    },
+    terms: {
+      title: "Terms of use",
+      intro: "Last updated {date}. By using TrialBridge you agree to these terms.",
+      sections: [
+        {
+          title: "Not medical advice",
+          body: ["TrialBridge provides information about clinical trials to help you prepare for conversations with your care team. It does not provide medical advice, diagnosis, or treatment, and it does not determine whether you can join a trial. Only the trial team and your doctor can decide if a trial is right for you."],
+          items: [],
+        },
+        {
+          title: "Accuracy",
+          body: ["Trial information comes from ClinicalTrials.gov and may be incomplete or out of date. AI-generated explanations may contain mistakes. Always confirm details with the trial contact and the official listing."],
+          items: [],
+        },
+        { title: "Emergencies", body: ["Do not use TrialBridge for emergencies. In the U.S., call 911 for medical emergencies, or call or text 988 for the Suicide & Crisis Lifeline."], items: [] },
+        { title: "Acceptable use", body: ["Don't misuse the service, including attempting to overload it, bypass rate limits or bot protection, or extract data at scale."], items: [] },
+        { title: "No warranty", body: ["The service is provided “as is” without warranties of any kind, to the extent permitted by law."], items: [] },
+        { title: "Changes", body: ["We may update these terms. Continued use means you accept the updated terms."], items: [] },
+      ],
+    },
   },
   errors: {
     title: "Something went wrong",
