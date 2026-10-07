@@ -9,6 +9,10 @@ export type { QuestionDef, OptionDef, OptionEffect, FactRule, FactRelation, Prer
 export { UNKNOWN, PREFER_NOT, SKIP, DEFERRED } from "@/config/questionnaire/types";
 import { DEFERRED, NON_RESPONSE_IDS as CATALOG_NON_RESPONSE_IDS } from "@/config/questionnaire/types";
 
+import type { FactPolicy } from "@/config/questionnaire/types";
+/** FACT_POLICY shape: fact key or family -> policy entry. */
+export type FactPolicyMap = Readonly<Record<string, FactPolicy>>;
+
 /** Alias of DEFERRED ("My doctor can fill this in later"): stored as a null answer plus an entry in `deferred`. */
 export const DEFER = DEFERRED;
 /** Answers with identical matching semantics: no facts, no query terms, no hard filters. */

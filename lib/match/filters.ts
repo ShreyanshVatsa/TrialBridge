@@ -18,6 +18,14 @@ export function passesAge(card: Pick<TrialCard, "minAge" | "maxAge">, age: numbe
   return true;
 }
 
+/**
+ * Hard filter (v2): a definite sex answer hides trials restricted to the other sex. "Prefer not to say",
+ * "not sure" and skip pass `null`, which never filters. Trials open to ALL always pass.
+ */
+export function passesSex(card: Pick<TrialCard, "sex">, sex: "FEMALE" | "MALE" | null | undefined): boolean {
+  return !sex || card.sex === "ALL" || card.sex === sex;
+}
+
 /** Sites sorted nearest-first; sites without coordinates go last with miles = null. */
 export function sortSitesByDistance(sites: Site[], origin: LatLon | null): NearestSite[] {
   const withMiles = sites.map((site) => ({

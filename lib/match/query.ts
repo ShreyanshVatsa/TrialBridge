@@ -1,6 +1,8 @@
 import { getCancerGroup } from "@/config/cancer-groups";
 import { BIOMARKERS } from "@/config/biomarkers";
 import type { IntakeAnswers } from "@/lib/types/intake";
+import type { QuestionDef } from "@/lib/types/questionnaire";
+import { compileState, queryTermsOf } from "@/lib/questionnaire/rules";
 
 const TREATMENT_WORDS: Record<string, string> = {
   chemotherapy: "prior chemotherapy",
@@ -14,14 +16,10 @@ const TREATMENT_WORDS: Record<string, string> = {
  * Standardized English profile text used for BOTH keyword search and the profile embedding.
  * Built only from structured answers (no ZIP, no exact age), so it is safe to compute anywhere.
  */
-export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" | "treatments" | "biomarkers">): string {
-  const parts: string[] = [];
-  if (a.cancerType !== "other") {
-    const g = getCancerGroup(a.cancerType);
-    parts.push(`${g.label}. ${g.synonyms.join(", ")}.`);
-  } else {
-    parts.push("Cancer.");
-  }
+export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" | "treatments" | "biomarkers" | "questionnaire">, catalog?: readonly QuestionDef[]): string {
+  const parts: string[] = [groupText(a.cancerType)];
+  // v2: the chosen options' English query terms, in catalog order. Unknown / skip / prefer not add nothing.
+  if (a.questionnaire && catalog) return [...parts, ...queryTermsOf(compileState(a.questionnaire, catalog))].join(" ");
   if (a.spread === "yes") parts.push("Metastatic advanced stage IV disease.");
   else if (a.spread === "no") parts.push("Localized early stage disease.");
 
@@ -35,4 +33,10 @@ export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" 
     else if (s === "negative") parts.push(`${b.label} negative.`);
   }
   return parts.join(" ");
+}
+
+function groupText(cancerType: IntakeAnswers["cancerType"]): string {
+  if (cancerType === "other") return "Cancer.";
+  const g = getCancerGroup(cancerType);
+  return `${g.label}. ${g.synonyms.join(", ")}.`;
 }

@@ -16,7 +16,7 @@ export function applyAnalysis(results: readonly RankedTrial[], response: Analyze
       return {
         ...r,
         analysis,
-        scores: { ...r.scores, fit, final: finalScore({ retrieval: r.scores.retrieval, precheck: r.precheck, fit }) },
+        scores: { ...r.scores, fit, final: finalScore({ retrieval: r.scores.retrieval, precheck: r.precheck, fit, phase: r.scores.phaseBonus ?? 0 }) },
       };
     })
     .sort((a, b) => b.scores.final - a.scores.final || a.card.id.localeCompare(b.card.id));

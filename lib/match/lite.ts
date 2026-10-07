@@ -3,9 +3,8 @@ import type { IntakeAnswers } from "@/lib/types/intake";
 import type { LiteCard, Site, TrialCard } from "@/lib/types/trial";
 import type { SearchOutcome } from "@/lib/types/match";
 import { nearestSite } from "./filters";
-import { precheck } from "./precheck";
 import { finalScore, precheckPenalty } from "./score";
-import type { RankEntry } from "./rank";
+import { trialPrecheck, type MatchContext, type RankAnswers, type RankEntry } from "./rank";
 
 /**
  * Cross-group "not sure" search runs over a LITE index (no criteria text/site details), then the
@@ -52,13 +51,14 @@ export function liteToEntries(shard: { cards: LiteCard[]; sites: Record<string, 
 export function hydrateResults(
   outcome: SearchOutcome,
   full: ReadonlyMap<string, { card: TrialCard; sites: Site[] }>,
-  answers: Pick<IntakeAnswers, "language" | "spread" | "treatments" | "biomarkers" | "pregnant" | "inAnotherTrial">,
+  answers: Pick<IntakeAnswers, "language" | "spread" | "treatments" | "biomarkers" | "pregnant" | "inAnotherTrial" | "questionnaire">,
   origin: LatLon | null,
+  ctx: MatchContext = {},
 ): SearchOutcome {
   const results = outcome.results.flatMap((r) => {
     const f = full.get(r.card.id);
     if (!f) return [];
-    const notes = precheck(answers, f.card.facts);
+    const { notes, phase } = trialPrecheck(answers as RankAnswers, f.card, ctx);
     return [
       {
         ...r,
@@ -67,7 +67,7 @@ export function hydrateResults(
         nearest: nearestSite(f.sites, origin),
         languageWarning: answers.language !== "en" && f.card.barriers.some((b) => b.type === "english_required"),
         precheck: notes,
-        scores: { ...r.scores, precheckPenalty: precheckPenalty(notes), final: finalScore({ retrieval: r.scores.retrieval, precheck: notes, fit: r.scores.fit }) },
+        scores: { ...r.scores, precheckPenalty: precheckPenalty(notes), phaseBonus: phase, final: finalScore({ retrieval: r.scores.retrieval, precheck: notes, fit: r.scores.fit, phase }) },
       },
     ];
   });
