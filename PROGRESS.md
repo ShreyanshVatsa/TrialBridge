@@ -79,3 +79,6 @@ Current checkpoint: P2 complete under the competition-first override (hosting/de
 5. OpenRouter (optional, free key): https://openrouter.ai/keys. Same data-terms step.
 6. Domain (later): buy through Cloudflare Registrar (at-cost pricing, auto-connects to Pages). Setup steps go in the deployment checkpoint.
 - Paste keys into `.dev.vars` yourself; never into chat.
+
+## v2 WP3 (questionnaire UI)
+- Adaptive conversational flow in `components/questionnaire/` (intake-chat retired): essentials, engine-chosen questions with "Why we're asking", tier labels, "could narrow N to M", quick/thorough, debounced polite live counter, back/edit, equal Not sure/Skip/Prefer not/doctor-later chips, tab resume (sessionStorage) + Clear, summary, Find-out list on summary/results/print; English catalog strings copied from WP1 en-defaults into en.ts; privacy copy updated (English). Note for WP4: en.ts gained `questionnaire.*`, `findOut.*`, `results.findOut*` and privacy keys (manifest coverage test needs regenerating).
