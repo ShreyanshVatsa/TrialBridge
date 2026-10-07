@@ -30,8 +30,12 @@ export class D1TrialStore implements TrialStore {
     const { results } = await this.db.prepare(`SELECT nct_id, payload FROM trials WHERE nct_id IN (${placeholders})`).bind(...ids).all<{ nct_id: string; payload: string }>();
     const byId = new Map<string, ServerTrial>();
     for (const r of results) {
-      const parsed = ServerTrialSchema.safeParse(JSON.parse(r.payload));
-      if (parsed.success) byId.set(r.nct_id, parsed.data);
+      try {
+        const parsed = ServerTrialSchema.safeParse(JSON.parse(r.payload));
+        if (parsed.success) byId.set(r.nct_id, parsed.data);
+      } catch {
+        // A corrupt row is skipped rather than failing the whole request.
+      }
     }
     return ids.map((id) => byId.get(id)).filter((t): t is ServerTrial => t !== undefined);
   }

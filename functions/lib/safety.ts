@@ -99,6 +99,8 @@ const BANNED_OUTPUT = [
 ];
 export function violatesWording(text: string): boolean {
   const t = text.replace(/[\u2018\u2019]/g, "'");
+  // Model text never needs links; one injected through trial text or a question could be phishing.
+  if (/\b(?:https?|ftp):\/\/|\bwww\.|\bjavascript:|\bdata:text/i.test(t)) return true;
   return BANNED_OUTPUT.some((re) => re.test(t));
 }
 

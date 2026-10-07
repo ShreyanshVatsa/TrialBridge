@@ -117,11 +117,11 @@ describe("request body size limit without Content-Length (L11)", () => {
       },
     });
   it("rejects an oversized chunked body early and accepts a small one", async () => {
-    const big = new Request("https://x.example/", { method: "POST", body: stream(Array(40).fill("x".repeat(1000))), duplex: "half" } as RequestInit);
+    const big = new Request("https://x.example/", { method: "POST", headers: { "Content-Type": "application/json" }, body: stream(Array(40).fill("x".repeat(1000))), duplex: "half" } as RequestInit);
     expect(await readJsonBody(big)).toBeNull();
-    const ok = new Request("https://x.example/", { method: "POST", body: stream(['{"a":', "1}"]), duplex: "half" } as RequestInit);
+    const ok = new Request("https://x.example/", { method: "POST", headers: { "Content-Type": "application/json" }, body: stream(['{"a":', "1}"]), duplex: "half" } as RequestInit);
     expect(await readJsonBody(ok)).toEqual({ a: 1 });
-    const bad = new Request("https://x.example/", { method: "POST", body: stream(["{nope"]), duplex: "half" } as RequestInit);
+    const bad = new Request("https://x.example/", { method: "POST", headers: { "Content-Type": "application/json" }, body: stream(["{nope"]), duplex: "half" } as RequestInit);
     expect(await readJsonBody(bad)).toBeUndefined();
     expect(await readJsonBody(new Request("https://x.example/", { method: "POST", headers: { "Content-Length": "99999" }, body: "{}" }))).toBeNull();
     expect(await readJsonBody(new Request("https://x.example/", { method: "GET" }))).toBeUndefined();

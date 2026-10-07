@@ -99,7 +99,7 @@ export async function handleAnalyze(request: Request, deps: AnalyzeDeps): Promis
   const rl = await checkRateLimit(deps.store, "analyze", await hashIp(ip ?? "unknown", deps.salt));
   if (!rl.allowed) return apiError("rate_limited", requestId, { ...cors, "Retry-After": String(rl.retryAfter) });
 
-  const ids = [...new Set(nctIds)];
+  const ids = [...new Set(nctIds)].sort(); // sorted: one cache entry per set, whatever order the client sent
   const trials = await deps.trials.getTrials(ids);
   const experimental = profile.language === "ht";
   const dataVersion = env.DATA_VERSION ?? "unknown";

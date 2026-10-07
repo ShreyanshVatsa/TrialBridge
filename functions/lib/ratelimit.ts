@@ -12,7 +12,21 @@ const HOUR_SECONDS = 3600;
  * cannot be linked across days.
  */
 export async function hashIp(ip: string, salt: string, now: Date = new Date()): Promise<string> {
-  return (await sha256Hex(`${salt}|${utcDay(now)}|${ip}`)).slice(0, 32);
+  return (await sha256Hex(`${salt}|${utcDay(now)}|${ipBucket(ip)}`)).slice(0, 32);
+}
+
+/**
+ * IPv6 clients usually control a whole /64, so rotating addresses inside it would bypass per-IP
+ * limits: bucket IPv6 by its /64 prefix. IPv4 (and unknown values) are used as-is.
+ */
+export function ipBucket(ip: string): string {
+  const v = ip.trim().toLowerCase();
+  if (!v.includes(":")) return v;
+  const [head, tail = ""] = v.split("::");
+  const a = head ? head.split(":") : [];
+  const b = tail ? tail.split(":") : [];
+  const groups = v.includes("::") ? [...a, ...Array<string>(Math.max(0, 8 - a.length - b.length)).fill("0"), ...b] : a;
+  return `${groups.slice(0, 4).map((g) => g.padStart(4, "0")).join(":")}::/64`;
 }
 
 export interface RateLimitResult {
