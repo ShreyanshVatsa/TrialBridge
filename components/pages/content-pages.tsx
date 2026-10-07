@@ -8,23 +8,39 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { EvalSummary } from "./eval-summary";
 import { ProsePage } from "./prose";
+import { FOUNDER_STORY } from "@/content/founder-story";
 
 /** Partner contact address; set NEXT_PUBLIC_PARTNER_EMAIL at build time. */
-const PARTNER_EMAIL = process.env.NEXT_PUBLIC_PARTNER_EMAIL ?? "";
+const PARTNER_EMAIL = (process.env.NEXT_PUBLIC_PARTNER_EMAIL ?? "").trim();
+const PARTNER_EMAIL_VALID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(PARTNER_EMAIL);
 /** Date the policy drafts were last edited. */
 const POLICY_DATE = "2026-10-07";
 
 export function ForSitesPage() {
   const m = useMessages().pages.forSites;
-  const href = `mailto:${PARTNER_EMAIL}?subject=${encodeURIComponent(m.mailSubject)}`;
   return (
     <ProsePage title={m.title} intro={m.intro} sections={m.sections}>
       <section className="rounded-3xl border border-border bg-card p-8 text-center">
-        <a href={href} className={cn(buttonVariants({ size: "lg" }), "h-14 px-7 text-lg")}>
-          <Mail aria-hidden />
-          {m.cta}
-        </a>
-        <p className="mt-3 text-sm text-muted-foreground">{m.ctaNote}</p>
+        {PARTNER_EMAIL_VALID ? (
+          <>
+            <a
+              href={`mailto:${PARTNER_EMAIL}?subject=${encodeURIComponent(m.mailSubject)}`}
+              className={cn(buttonVariants({ size: "lg" }), "h-14 px-7 text-lg")}
+            >
+              <Mail aria-hidden />
+              {m.cta}
+            </a>
+            <p className="mt-3 text-sm text-muted-foreground">{m.ctaNote}</p>
+          </>
+        ) : (
+          <span
+            aria-disabled="true"
+            className={cn(buttonVariants({ size: "lg", variant: "outline" }), "h-14 cursor-not-allowed px-7 text-lg opacity-60")}
+          >
+            <Mail aria-hidden />
+            {m.ctaSoon}
+          </span>
+        )}
       </section>
     </ProsePage>
   );
@@ -45,8 +61,19 @@ export function MethodologyPage() {
 
 export function AboutPage() {
   const m = useMessages().pages.about;
+  const story = FOUNDER_STORY.filter((p) => p.trim() !== "");
   return (
     <ProsePage title={m.title} intro={m.intro} sections={m.sections}>
+      {story.length > 0 && (
+        <section className="border-t border-border pt-8">
+          <h2 className="text-2xl font-semibold">{m.founderTitle}</h2>
+          <div className="mt-3 max-w-[70ch] space-y-4">
+            {story.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </section>
+      )}
       <Link href="/methodology/" className={buttonVariants({ variant: "outline" })}>
         {m.methodologyLink}
         <ArrowRight aria-hidden />
