@@ -1,3 +1,5 @@
+"use client";
+
 import { AlertTriangle, CircleHelp, CircleCheck, CircleMinus, Languages } from "lucide-react";
 import type { ReactNode } from "react";
 import { format, useMessages } from "@/components/i18n";

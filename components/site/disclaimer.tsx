@@ -1,3 +1,5 @@
+"use client";
+
 import { Info } from "lucide-react";
 import { useMessages } from "@/components/i18n";
 import { cn } from "@/lib/utils";
