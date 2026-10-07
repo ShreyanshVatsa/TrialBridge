@@ -44,3 +44,7 @@
 - Priority override (2026-10-06): user has a competition submission; focus on functionality, speed, quality. Hosting, deployment, domain, CI, Dependabot deferred. Reason: user request.
 - npm audit fixed without allowlists: `sharp` overridden to 0.35.5 (miniflare pinned 0.35.4); `fast-glob` overridden with a vendored tinyglobby shim (vendor/fast-glob; only @next/eslint-plugin-next's globSync is used) since braces <=3.0.3 has no patched release; the `shadcn` CLI package replaced by a vendored copy of its MIT tailwind.css (vendor/shadcn-css), use `npx shadcn@latest` to add components.
 - Coverage thresholds enforced in vitest.config.ts (lines/statements/functions 90, branches 85); D1 code tested against real SQL via Node's built-in node:sqlite.
+- Inline-script externalization merges each page's classic inline scripts into one deferred file under /_next/static/inline/ (Next's runtime requires currentScript under /_next/; fewer requests; no render blocking).
+- zod configured jitless (z.config in lib/types/trial.ts): its eval-based JIT probe violated our CSP and is disallowed in Workers.
+- E2E isolation: Playwright output dir, port, and served build snapshot are env-overridable (PW_OUTPUT_DIR/PW_PORT/PW_ASSETS) and local rate-limit counters are reset per run, because several agents run suites concurrently.
+- Lighthouse measured with the default simulated mobile throttling against `wrangler dev` (gzip); targets met on landing (94) and trial (90).

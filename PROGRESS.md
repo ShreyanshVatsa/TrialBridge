@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agent B owns app/ + components/.
+Current checkpoint: P2 complete under the competition-first override (hosting/deploy/CI/Dependabot/domain deferred). Agent A = data/matching/backend/tests; Agent B = app/ + components/.
 
 ## Done (P0, Agent A)
 - Scaffold: Next 16 static export, TS 5.9 strict, Tailwind 4, shadcn (base-ui), Vitest, Playwright deps, wrangler.jsonc (Workers + static assets + D1), .dev.vars (empty), .gitignore.
@@ -38,9 +38,16 @@ Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agen
 - E2E (Playwright, 11 tests): main flow x3 + mobile, AI fallback, data-minimization network test, Q&A safety UI + API. Pass on seed and national data.
 - National ingest: 5,888 fetched, 5,779 trials, 51 states, 107 out of scope, 2 invalid; resumable rerun uses cached pages + embeddings (8.6 s).
 
-## Next (P2)
-- Coverage to 90% (now 77% lines), axe suite, PWA, CI + monthly refresh workflow, Dependabot, SECURITY.md, README; npm audit (dev-tool advisories).
-- Full LLM fact extraction run (`npm run ingest:llm`, ~20+ h nationally at ~15-30 s/trial).
+## Done (P2, Agent A)
+- Unit tests: 124 passing; coverage lib/ + functions/lib/ 98.9% lines, 97.3% statements, 95.5% functions, 88.1% branches; thresholds enforced in vitest.config.ts. D1 code tested against real SQL (node:sqlite).
+- E2E + a11y (Playwright, 37 tests): intake to results (breast/lung/not sure, mobile), AI fallback, data-minimization network test, Q&A safety (UI + API), language switching + persistence, trial page + not-found, Access filters/map/table, print view, PWA installability (manifest, SW, CDP installability), axe 0 serious/critical on 9 pages x light/dark + results + Spanish, latency check.
+- Performance: prefetchSearch (shards + model during intake) => first search ~120 ms after "Search trials" locally; inline scripts merged into one deferred file under /_next/ (fixed a Next currentScript invariant error and render blocking); zod jitless (removed CSP eval violation). Lighthouse (mobile, simulated, local): landing 94, trial 90; accessibility/best-practices/SEO 100.
+- npm audit: 0 vulnerabilities (sharp override, tinyglobby shim for fast-glob, vendored shadcn tailwind.css).
+- Fixed: service worker reloaded the page on first install (wiped intake mid-way); now reloads only on updates (components/site/sw-register.tsx, committed by Agent B).
+
+## Next (after the override is lifted / user features)
+- Full LLM fact extraction run (`npm run ingest:llm`, ~20+ h nationally at ~15-30 s/trial), then `npm run ingest` to merge.
+- Deployment checkpoint (Cloudflare, D1 import, secrets, Turnstile production keys), CI + monthly refresh workflow, Dependabot (all deferred by the override).
 
 ## Previously planned for P1 (done)
 - National ingestion run (background); then make the `_all` "not sure" shard a lite cross-group index (full-card `_all` is ~4 MB raw for 302 trials, too big nationally).
@@ -53,9 +60,16 @@ Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agen
 ## Known issues
 - UI: set NEXT_PUBLIC_PARTNER_EMAIL at build time; without it the "Partner with us" mailto has no recipient.
 - UI: About page has no founder story yet (needs the founder's real text; none was invented).
-- Coverage below 90% target (loader/search/embedder untested; P2). Rule-fact precision 66% on hand-labeled sample (eval/RESULTS.md).
-- `npm audit --audit-level=high` fails on dev tooling only (braces 3.0.3 advisory with no patched release, via shadcn/eslint-config-next; sharp via miniflare). P2: overrides/upgrades.
-- Rule-layer facts are heuristic; some criteria still misread (LLM layer + eval in P1).
+- Rule-fact precision 66% on the hand-labeled sample (eval/RESULTS.md); uncertain facts never penalize, but some criteria are misread.
+- Eval labels are synthetic and rule-generated (not clinician-reviewed); retrieval variants differ by <0.01 nDCG@10.
+- Lighthouse trial-page LCP waits on client-loaded trial data (~90 simulated); local devtools-throttled runs score 99-100.
+- Transformers.js requests some model files twice (an aborted probe + the real fetch); bytes are cached after first load.
+- README commands affected by Agent A changes: `npm run test:e2e` now snapshots ./out to .wrangler/e2e-out and resets local rate-limit counters; PW_PORT/PW_ASSETS/PW_OUTPUT_DIR env vars isolate parallel runs; `npm run eval`, `npm run ingest:llm -- --limit=N`; always use `npm run build` (bare `next build` output is not deployable).
+
+## Final report
+**What works (locally, zero API keys, mock AI):** national dataset of 5,779 real recruiting interventional cancer trials (51 states) from ClinicalTrials.gov with barriers, rule facts, int8 embeddings, and sharding; guided chat intake in 4 languages; private in-browser hybrid retrieval (BM25 + embeddings + RRF + rule pre-check) with hard filters (0% violations in eval); AI analysis and Trial Q&A endpoints with data minimization, quote/citation verification, safety refusals and crisis response, failover, caching, rate limiting, Turnstile; Access Intelligence; trial pages; PWA; strict CSP. Checks green: lint, typecheck, 124 unit tests (98.9% lines), eval, build (+ secret scan), 37 e2e/a11y tests, npm audit 0.
+**Known limitations:** heuristic rule facts (66% precision sample); LLM fact layer only run on 4 trials; synthetic eval labels; real AI providers untested live (keys/terms not set; `eval:live` deferred); translations not reviewed by native speakers; no founder story text; not deployed (override).
+**Recommended next steps:** run the full LLM extraction and re-evaluate fact precision with clinician-reviewed labels; enable one provider after reading its data terms and run `eval:live`; native-speaker review of es/pt/ht; then lift the override for the deployment checkpoint (D1 import, secrets, Turnstile keys, CI, refresh workflow).
 
 ## Accounts to create (user does these; none block the build, mock provider is used until ready)
 1. GitHub (free): https://github.com/signup, then run `gh auth login` in the terminal.
