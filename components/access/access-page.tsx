@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CANCER_GROUPS, type CancerGroupId } from "@/config/cancer-groups";
+import type { CancerGroupId } from "@/config/cancer-groups";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
 import { ErrorView } from "@/components/site/error-view";
@@ -26,7 +26,6 @@ import { STATE_NAMES, UsTileMap } from "./us-tile-map";
 
 type State = { kind: "loading" } | { kind: "error" } | { kind: "ok"; data: AccessData; seed: boolean };
 const METRICS: BarrierMetric[] = ["any", "english_required", "upper_age_limit", "disability_exclusion"];
-const groupLabel = (id: CancerGroupId) => CANCER_GROUPS.find((g) => g.id === id)?.label ?? id;
 
 function Card({ title, children, className, id }: { title: string; children: ReactNode; className?: string; id?: string }) {
   return (
@@ -140,7 +139,7 @@ export function AccessPage() {
               <option value="">{m.access.allGroups}</option>
               {view.groupIds.map((g) => (
                 <option key={g} value={g}>
-                  {groupLabel(g)}
+                  {m.cancerGroups[g]}
                 </option>
               ))}
             </Select>
@@ -211,6 +210,7 @@ export function AccessPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       layout="vertical"
+                      accessibilityLayer={false}
                       data={view.breakdown.map((b) => ({ ...b, label: m.access.metrics[b.type] }))}
                       margin={{ top: 4, right: 72, bottom: 4, left: 4 }}
                       barCategoryGap={10}
@@ -274,7 +274,7 @@ export function AccessPage() {
                       )}
                     >
                       <span className="flex justify-between gap-3">
-                        <span className="font-medium">{groupLabel(g.group)}</span>
+                        <span className="font-medium">{m.cancerGroups[g.group]}</span>
                         <span className="text-sm text-muted-foreground tabular-nums">{pc(g.anyBarrier, g.trials)}</span>
                       </span>
                       <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>

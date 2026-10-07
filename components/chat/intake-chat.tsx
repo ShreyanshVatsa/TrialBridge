@@ -3,7 +3,7 @@
 import { RotateCcw, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { BIOMARKERS, BIOMARKERS_BY_GROUP, type BiomarkerId } from "@/config/biomarkers";
-import { PICKABLE_GROUPS, getCancerGroup, type CancerGroupId } from "@/config/cancer-groups";
+import { PICKABLE_GROUPS, type CancerGroupId } from "@/config/cancer-groups";
 import { format, useMessages, type Messages } from "@/components/i18n";
 import { Button } from "@/components/ui/button";
 import { lookupZip } from "@/lib/data/loader";
@@ -49,8 +49,10 @@ function travelLabel(miles: number | null, m: Messages): string {
   return miles === null ? m.chat.travelAnywhere : format(m.chat.travelOption, { miles });
 }
 
-function biomarkerLabel(id: BiomarkerId): string {
-  return BIOMARKERS.find((b) => b.id === id)?.label ?? id;
+/** Translated name when the label is a phrase; gene/protein symbols (HER2, EGFR, ...) stay as-is. */
+function biomarkerLabel(id: BiomarkerId, m?: Messages): string {
+  const names: Partial<Record<string, string>> | undefined = m?.biomarkerNames;
+  return names?.[id] ?? BIOMARKERS.find((b) => b.id === id)?.label ?? id;
 }
 
 function questionFor(step: StepId, m: Messages): string {
@@ -72,7 +74,7 @@ function questionFor(step: StepId, m: Messages): string {
 function answerText(step: StepId, d: Draft, m: Messages): string {
   switch (step) {
     case "cancerType":
-      return d.cancerType ? getCancerGroup(d.cancerType).label : "";
+      return d.cancerType ? m.cancerGroups[d.cancerType] : "";
     case "zip":
       return d.zip ?? "";
     case "travel":
@@ -87,7 +89,7 @@ function answerText(step: StepId, d: Draft, m: Messages): string {
       return (d.treatments ?? []).map((t) => m.options.treatment[t]).join(", ");
     case "biomarkers": {
       const entries = Object.entries(d.biomarkers ?? {}) as [BiomarkerId, BiomarkerStatus][];
-      return entries.length ? entries.map(([id, s]) => `${biomarkerLabel(id)}: ${m.options.biomarker[s]}`).join(" · ") : m.chat.none;
+      return entries.length ? entries.map(([id, s]) => `${biomarkerLabel(id, m)}: ${m.options.biomarker[s]}`).join(" · ") : m.chat.none;
     }
     case "pregnant":
       return d.pregnant ? m.options.pregnant[d.pregnant] : "";
@@ -122,8 +124,13 @@ function CancerTypeInput({ onAnswer }: { onAnswer: (v: CancerGroupId) => void })
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return PICKABLE_GROUPS;
-    return PICKABLE_GROUPS.filter((g) => g.label.toLowerCase().includes(q) || g.synonyms.some((s) => s.toLowerCase().includes(q)));
-  }, [query]);
+    return PICKABLE_GROUPS.filter(
+      (g) =>
+        g.label.toLowerCase().includes(q) ||
+        m.cancerGroups[g.id].toLowerCase().includes(q) ||
+        g.synonyms.some((s) => s.toLowerCase().includes(q)),
+    );
+  }, [query, m]);
   return (
     <div className="space-y-3">
       <label htmlFor={inputId} className="sr-only">
@@ -145,7 +152,7 @@ function CancerTypeInput({ onAnswer }: { onAnswer: (v: CancerGroupId) => void })
       {filtered.length === 0 && <p className="text-muted-foreground">{m.chat.cancerNoMatch}</p>}
       <Chips
         label={m.chat.labels.cancerType}
-        options={[...filtered.map((g) => ({ value: g.id, label: g.label })), { value: "other" as const, label: m.chat.cancerOther }]}
+        options={[...filtered.map((g) => ({ value: g.id, label: m.cancerGroups[g.id] })), { value: "other" as const, label: m.chat.cancerOther }]}
         onSelect={onAnswer}
       />
     </div>
@@ -334,10 +341,10 @@ function BiomarkersInput({
     <div className="space-y-4">
       {ids.map((id) => (
         <fieldset key={id} className="space-y-2">
-          <legend className="font-medium">{biomarkerLabel(id)}</legend>
+          <legend className="font-medium">{biomarkerLabel(id, m)}</legend>
           <Chips
             multi
-            label={format(m.chat.biomarkerGroup, { name: biomarkerLabel(id) })}
+            label={format(m.chat.biomarkerGroup, { name: biomarkerLabel(id, m) })}
             options={BIOMARKER_STATUSES.map((s) => ({ value: s, label: m.options.biomarker[s] }))}
             selected={values[id] ? [values[id]] : []}
             onSelect={(s) => setValues((prev) => ({ ...prev, [id]: s }))}
