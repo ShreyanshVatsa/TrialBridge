@@ -7,8 +7,12 @@ export const metadata: Metadata = { title: "Trial details" };
 /** One static page for every trial: the NCT ID comes from ?id= and data loads on the client. */
 export default function TrialPage() {
   return (
-    <Suspense fallback={<TrialLoading />}>
-      <TrialDetail />
-    </Suspense>
+    <>
+      {/* Start fetching the data manifest with the HTML, before the page script asks for it. */}
+      <link rel="preload" href="/data/manifest.json" as="fetch" crossOrigin="anonymous" />
+      <Suspense fallback={<TrialLoading />}>
+        <TrialDetail />
+      </Suspense>
+    </>
   );
 }

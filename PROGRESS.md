@@ -22,6 +22,14 @@ Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agen
 - Verified: "1 card after returning from trial page" was a test artifact (counted the trial page's own article); results persist (10/10).
 - Checks: lint + typecheck clean for app/ and components/; axe no serious/critical on all pages in en/es/pt/ht, light/dark, 390px; no horizontal overflow.
 
+## Done (P2, Agent B: UI)
+- PWA: manifest (any + maskable icons 192/512, apple-touch), app-shell-only service worker (never /api, /data, /models, /ort), /offline/ page, update prompt; Chromium reports no installability errors.
+- No English flash: /theme-init.js (blocking, CSP-safe) sets theme + lang and hides the page until the saved language renders; non-English messages are lazy-loaded chunks.
+- Speed: matching engine, AI client, Turnstile and Recharts code-split; prefetchSearch warm-up after cancer type; zod kept off landing/access critical path; manifest preload on trial page; next/font with metric-matched fallbacks; skeletons with reserved height (CLS 0).
+- Lighthouse (mobile, simulated, local preview): landing 88-94, find 93, access 93, trial 87-89 performance; accessibility, best practices, SEO 100 on all. Trial LCP waits on client-loaded trial data (by design).
+- Polish: chat typing indicator before each question, Enter picks top cancer match, wrapping buttons (no overflow at 320px), demo animation without opacity (contrast-safe), print view margins/URLs, dark mode checked on results.
+- Axe sweep: 0 serious/critical on all 13 routes x 4 languages x light/dark (320/390/1280px) plus summary, results (4 languages) and trial + Q&A views; keyboard intake verified.
+
 ## Done (P1, Agent A)
 - Lite cross-group "not sure" index + per-trial buckets; Access Intelligence aggregates (/data/access.json) + helpers (lib/access).
 - POST /api/ask (crisis 988, refusals, PII scrub, grounded citations, cache, 30/h, Turnstile, mock) + client lib/api/ask.ts; API.md updated.
@@ -45,7 +53,6 @@ Current checkpoint: 3 (end of P1). Agent A (data/matching/backend) P1 done; Agen
 ## Known issues
 - UI: set NEXT_PUBLIC_PARTNER_EMAIL at build time; without it the "Partner with us" mailto has no recipient.
 - UI: About page has no founder story yet (needs the founder's real text; none was invented).
-- UI: server-rendered HTML is English; a saved non-English language applies right after hydration (brief English flash).
 - Coverage below 90% target (loader/search/embedder untested; P2). Rule-fact precision 66% on hand-labeled sample (eval/RESULTS.md).
 - `npm audit --audit-level=high` fails on dev tooling only (braces 3.0.3 advisory with no patched release, via shadcn/eslint-config-next; sharp via miniflare). P2: overrides/upgrades.
 - Rule-layer facts are heuristic; some criteria still misread (LLM layer + eval in P1).

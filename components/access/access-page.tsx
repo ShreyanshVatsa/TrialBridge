@@ -233,7 +233,7 @@ export function AccessPage() {
             </Card>
           </div>
 
-          <Card title={m.access.groupsTitle} id="groups-title">
+          <Card title={m.access.groupsTitle}>
             <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
               {view.groups
                 .filter((g) => g.trials > 0 && g.group !== "other")

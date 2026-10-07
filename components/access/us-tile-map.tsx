@@ -90,7 +90,15 @@ export function UsTileMap({
               )}
             >
               <span className="text-[0.6rem] font-semibold sm:text-xs">{code}</span>
-              {has && <span className="mt-0.5 hidden text-[0.65rem] tabular-nums sm:block">{Math.round(r.rate)}%</span>}
+              {/* Percentage drawn via CSS content: visible on larger screens, while the tile's text stays the
+                  state code (the full value is in the accessible name). */}
+              {has && (
+                <span
+                  aria-hidden
+                  data-pct={`${Math.round(r.rate)}%`}
+                  className="mt-0.5 hidden text-[0.65rem] tabular-nums after:content-[attr(data-pct)] sm:block"
+                />
+              )}
             </button>
           );
         })}
