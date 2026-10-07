@@ -41,7 +41,7 @@ const server = (async (input: string | URL | Request) => {
   const body = files[url];
   if (body === undefined) return new Response("nf", { status: 404 });
   const bytes = typeof body === "string" ? new TextEncoder().encode(body) : body;
-  return new Response(bytes, { headers: { "content-length": String(bytes.byteLength) } });
+  return new Response(bytes as BodyInit, { headers: { "content-length": String(bytes.byteLength) } });
 }) as unknown as typeof fetch;
 
 beforeEach(() => {

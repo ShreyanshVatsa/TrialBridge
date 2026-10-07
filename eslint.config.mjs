@@ -5,7 +5,7 @@ const config = [
   ...nextVitals,
   ...nextTs,
   {
-    ignores: [".next/**", "out/**", ".wrangler/**", "coverage/**", "public/**", "data/**", "next-env.d.ts", "playwright-report/**", "test-results/**"],
+    ignores: ["vendor/**", ".next/**", "out/**", ".wrangler/**", "coverage/**", "public/**", "data/**", "next-env.d.ts", "playwright-report/**", "test-results/**"],
   },
 ];
 export default config;
