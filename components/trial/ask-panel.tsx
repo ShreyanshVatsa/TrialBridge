@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { format, useLanguage, useMessages } from "@/components/i18n";
 import { TypingDots } from "@/components/site/spinner";
 import { Button } from "@/components/ui/button";
+import { detectCrisisLocal, localCrisisResponse } from "@/lib/api/crisis";
 import { askQuestion, MAX_QUESTION_CHARS, MAX_QUESTIONS_PER_TRIAL, questionsRemaining } from "@/lib/api/ask";
 import { getTurnstileToken } from "@/lib/api/turnstile";
 import type { AskResponse, Citation } from "@/lib/types/ask";
@@ -157,6 +158,12 @@ export function AskPanel({ nctId }: { nctId: string }) {
     const id = nextId.current++;
     setTurns((t) => [...t, { id, question: q, response: null }]);
     setQuestion("");
+    // Crisis resources come from a local detector and never wait for (or depend on) the network.
+    if (detectCrisisLocal(q)) {
+      const crisis = localCrisisResponse();
+      setTurns((t) => t.map((x) => (x.id === id ? { ...x, response: crisis } : x)));
+      return;
+    }
     setPending(true);
     const ac = new AbortController();
     abortRef.current = ac;

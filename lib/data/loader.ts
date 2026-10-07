@@ -53,6 +53,7 @@ let fetchImpl: typeof fetch = (...a) => fetch(...a);
 export function setFetchForTests(f: typeof fetch): void {
   fetchImpl = f;
   cache.clear();
+  progressState.clear();
 }
 
 async function fetchBytes(url: string, opts: FetchOptions = {}): Promise<Uint8Array> {
@@ -118,6 +119,41 @@ function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
   return p;
 }
 
+/**
+ * Like `memo`, but every caller's `onProgress` is honoured: a caller that joins an in-flight load
+ * (e.g. a prefetch started earlier) is told the current fraction and all later updates.
+ */
+const progressState = new Map<string, { listeners: Set<(f: number) => void>; last: number }>();
+function memoProgress<T>(key: string, onProgress: ((f: number) => void) | undefined, load: (report: (f: number) => void) => Promise<T>): Promise<T> {
+  const hit = cache.get(key) as Promise<T> | undefined;
+  const state = progressState.get(key);
+  if (hit && state) {
+    if (!onProgress) return hit;
+    state.listeners.add(onProgress);
+    onProgress(state.last);
+    const done = () => state.listeners.delete(onProgress);
+    hit.then(done, done);
+    return hit;
+  }
+  if (hit) {
+    onProgress?.(1);
+    return hit;
+  }
+  const st = { listeners: new Set<(f: number) => void>(), last: 0 };
+  if (onProgress) st.listeners.add(onProgress);
+  progressState.set(key, st);
+  const report = (f: number) => {
+    st.last = f;
+    st.listeners.forEach((cb) => cb(f));
+  };
+  const p = memo(key, () => load(report));
+  const finish = () => {
+    progressState.delete(key);
+  };
+  p.then(finish, finish);
+  return p;
+}
+
 export function loadMeta(): Promise<Meta> {
   return memo("meta", () => fetchJson(`${DATA_BASE}/meta.json`, MetaSchema));
 }
@@ -136,13 +172,13 @@ export interface LoadedShard {
 }
 
 export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedShard> {
-  return memo(`shard:${shardBase}/${info.id}`, async () => {
+  return memoProgress(`shard:${shardBase}/${info.id}`, opts.onProgress, async (emit) => {
     const base = `${shardBase}/${info.id}/`;
     // Progress is weighted by the shard's recorded size; cards dominate.
     const fractions = [0, 0, 0, 0];
     const report = (i: number) => (f: number) => {
       fractions[i] = f;
-      opts.onProgress?.(fractions.reduce((a, b) => a + b, 0) / fractions.length);
+      emit(fractions.reduce((a, b) => a + b, 0) / fractions.length);
     };
     const [cards, sites, indexBytes, embBytes] = await Promise.all([
       fetchJson(base + info.files.cards, z.array(TrialCardSchema), { ...opts, onProgress: report(0) }),
@@ -167,12 +203,12 @@ export interface LoadedLiteShard {
 }
 
 export function loadLiteShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedLiteShard> {
-  return memo(`lite:${shardBase}/${info.id}`, async () => {
+  return memoProgress(`lite:${shardBase}/${info.id}`, opts.onProgress, async (emit) => {
     const base = `${shardBase}/${info.id}/`;
     const fractions = [0, 0, 0, 0];
     const report = (i: number) => (f: number) => {
       fractions[i] = f;
-      opts.onProgress?.(fractions.reduce((a, b) => a + b, 0) / fractions.length);
+      emit(fractions.reduce((a, b) => a + b, 0) / fractions.length);
     };
     const [cards, sites, indexBytes, embBytes] = await Promise.all([
       fetchJson(base + info.files.cards, z.array(LiteCardSchema), { ...opts, onProgress: report(0) }),
@@ -228,7 +264,7 @@ const ZipTableSchema = z.record(z.string(), z.tuple([z.number(), z.number()]));
  * ZIP -> approximate centroid (Census ZCTA internal point). Loads only the 3-digit-prefix file.
  * Falls back to the prefix's average when the exact ZIP isn't a ZCTA (e.g. PO-box-only ZIPs).
  */
-export async function lookupZip(zip: string, opts: FetchOptions = {}): Promise<LatLon | null> {
+export async function lookupZip(zip: string, opts: FetchOptions = {}): Promise<(LatLon & { approximate?: true }) | null> {
   if (!/^\d{5}$/.test(zip)) return null;
   const prefix = zip.slice(0, 3);
   let table: Record<string, [number, number]>;
@@ -242,5 +278,6 @@ export async function lookupZip(zip: string, opts: FetchOptions = {}): Promise<L
   if (exact) return { lat: exact[0], lon: exact[1] };
   const all = Object.values(table);
   if (all.length === 0) return null;
-  return { lat: all.reduce((s, v) => s + v[0], 0) / all.length, lon: all.reduce((s, v) => s + v[1], 0) / all.length };
+  // Not a known ZCTA: the location is only the prefix area's centre, so flag it as approximate.
+  return { lat: all.reduce((s, v) => s + v[0], 0) / all.length, lon: all.reduce((s, v) => s + v[1], 0) / all.length, approximate: true };
 }

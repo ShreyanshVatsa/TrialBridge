@@ -30,6 +30,23 @@ test.describe("Trial page and Q&A safety (mock)", () => {
     await expect(page.getByText(/988/).first()).toBeVisible({ timeout: 60_000 });
   });
 
+  test("crisis resources show instantly with no network call, even offline, in every language", async ({ page }) => {
+    const calls: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/api/ask")) calls.push(r.url());
+    });
+    await page.route("**/api/ask", (route) => route.abort("internetdisconnected"));
+    for (const q of ["I am thinking about ending my life", "Estou pensando em suicídio", "quiero acabar con mi vida", "mwen ap panse swisid"]) {
+      await ask(page, q);
+    }
+    await expect(page.getByRole("alert").filter({ hasText: /988/ })).toHaveCount(4);
+    expect(calls).toEqual([]);
+    // A normal question while the API is down gets the busy notice, not crisis resources.
+    await ask(page, "Can people who had radiation before join?");
+    await expect(page.getByText(/Answers are busy right now/i)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("alert").filter({ hasText: /988/ })).toHaveCount(4);
+  });
+
   test("personal details are scrubbed before sending", async ({ page }) => {
     const bodies: string[] = [];
     page.on("request", (r) => {

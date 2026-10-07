@@ -5,6 +5,7 @@ import { en } from "@/components/i18n/en";
 import { SessionProvider } from "@/components/session/session-provider";
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
+import { DocumentMeta } from "@/components/site/document-meta";
 import { ServiceWorkerRegister } from "@/components/site/sw-register";
 import { SkipLink } from "@/components/site/skip-link";
 import { LanguageReady } from "@/components/i18n";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="flex min-h-dvh flex-col">
         <LanguageReady />
+        <DocumentMeta />
         <SkipLink />
         <SessionProvider>
           <SiteHeader />

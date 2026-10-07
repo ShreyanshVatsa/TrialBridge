@@ -95,6 +95,9 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
     const full = await loadTrials(outcome.results.map((r) => r.card.id), signalOpt);
     outcome = hydrateResults(outcome, full, a, origin);
   }
+  // Never drop the distance limit silently: tell the UI when it could not be applied.
+  if (a.travelMiles !== null && !origin) outcome = { ...outcome, distanceUnavailable: true };
+  if (origin && "approximate" in origin && origin.approximate) outcome = { ...outcome, zipApproximate: true };
   report({ stage: "done" });
   return outcome;
 }

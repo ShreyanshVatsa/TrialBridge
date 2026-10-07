@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MiniSearch from "minisearch";
-import { DataLoadError, loadMeta, loadTrial, loadTrials, lookupZip, setFetchForTests } from "@/lib/data/loader";
+import { DataLoadError, loadManifest, loadShard, loadMeta, loadTrial, loadTrials, lookupZip, setFetchForTests } from "@/lib/data/loader";
 import { MINISEARCH_OPTIONS, toSearchDoc } from "@/lib/match/minisearch-config";
 import type { Manifest, Meta, TrialCard } from "@/lib/types/trial";
 import { boston, fact, makeAnswers, makeCard } from "./fixtures";
@@ -77,6 +77,7 @@ describe("data loader", () => {
     expect(await lookupZip("02115")).toEqual({ lat: 42.34, lon: -71.1 });
     const approx = await lookupZip("02199");
     expect(approx?.lat).toBeCloseTo(42.345, 3);
+    expect(approx?.approximate).toBe(true);
     expect(await lookupZip("99999")).toBeNull();
     expect(await lookupZip("abc")).toBeNull();
     files["/data/zip/022.json"] = "{}";
@@ -112,6 +113,37 @@ describe("searchTrials orchestration", () => {
     vi.mocked(embedProfile).mockResolvedValueOnce(null);
     expect((await searchTrials(makeAnswers())).keywordOnly).toBe(true);
     expect((await searchTrials(makeAnswers({ cancerType: "lung" }))).results).toEqual([]);
+  });
+  it("tells the UI when the travel limit could not be applied (ZIP table unavailable) instead of dropping it silently", async () => {
+    const ok = await searchTrials(makeAnswers({ travelMiles: 25 }));
+    expect(ok.distanceUnavailable).toBeUndefined();
+    delete files["/data/zip/021.json"];
+    setFetchForTests(server);
+    const out = await searchTrials(makeAnswers({ travelMiles: 25 }));
+    expect(out.distanceUnavailable).toBe(true);
+    expect(out.results.length).toBeGreaterThan(0);
+    // No travel limit set: nothing was dropped, so no notice.
+    expect((await searchTrials(makeAnswers({ travelMiles: null }))).distanceUnavailable).toBeUndefined();
+  });
+  it("flags a ZIP that is not a known ZIP area as approximate", async () => {
+    const out = await searchTrials(makeAnswers({ zip: "02199", travelMiles: 250 }));
+    expect(out.zipApproximate).toBe(true);
+    expect((await searchTrials(makeAnswers({ travelMiles: 250 }))).zipApproximate).toBeUndefined();
+  });
+  it("reports shard download progress to a caller that joins an in-flight load", async () => {
+    const manifestData = await loadManifest();
+    const info = manifestData.shards[0]!;
+    const first: number[] = [];
+    const second: number[] = [];
+    const p1 = loadShard(info, manifestData.shardBase, { onProgress: (f) => first.push(f) });
+    const p2 = loadShard(info, manifestData.shardBase, { onProgress: (f) => second.push(f) });
+    await Promise.all([p1, p2]);
+    expect(second.length).toBeGreaterThan(0);
+    expect(Math.max(...second)).toBeGreaterThan(0);
+    // Joining an already finished load reports completion.
+    const third: number[] = [];
+    await loadShard(info, manifestData.shardBase, { onProgress: (f) => third.push(f) });
+    expect(third).toEqual([1]);
   });
   it("rejects invalid answers and honors abort", async () => {
     await expect(searchTrials({ ...makeAnswers(), zip: "12" })).rejects.toThrow();

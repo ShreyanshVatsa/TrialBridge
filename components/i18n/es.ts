@@ -5,6 +5,7 @@ export const es: Messages = {
   meta: {
     title: "TrialBridge: encuentre estudios clínicos de cáncer adecuados para usted",
     description: "Búsqueda gratuita y privada de estudios clínicos de cáncer que reclutan en EE. UU., explicada en lenguaje sencillo.",
+    pages: { offline: "Sin conexión", terms: "Términos de uso (borrador)", privacyPolicy: "Política de privacidad (borrador)" },
   },
   common: {
     brand: "TrialBridge",
@@ -255,6 +256,8 @@ export const es: Messages = {
     analyzed: "Se agregaron explicaciones con IA. Confirme siempre con el equipo del estudio.",
     degraded: "Las explicaciones con IA están ocupadas en este momento. Estas son sus coincidencias según los criterios de los estudios.",
     keywordOnly: "La búsqueda inteligente no pudo cargarse en este dispositivo, así que los resultados se ordenan solo por palabras clave.",
+    distanceUnavailable: "No pudimos buscar su código postal en este dispositivo, así que no se aplicó su distancia de viaje. Estos resultados pueden incluir estudios lejos de usted. Revise su conexión y busque de nuevo.",
+    zipApproximate: "No pudimos ubicar ese código postal exacto, así que las distancias se calculan según la zona general. Revise su código postal si las distancias parecen incorrectas.",
     experimental: "Las explicaciones en criollo haitiano son experimentales. Los criterios citados se mantienen en inglés.",
     aiNote: "Las explicaciones las escribe una IA y pueden tener errores. Los criterios citados son el texto oficial del estudio (en inglés).",
     emptyTitle: "Ningún estudio coincidió con estos filtros",

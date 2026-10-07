@@ -7,6 +7,7 @@ export const en = {
   meta: {
     title: "TrialBridge: find cancer clinical trials that fit you",
     description: "Free, private matching to recruiting cancer clinical trials in the U.S., explained in plain language.",
+    pages: { offline: "Offline", terms: "Terms of use (draft)", privacyPolicy: "Privacy policy (draft)" },
   },
   common: {
     brand: "TrialBridge",
@@ -257,6 +258,8 @@ export const en = {
     analyzed: "AI explanations added. Always confirm with the trial team.",
     degraded: "AI explanations are busy right now. Here are your matches based on trial criteria.",
     keywordOnly: "Smart search couldn't load on this device, so results are ranked by keywords only.",
+    distanceUnavailable: "We couldn't look up your ZIP code on this device, so your travel distance was not applied. These results may include trials far from you. Check your connection and search again.",
+    zipApproximate: "We couldn't pinpoint that exact ZIP code, so distances are estimated from the general area. Check your ZIP code if distances look wrong.",
     experimental: "Explanations in Haitian Creole are experimental. Quoted criteria remain in English.",
     aiNote: "Explanations are written by AI and may contain mistakes. Quoted criteria are the official trial text.",
     emptyTitle: "No trials matched these filters",

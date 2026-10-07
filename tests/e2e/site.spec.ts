@@ -15,6 +15,20 @@ test("language switching translates the UI and persists across reloads", async (
   await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
 });
 
+test("tab title and meta description follow the language on non-trial pages", async ({ page }) => {
+  await page.goto("/privacy/");
+  await expect(page).toHaveTitle(/^Privacy/);
+  await page.getByLabel("Language").first().selectOption("es");
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  await expect(page).toHaveTitle(/^Privacidad · TrialBridge/);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /Búsqueda gratuita y privada/);
+  await page.getByLabel(/Idioma/).first().selectOption("ht");
+  await expect(page).toHaveTitle(/TrialBridge/);
+  await expect(page).not.toHaveTitle(/^Privacy ·/);
+  await page.goto("/offline/");
+  await expect(page).toHaveTitle(/San koneksyon/);
+});
+
 test("trial detail page shows official text, criteria, and link @mobile", async ({ page }) => {
   await page.goto(`/trial/?id=${id}`);
   await expect(page.getByText(id).first()).toBeVisible();

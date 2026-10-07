@@ -122,6 +122,8 @@ export function ResultsView({
           </Notice>
         )}
         {analysis.status === "degraded" && <Notice tone="warn">{m.results.degraded}</Notice>}
+        {outcome.distanceUnavailable && <Notice tone="warn">{m.results.distanceUnavailable}</Notice>}
+        {outcome.zipApproximate && <Notice>{m.results.zipApproximate}</Notice>}
         {outcome.keywordOnly && <Notice tone="warn">{m.results.keywordOnly}</Notice>}
       </div>
 
