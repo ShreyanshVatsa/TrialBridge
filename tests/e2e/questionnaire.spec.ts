@@ -60,6 +60,16 @@ test.describe("adaptive questionnaire", () => {
     await page.emulateMedia({ media: "print" });
     await expect(page.getByText("Questions to ask at your appointment")).toBeVisible();
     await expect(page.getByText("Bring this to your appointment")).toBeVisible();
+    // "Fill in what you found out" reopens exactly the Find-out questions, then returns to the summary.
+    await page.emulateMedia({ media: "screen" });
+    await page.getByRole("button", { name: "Fill in what you found out" }).click();
+    const reopened = page.locator("section[data-question]").last();
+    await expect(reopened).toBeVisible();
+    for (let i = 0; i < 20 && (await reopened.isVisible()); i++) {
+      await answerCurrent(page, "skip");
+      await expect(summary.or(page.locator("section[data-question]").last())).toBeVisible();
+    }
+    await expect(summary).toBeVisible();
   });
 
   test("back and edit any answer", async ({ page }) => {
@@ -143,11 +153,18 @@ test.describe("adaptive questionnaire", () => {
     await answerEssentials(page, { cancer: "Lung cancer" });
     const card = page.locator("section[data-question]").last();
     const id = await currentId(page);
-    const radios = card.getByRole("radio");
-    if ((await radios.count()) > 0) {
+    const radios = card.locator("fieldset").getByRole("radio");
+    const boxes = card.locator("fieldset").getByRole("checkbox");
+    if ((await radios.count()) > 1) {
       await radios.first().focus();
       await page.keyboard.press("ArrowRight");
       await expect(radios.nth(1)).toBeChecked();
+      await page.keyboard.press("Enter"); // implicit form submission = Continue
+    } else if ((await boxes.count()) > 0) {
+      await boxes.first().focus();
+      await page.keyboard.press("Space");
+      await expect(boxes.first()).toBeChecked();
+      await card.getByRole("button", { name: "Continue" }).focus();
       await page.keyboard.press("Enter");
     } else {
       await card.getByRole("group", { name: "Other ways to answer" }).getByRole("button").first().focus();
