@@ -1,0 +1,114 @@
+{
+ "version": 1,
+ "source": "en",
+ "locales": {
+  "en": {
+   "status": "reviewed",
+   "coverage": 1,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "es": {
+   "status": "partial",
+   "coverage": 0.5192,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "pt": {
+   "status": "partial",
+   "coverage": 0.5192,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "ht": {
+   "status": "partial",
+   "coverage": 0.5226,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "zh-Hans": {
+   "status": "partial",
+   "coverage": 0.6299,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "zh-Hant": {
+   "status": "partial",
+   "coverage": 0.6299,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "vi": {
+   "status": "partial",
+   "coverage": 0.6266,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "ko": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "tl": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "ar": {
+   "status": "partial",
+   "coverage": 0.6226,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "ru": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "fr": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "hi": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "pl": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "bn": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "gu": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "ur": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  },
+  "fa": {
+   "status": "partial",
+   "coverage": 0,
+   "sourceHash": "kmpuuk",
+   "updated": "2026-10-07"
+  }
+ }
+}

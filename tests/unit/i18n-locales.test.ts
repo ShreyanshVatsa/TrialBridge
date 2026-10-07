@@ -134,7 +134,7 @@ describe("locale files: parity with the English source (QUESTIONNAIRE_SPEC 7.6)"
       it("has non-empty strings with identical placeholder sets", () => {
         const bad: string[] = [];
         for (const [k, v] of Object.entries(flat)) {
-          const a = placeholders(enFlat[k]!);
+          const a = placeholders(targetKeys(l.tag, enFlat)[k] ?? enFlat[k] ?? "");
           const b = placeholders(v);
           if (typeof v !== "string" || v.trim() === "" || a.join() !== b.join()) bad.push(k);
         }
@@ -156,7 +156,7 @@ describe("locale files: parity with the English source (QUESTIONNAIRE_SPEC 7.6)"
         }
       });
       it("does not contain markup", () => {
-        const hits = Object.entries(flat).filter(([k, v]) => /<\/?[a-z][^>]*>|\*\*|`/i.test(v) && !/<\/?[a-z][^>]*>|\*\*|`/i.test(enFlat[k]!)).map(([k]) => k);
+        const hits = Object.entries(flat).filter(([k, v]) => /<\/?[a-z][^>]*>|\*\*|`/i.test(v) && !/<\/?[a-z][^>]*>|\*\*|`/i.test(enFlat[k] ?? "")).map(([k]) => k);
         expect(hits).toEqual([]);
       });
     });
