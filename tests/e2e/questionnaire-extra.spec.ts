@@ -81,6 +81,7 @@ test.describe("questionnaire gaps (spec 7.4, 7.5)", () => {
   });
 
   test("quick vs thorough: thorough asks at least as many, and the toggle is available mid-flow", async ({ page }) => {
+    test.setTimeout(240_000); // two full flows
     const quick = await completeQuestionnaire(page, { cancer: "Breast cancer", fallback: "unknown", search: false });
     const thorough = await completeQuestionnaire(page, { cancer: "Breast cancer", mode: "Thorough", fallback: "unknown", search: false });
     expect(quick.length).toBeLessThanOrEqual(7);
