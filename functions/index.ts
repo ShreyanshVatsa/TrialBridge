@@ -8,7 +8,8 @@ import { isProduction } from "./lib/env";
 import { apiError, json } from "./lib/http";
 import { D1KvStore } from "./lib/store";
 import { D1TrialStore } from "./lib/trials";
-import { handleAnalyze } from "./lib/analyze";
+import { handleAnalyze, type AnalyzeDeps } from "./lib/analyze";
+import { handleAsk } from "./lib/ask";
 import { breakerFor } from "./lib/ai/circuit";
 import { resolveProviders } from "./lib/ai/providers";
 import { verifyTurnstile } from "./lib/turnstile";
@@ -27,9 +28,9 @@ export default {
     const t0 = Date.now();
     try {
       let res: Response;
-      if (url.pathname === "/api/analyze") {
+      if (url.pathname === "/api/analyze" || url.pathname === "/api/ask") {
         const store = new D1KvStore(env.DB);
-        res = await handleAnalyze(request, {
+        const deps: AnalyzeDeps = {
           env,
           store,
           trials: new D1TrialStore(env.DB),
@@ -39,7 +40,8 @@ export default {
           salt: env.RATE_LIMIT_SALT || (isProduction(env) ? getIsolateSalt() : "trialbridge-dev-salt"),
           requestId,
           log,
-        });
+        };
+        res = url.pathname === "/api/analyze" ? await handleAnalyze(request, deps) : await handleAsk(request, deps);
         if (Math.random() < 0.02) ctx.waitUntil(store.purgeExpired());
       } else if (url.pathname === "/api/health") {
         res = json({ ok: true, dataVersion: env.DATA_VERSION ?? null }, 200, requestId);

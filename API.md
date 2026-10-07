@@ -12,7 +12,8 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 - `loadTrial(nctId: string): Promise<{ card: TrialCard; sites: Site[] } | null>`: trial detail page (`/trial/?id=NCT01234567`). null = unknown ID.
 - `lookupZip(zip: string): Promise<{ lat: number; lon: number } | null>`: ZIP centroid (loads one 3-digit-prefix file on demand).
 - `sortSitesByDistance(sites: Site[], origin: { lat: number; lon: number } | null): Array<{ site: Site; miles: number | null }>`: nearest first.
-- Internal: `loadManifest()`, `loadShard(info, shardBase, opts)` (used by search; UI should not need them).
+- `loadTrials(nctIds: string[]): Promise<Map<string, { card; sites }>>`: several trials at once (per-trial bucket files).
+- Internal: `loadManifest()`, `loadShard(...)`, `loadLiteShard(...)` (used by search; UI should not need them).
 - All loaders throw `DataLoadError` (`code: "network" | "not_found" | "invalid" | "timeout"`) after retries.
 
 ## Matching (`lib/match/search.ts`)
@@ -25,6 +26,25 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 - `requestAnalysis(answers: IntakeAnswers, nctIds: string[], turnstileToken: string, opts?: { signal?: AbortSignal }): Promise<AnalyzeResponse>`
   - Minimizes the profile internally (`minimizeProfile`, `lib/privacy/minimize.ts`). Never throws for AI/network failure: returns `{ status: "degraded", degradedReason }`; show "AI explanations are busy right now. Here are your matches based on trial criteria." `experimental === true` => label Haitian Creole AI output "experimental".
 - `getTurnstileToken(container: HTMLElement): Promise<string>` (`lib/api/turnstile.ts`): loads Turnstile and renders an interaction-only widget in `container`; resolves with a token.
+
+## Trial Q&A (`lib/api/ask.ts`, types in `lib/types/ask.ts`)
+- `askQuestion(nctId: string, question: string, language: Language, turnstileToken: string, opts?: { signal?: AbortSignal }): Promise<AskResponse>`
+  - Get a fresh Turnstile token per question (`getTurnstileToken`). Scrubs personal info client-side first; never throws for AI/network failure.
+  - `MAX_QUESTION_CHARS` (300) for the input's maxLength; `questionsRemaining(nctId)` (10 per trial per session) for the counter; `scrubPersonalInfo(text)` if you want to preview removal.
+  - Always show the notice "Don't include personal details." `piiRemoved === true` => tell the user some details were removed.
+- `AskResponse`: `{ status: "ok" | "degraded", kind: "answer" | "not_in_text" | "refusal" | "crisis" | null, refusalReason?: "off_topic" | "diagnosis" | "treatment_advice" | "eligibility", answer, citations: { section: "inclusion" | "exclusion" | "summary" | "title", number: number | null, quote }[], crisis, piiRemoved, experimental, cached, provider, degradedReason? }`
+  - `answer` is already in the user's language (server-written for refusals/crisis). Render `citations[].quote` as English official text with "Inclusion criterion N" etc.
+  - `crisis === true` => show crisis resources prominently: U.S. call or text 988 (Suicide & Crisis Lifeline); emergencies 911; encourage contacting their care team.
+  - `degradedReason`: "question_limit" => "You've reached the 10-question limit for this trial"; "rate_limited"/"ai_unavailable"/"budget_exhausted"/"invalid_output" => friendly busy message.
+
+## Access Intelligence (`lib/access/access.ts`, data `/data/access.json`, types `lib/types/access.ts`)
+- `loadAccess(): Promise<AccessData>` (memoized). `data.dataDate` for the "data as of" label.
+- `getSummary(data, { state?, group? }): Counts` => stat cards. `Counts = { trials, anyBarrier, english_required, upper_age_limit, disability_exclusion }`. Use `pct(n, d)` for percentages (show counts next to them).
+- `getStateRates(data, { group?, metric? = "any" }): { state, trials, count, rate }[]` => U.S. map (state = postal code, e.g. "TX"; rate is 0..100).
+- `getBarrierBreakdown(data, { state?, group? }): { type: "any" | BarrierType, count, rate }[]` => barrier-type chart.
+- `getGroupRows(data, state?): { group, trials, anyBarrier, rate }[]` => cancer-type filter list/chart.
+- `getSiteTable(data, { state?, group?, metric?, minTrials? = 5, limit? = 100 }): SiteRow[]` => ranked site table (sites with 5+ trials; sorted by barrier rate, then trials). `SiteRow = Counts & { facility, city, state, rate }`.
+- Methodology note: "disability exclusion" includes exclusions of people with psychiatric/mental illness or cognitive/physical disability when no medical reason is stated (e.g. "would limit compliance with study requirements").
 
 ## Fit/badges
 - `FitLevel`: strong | possible | unlikely | unclear. `Assessment`: likely_met | likely_not_met | needs_doctor. Never say "eligible"/"qualify"; say "possible match to discuss with your care team".
