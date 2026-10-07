@@ -19,3 +19,4 @@ public/models/
 public/ort/
 data/build/
 data/cache/
+.scaffold-ready
