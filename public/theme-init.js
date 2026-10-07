@@ -24,4 +24,25 @@
   } catch (e) {
     /* storage unavailable: English */
   }
+  // 3) Trial page head start: begin fetching the trial's data bucket now, before the app bundle has
+  //    downloaded and hydrated. lib/data/loader.ts adopts this response when its URL matches.
+  try {
+    var id = location.pathname.indexOf("/trial") === 0 && new URLSearchParams(location.search).get("id");
+    if (id && /^NCT\d{8}$/i.test(id.trim()) && window.fetch) {
+      id = id.trim().toUpperCase();
+      window.__tbEarlyBucket = fetch("/data/manifest.json")
+        .then(function (r) {
+          return r.ok ? r.json() : Promise.reject();
+        })
+        .then(function (m) {
+          var url = m.trialBase + "/" + id.slice(-3) + ".json";
+          return fetch(url).then(function (r) {
+            return r.ok ? r.json().then(function (data) { return { url: url, data: data }; }) : Promise.reject();
+          });
+        });
+      window.__tbEarlyBucket.catch(function () {});
+    }
+  } catch (e) {
+    /* best effort: the app fetches the data itself */
+  }
 })();

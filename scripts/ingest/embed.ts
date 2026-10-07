@@ -18,7 +18,8 @@ export async function embedTexts(items: { key: string; text: string }[]): Promis
   } catch {
     /* empty cache */
   }
-  const todo = items.filter((i) => !cache[i.key]);
+  // Longest texts last: batches of similar length waste far less compute on padding.
+  const todo = items.filter((i) => !cache[i.key]).sort((a, b) => a.text.length - b.text.length);
   if (todo.length) {
     env.localModelPath = path.resolve("public/models") + "/";
     env.allowRemoteModels = false;
