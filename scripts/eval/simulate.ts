@@ -9,9 +9,11 @@
 import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import { applyAnswer, createState, eligibleQuestions, rankPool, type CandidatePool } from "../../lib/questionnaire/engine";
-import { runAdaptive, runFixed, samplePatient, simContext } from "../../lib/questionnaire/simulate";
+import { runAdaptive, runAdaptiveCurve, runFixedCurve, samplePatient, simContext, type FlowResult } from "../../lib/questionnaire/simulate";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
+import type { TrialCard } from "../../lib/types/trial";
 import { loadSeedCards } from "./common";
+import { loadNational, type National } from "./national";
 
 export const SIM_SEED = 20261007;
 export const SIM_GROUPS: readonly CancerGroupId[] = CANCER_GROUP_IDS.slice(0, 12);
@@ -30,6 +32,8 @@ function mulberry32(seed: number): () => number {
 }
 
 export interface SimSummary {
+  /** "seed" (committed, CI-reproducible) or "national" (public/data shards). */
+  source: "seed" | "national";
   seed: number;
   patients: number;
   groups: number;
@@ -42,37 +46,63 @@ export interface SimSummary {
   fullFixedNdcg: number;
   fullFixedQuestions: number;
   adaptiveBeatsFixedAtAllK: boolean;
-  /** Smallest k at which adaptive reaches 95% of the full fixed flow's nDCG, or null. */
+  /** Smallest k (scanned over 1..CURVE_K) at which adaptive reaches 95% of the full fixed flow's nDCG, or null. */
   kFor95: number | null;
+  /** kFor95 as a share of the full fixed flow's mean question count (target: <= 0.6). */
+  shareFor95: number | null;
+  /** Mean adaptive / fixed nDCG@10 for k = 1..CURVE_K. */
+  adaptiveCurve: number[];
+  fixedCurve: number[];
   quick: { medianQuestions: number; meanNdcg: number };
   nonResponse: { checks: number; rankDrops: number; scoreDrops: number };
 }
 
-const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+/** How many questions the per-k curves cover (the full fixed flow asks about 13). */
+export const CURVE_K = 14;
 
-export function runSimulation(): SimSummary {
-  const { cards } = loadSeedCards(new Map());
-  const r = mulberry32(SIM_SEED);
+const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+const at = <T,>(curve: T[], k: number): T => curve[Math.min(k, curve.length - 1)] as T;
+
+export function runSimulation(opts: { national?: National | null; seed?: number; groups?: readonly CancerGroupId[]; patientsPerGroup?: number } = {}): SimSummary {
+  const nat = opts.national ?? null;
+  const seedCards = nat ? null : loadSeedCards(new Map()).cards;
+  const seed = opts.seed ?? SIM_SEED;
+  const groups = opts.groups ?? SIM_GROUPS;
+  const perGroup = opts.patientsPerGroup ?? PATIENTS_PER_GROUP;
+  const r = mulberry32(seed);
   const rows: Array<{ a: number[]; f: number[]; ac: number[]; fc: number[]; full: number; fullLen: number; quickLen: number; quick: number }> = [];
   const nr = { checks: 0, rankDrops: 0, scoreDrops: 0 };
   let trialCount = 0;
   const kMax = Math.max(...SIM_KS);
 
-  for (const g of SIM_GROUPS) {
+  for (const g of groups) {
     const catalog = getCatalog("cancer", g);
-    const sorted = cards.filter((c) => c.groups.includes(g));
+    const cards = nat ? nat.entries(g).map((e) => e.card) : (seedCards as TrialCard[]);
+    const sorted = cards.filter((c) => c.groups.includes(g)).sort((a, b) => a.id.localeCompare(b.id));
     trialCount += sorted.length;
     // Prior: fixed deterministic order (no query text exists for a synthetic patient), decaying from 1.
     const pool: CandidatePool = { group: g, trials: sorted.map((c, i, all) => ({ id: c.id, prior: 1 - i / all.length, facts: c.facts, sex: c.sex })) };
     const base: QuestionnaireState = { ...createState("quick", 1), answers: { cancer_type: g, age: 55, zip: "02115", travel: null }, history: ["cancer_type", "age", "zip", "travel"] };
-    for (let i = 0; i < PATIENTS_PER_GROUP; i++) {
+    for (let i = 0; i < perGroup; i++) {
       const patient = samplePatient(r, base, catalog, g);
       const ctx = simContext(pool, catalog, base, patient, FACT_POLICY);
-      const full = runFixed(ctx, 99);
+      const fixedCurve = runFixedCurve(ctx, 99);
+      const full = fixedCurve[fixedCurve.length - 1] as FlowResult;
       const quick = runAdaptive(ctx, 99, "quick");
-      const ad = SIM_KS.map((k) => runAdaptive(ctx, k));
-      const fx = SIM_KS.map((k) => runFixed(ctx, k));
-      rows.push({ a: ad.map((x) => x.ndcg), f: fx.map((x) => x.ndcg), ac: ad.map((x) => x.conflictShare), fc: fx.map((x) => x.conflictShare), full: full.ndcg, fullLen: full.asked.length, quickLen: quick.asked.length, quick: quick.ndcg });
+      const adCurve = runAdaptiveCurve(ctx, CURVE_K);
+      const fxK = (k: number) => at(fixedCurve, k);
+      const adK = (k: number) => at(adCurve, k);
+      const ks = Array.from({ length: CURVE_K }, (_, j) => j + 1);
+      rows.push({
+        a: ks.map((k) => adK(k).ndcg),
+        f: ks.map((k) => fxK(k).ndcg),
+        ac: ks.map((k) => adK(k).conflictShare),
+        fc: ks.map((k) => fxK(k).conflictShare),
+        full: full.ndcg,
+        fullLen: full.asked.length,
+        quickLen: quick.asked.length,
+        quick: quick.ndcg,
+      });
 
       // Non-response gate: on a state where the patient has really answered two questions, answering
       // "don't know" or skipping any other eligible question must not lower any trial's score or rank.
@@ -97,27 +127,33 @@ export function runSimulation(): SimSummary {
       }
     }
   }
-  const col = (pick: (x: (typeof rows)[number]) => number[], j: number) => mean(rows.map((x) => pick(x)[j] as number));
-  const adaptive = SIM_KS.map((_, j) => col((x) => x.a, j));
-  const fixed = SIM_KS.map((_, j) => col((x) => x.f, j));
+  const col = (pick: (x: (typeof rows)[number]) => number[], k: number) => mean(rows.map((x) => pick(x)[k - 1] as number));
+  const adaptiveCurve = Array.from({ length: CURVE_K }, (_, j) => col((x) => x.a, j + 1));
+  const fixedCurve = Array.from({ length: CURVE_K }, (_, j) => col((x) => x.f, j + 1));
+  const adaptive = SIM_KS.map((k) => adaptiveCurve[k - 1] as number);
+  const fixed = SIM_KS.map((k) => fixedCurve[k - 1] as number);
   const fullFixedNdcg = mean(rows.map((x) => x.full));
+  const fullFixedQuestions = mean(rows.map((x) => x.fullLen));
   const lens = rows.map((x) => x.quickLen).sort((a, b) => a - b);
-  // k for 95%: scan adaptive at k = 1..12 over the same patients would need a rerun; derive from the listed ks.
-  const kFor95 = SIM_KS.find((_, j) => (adaptive[j] as number) >= 0.95 * fullFixedNdcg) ?? null;
+  const kFor95 = adaptiveCurve.findIndex((v) => v >= 0.95 * fullFixedNdcg);
   return {
-    seed: SIM_SEED,
+    source: nat ? "national" : "seed",
+    seed,
     patients: rows.length,
-    groups: SIM_GROUPS.length,
+    groups: groups.length,
     trials: trialCount,
     ks: SIM_KS,
     adaptive,
     fixed,
-    adaptiveConflict: SIM_KS.map((_, j) => col((x) => x.ac, j)),
-    fixedConflict: SIM_KS.map((_, j) => col((x) => x.fc, j)),
+    adaptiveConflict: SIM_KS.map((k) => col((x) => x.ac, k)),
+    fixedConflict: SIM_KS.map((k) => col((x) => x.fc, k)),
     fullFixedNdcg,
-    fullFixedQuestions: mean(rows.map((x) => x.fullLen)),
+    fullFixedQuestions,
     adaptiveBeatsFixedAtAllK: adaptive.every((v, j) => v >= (fixed[j] as number) - 1e-9),
-    kFor95,
+    kFor95: kFor95 < 0 ? null : kFor95 + 1,
+    shareFor95: kFor95 < 0 ? null : (kFor95 + 1) / fullFixedQuestions,
+    adaptiveCurve,
+    fixedCurve,
     quick: { medianQuestions: lens[Math.floor(lens.length / 2)] as number, meanNdcg: mean(rows.map((x) => x.quick)) },
     nonResponse: nr,
   };
@@ -144,7 +180,32 @@ ${rowsMd}
 `;
 }
 
+/** One-screen summary for tuning runs. */
+export function simulationBrief(s: SimSummary): string {
+  const row = (name: string, xs: number[]) => `${name.padEnd(9)}${xs.map((x) => f3(x)).join(" ")}`;
+  return [
+    `${s.source}: ${s.patients} patients, ${s.trials} trials; full fixed ${f3(s.fullFixedNdcg)} in ${s.fullFixedQuestions.toFixed(1)} questions; adaptive reaches 95% at k=${s.kFor95} (${s.shareFor95 === null ? "n/a" : (100 * s.shareFor95).toFixed(0) + "%"} of the questions); quick median ${s.quick.medianQuestions} @ ${f3(s.quick.meanNdcg)}`,
+    `k        ${s.adaptiveCurve.map((_, j) => String(j + 1).padStart(5)).join(" ")}`,
+    row("adaptive", s.adaptiveCurve),
+    row("fixed", s.fixedCurve),
+    `adaptive - fixed at k=1,3,5,7: ${s.ks.map((k, j) => `${k}:${((s.adaptive[j] as number) - (s.fixed[j] as number)).toFixed(3)}`).join(" ")}; non-response drops ${s.nonResponse.rankDrops + s.nonResponse.scoreDrops}`,
+  ].join("\n");
+}
+
 if (process.argv[1]?.endsWith("simulate.ts")) {
-  const s = runSimulation();
-  console.log(simulationMarkdown(s));
+  const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+  const wantNational = process.argv.includes("--national");
+  const groupIdx = arg("groups")?.split(",").map(Number);
+  const national = wantNational ? loadNational() : null;
+  if (wantNational && !national) throw new Error("no national data (public/data or NATIONAL_DIR)");
+  const t0 = Date.now();
+  const s = runSimulation({
+    national,
+    ...(arg("seed") ? { seed: Number(arg("seed")) } : {}),
+    ...(groupIdx ? { groups: groupIdx.map((i) => SIM_GROUPS[i] as CancerGroupId) } : {}),
+    ...(arg("patients") ? { patientsPerGroup: Number(arg("patients")) } : {}),
+  });
+  console.log(process.argv.includes("--md") ? simulationMarkdown(s) : process.argv.includes("--json") ? JSON.stringify(s) : simulationBrief(s));
+  const cpu = process.cpuUsage();
+  console.log(`(${((Date.now() - t0) / 1000).toFixed(1)} s wall, ${((cpu.user + cpu.system) / 1e6).toFixed(1)} s cpu)`);
 }

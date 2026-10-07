@@ -4,10 +4,9 @@
  * eval/results.json. Uses the mock AI provider only (`eval:live` is deferred).
  * Embedding variants compared: MiniLM vs bge-small, q8 vs fp32 weights, int8 vs float32 storage.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync } from "node:fs";
-import path from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
 import MiniSearch from "minisearch";
-import { pipeline, env } from "@huggingface/transformers";
+import { MODELS, embedAll, quantize, type Dtype, type ModelKey } from "./embed";
 import { loadSeedCards, loadZip, zipCentroid } from "./common";
 import { embeddingText } from "../../lib/ingest/record";
 import { buildProfileText } from "../../lib/match/query";
@@ -22,20 +21,12 @@ import { parseModelOutput } from "../../functions/lib/ai/output";
 import { verifyQuotes } from "../../functions/lib/quotes";
 import type { IntakeAnswers } from "../../lib/types/intake";
 import type { TrialCard } from "../../lib/types/trial";
-import { INT8_SCALE } from "../../config/embedding";
 import { loadAssertionCases, runAssertions } from "./assertions";
 import { runSimulation, simulationMarkdown } from "./simulate";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import { applyAnswer, eligibleQuestions } from "../../lib/questionnaire/engine";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
 
-const MODEL_DIR = path.resolve("data/cache/models");
-const MODELS = {
-  minilm: { id: "Xenova/all-MiniLM-L6-v2", queryPrefix: "" },
-  bge: { id: "Xenova/bge-small-en-v1.5", queryPrefix: "Represent this sentence for searching relevant passages: " },
-} as const;
-type ModelKey = keyof typeof MODELS;
-type Dtype = "q8" | "fp32";
 const VARIANTS: { name: string; model: ModelKey; dtype: Dtype; storage: "int8" | "float32" }[] = [
   { name: "MiniLM q8 + int8 (production)", model: "minilm", dtype: "q8", storage: "int8" },
   { name: "MiniLM q8 + float32", model: "minilm", dtype: "q8", storage: "float32" },
@@ -45,47 +36,6 @@ const VARIANTS: { name: string; model: ModelKey; dtype: Dtype; storage: "int8" |
   { name: "bge-small fp32 + int8", model: "bge", dtype: "fp32", storage: "int8" },
 ];
 
-async function ensureModel(id: string): Promise<void> {
-  const files = ["config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "onnx/model_quantized.onnx", "onnx/model.onnx"];
-  const local = path.join("public/models", id);
-  for (const f of files) {
-    const dest = path.join(MODEL_DIR, id, f);
-    if (existsSync(dest)) continue;
-    mkdirSync(path.dirname(dest), { recursive: true });
-    if (existsSync(path.join(local, f))) {
-      cpSync(path.join(local, f), dest);
-      continue;
-    }
-    const res = await fetch(`https://huggingface.co/${id}/resolve/main/${f}`, { signal: AbortSignal.timeout(600_000) });
-    if (!res.ok) throw new Error(`download ${id}/${f}: ${res.status}`);
-    writeFileSync(dest, new Uint8Array(await res.arrayBuffer()));
-    console.log(`  downloaded ${id}/${f}`);
-  }
-}
-
-async function embedAll(model: ModelKey, dtype: Dtype, texts: string[]): Promise<Float32Array[]> {
-  const cacheFile = path.join("data/cache", `eval-emb-${model}-${dtype}.json`);
-  let cache: Record<string, number[]> = {};
-  if (existsSync(cacheFile)) cache = JSON.parse(readFileSync(cacheFile, "utf8")) as Record<string, number[]>;
-  const todo = [...new Set(texts.filter((t) => !cache[t]))];
-  if (todo.length) {
-    await ensureModel(MODELS[model].id);
-    env.localModelPath = MODEL_DIR + "/";
-    env.allowRemoteModels = false;
-    const fe = await pipeline("feature-extraction", MODELS[model].id, { dtype });
-    for (let i = 0; i < todo.length; i += 32) {
-      const batch = todo.slice(i, i + 32);
-      const out = await fe(batch, { pooling: model === "bge" ? "cls" : "mean", normalize: true });
-      const data = out.data as Float32Array;
-      const dims = data.length / batch.length;
-      batch.forEach((t, j) => (cache[t] = Array.from(data.subarray(j * dims, (j + 1) * dims))));
-    }
-    writeFileSync(cacheFile, JSON.stringify(cache));
-  }
-  return texts.map((t) => Float32Array.from(cache[t] as number[]));
-}
-
-const quantize = (v: Float32Array) => Int8Array.from(v, (x) => Math.max(-127, Math.min(127, Math.round(x * INT8_SCALE))));
 
 function recallAt(ranked: string[], rel: Set<string>, k = 10): number {
   if (rel.size === 0) return NaN;

@@ -112,30 +112,51 @@ export function simContext(pool: CandidatePool, catalog: readonly QuestionDef[],
   return { pool, catalog, base, patient, oracle, oracleState, ...(policy ? { policy } : {}) };
 }
 
-/** Adaptive flow: up to k questions chosen by the engine (thorough mode, so only k or exhaustion stops it). */
+/**
+ * Adaptive flow: up to k questions chosen by the engine (thorough mode, so only k or exhaustion stops it).
+ * The engine is deterministic, so the flow for k questions is a prefix of the flow for k + 1: `runAdaptiveCurve`
+ * walks it once and scores every prefix, which is how the eval gets k = 1..K without K separate runs.
+ */
 export function runAdaptive(ctx: SimContext, k: number, mode: "quick" | "thorough" = "thorough"): FlowResult {
+  const curve = runAdaptiveCurve(ctx, k, mode);
+  return curve[curve.length - 1] as FlowResult;
+}
+
+/** Results after 0, 1, ..., (up to) kMax adaptive questions: index j = after j questions (stops early when the engine is done). */
+export function runAdaptiveCurve(ctx: SimContext, kMax: number, mode: "quick" | "thorough" = "thorough"): FlowResult[] {
   let state = setMode(ctx.base, mode, ctx.base.updatedAt);
   const asked: string[] = [];
   const opts = ctx.policy ? { policy: ctx.policy } : {};
-  while (asked.length < k) {
+  const curve: FlowResult[] = [];
+  for (;;) {
+    curve.push(evaluate(ctx, state, [...asked]));
+    if (asked.length >= kMax) break;
     const step = nextQuestion(state, ctx.pool, ctx.catalog, opts);
     if (step.kind === "done") break;
     asked.push(step.question.id);
     state = applyAnswer(state, step.question.id, patientAnswer(ctx.patient, step.question), ctx.catalog, { now: state.updatedAt }).state;
   }
-  return evaluate(ctx, state, asked);
+  return curve;
 }
 
 /** Fixed flow: eligible questions in catalog order (the v1 style), truncated at k. */
 export function runFixed(ctx: SimContext, k: number): FlowResult {
+  const curve = runFixedCurve(ctx, k);
+  return curve[curve.length - 1] as FlowResult;
+}
+
+/** Fixed-order results after 0, 1, ..., (up to) kMax questions. */
+export function runFixedCurve(ctx: SimContext, kMax: number): FlowResult[] {
   let state = ctx.base;
   const asked: string[] = [];
   const group = ctx.pool.group;
+  const curve: FlowResult[] = [evaluate(ctx, state, [])];
   for (const q of ctx.catalog) {
-    if (asked.length >= k) break;
+    if (asked.length >= kMax) break;
     if (q.tier === "essential" || !q.enabled || !appliesToGroup(q, group) || !prerequisitesHold(q, state) || state.answers[q.id] !== undefined) continue;
     asked.push(q.id);
     state = applyAnswer(state, q.id, patientAnswer(ctx.patient, q), ctx.catalog, { now: state.updatedAt }).state;
+    curve.push(evaluate(ctx, state, [...asked]));
   }
-  return evaluate(ctx, state, asked);
+  return curve;
 }

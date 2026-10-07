@@ -5,13 +5,12 @@
  * Sex is NOT applied here: it is a live hard filter (liveCount / scoring), so editing it never needs a rebuild.
  * Client-only; nothing leaves the browser (only static shard files are fetched).
  */
-import MiniSearch from "minisearch";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import { loadLiteShard, loadManifest, loadShard, lookupZip } from "@/lib/data/loader";
 import type { LatLon } from "@/lib/geo/distance";
 import { nearestSite, passesAge, passesDistance, passesGroup } from "@/lib/match/filters";
 import { liteToEntries } from "@/lib/match/lite";
-import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "@/lib/match/minisearch-config";
+import { getShardIndex, keywordScores } from "@/lib/match/keyword";
 import { buildProfileText } from "@/lib/match/query";
 import type { RankEntry } from "@/lib/match/rank";
 import type { QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
@@ -60,8 +59,6 @@ export function poolFromEntries(input: {
   return { group, trials };
 }
 
-const indexCache = new Map<string, MiniSearch<SearchDoc>>();
-
 /**
  * Load the group's shard(s) (already prefetched after cancer_type in the usual flow) and the ZIP centroid,
  * then build the pool. Call it again after answers change to refresh the BM25 prior; shards are cached.
@@ -88,19 +85,7 @@ export async function buildCandidatePool(state: QuestionnaireState, opts: { sign
   ]);
   if (opts.signal?.aborted) throw opts.signal.reason;
   const text = buildProfileText({ cancerType: group, spread: "not_sure", treatments: ["not_sure"], biomarkers: {}, questionnaire: state }, opts.catalog ?? getCatalog("cancer", group));
-  const indexes = shards.map((s) => {
-    let idx = indexCache.get(s.id);
-    if (!idx) {
-      idx = MiniSearch.loadJSON<SearchDoc>(s.indexJson, MINISEARCH_OPTIONS);
-      indexCache.set(s.id, idx);
-    }
-    return idx;
-  });
-  const bm25 = (candidates: ReadonlySet<string>) => {
-    const scores = new Map<string, number>();
-    for (const idx of indexes)
-      for (const r of idx.search(text, { ...MINISEARCH_SEARCH, filter: (res) => candidates.has(String(res.id)) })) scores.set(String(r.id), Math.max(scores.get(String(r.id)) ?? 0, r.score));
-    return scores;
-  };
+  const indexes = shards.map((s) => getShardIndex(s));
+  const bm25 = (candidates: ReadonlySet<string>) => keywordScores(indexes, text, candidates);
   return poolFromEntries({ entries: shards.flatMap((s) => s.entries as RankEntry[] | PoolEntry[]), state, origin, bm25 });
 }

@@ -11,16 +11,18 @@ import type { IntakeAnswers } from "../../lib/types/intake";
 import { getCatalog } from "../../config/questionnaire";
 import type { AnswerValue, QuestionnaireState } from "../../lib/types/questionnaire";
 import { nearestSite, passesAge, passesDistance, passesGroup } from "../../lib/match/filters";
+import type { Site, TrialCard } from "../../lib/types/trial";
+import type { LatLon } from "../../lib/geo/distance";
 import { loadSeedCards, loadZip, zipCentroid } from "./common";
 
 /** x = hand-written extra v2 answers for the profile ("unknown" = the synthetic patient does not know). */
-type P = { id: string; note: string; a: IntakeAnswers; rel: RegExp; not?: RegExp; x?: Record<string, AnswerValue> };
+export type P = { id: string; note: string; a: IntakeAnswers; rel: RegExp; not?: RegExp; x?: Record<string, AnswerValue> };
 const base = { language: "en", pregnant: "no", inAnotherTrial: "no" } as const;
 const A = (o: Partial<IntakeAnswers> & Pick<IntakeAnswers, "cancerType" | "zip" | "age">): IntakeAnswers => ({
   travelMiles: 250, spread: "not_sure", treatments: ["not_sure"], biomarkers: {}, ...base, ...o,
 });
 
-const PROFILES: P[] = [
+export const PROFILES: P[] = [
   { id: "p01", note: "HER2+ metastatic breast, prior chemo, Boston", a: A({ cancerType: "breast", zip: "02115", age: 52, spread: "yes", treatments: ["chemotherapy"], biomarkers: { HER2: "positive" } }), rel: /breast/i, not: /HER2[- ]?(negative|-)|triple|TNBC|HR\+\/HER2-/i, x: { daily_activity: "0-1", disease_status: "recurrent" } },
   { id: "p02", note: "Triple-negative breast, Houston", a: A({ cancerType: "breast", zip: "77030", age: 44, spread: "yes", biomarkers: { HER2: "negative", HR: "negative" } }), rel: /breast/i, not: /HER2[- ]?positive|HER2\+|HR[- ]?positive|HR\+/i, x: { daily_activity: "unknown", disease_status: "on_treatment" } },
   { id: "p03", note: "HR+/HER2- breast, Chicago, 500 mi", a: A({ cancerType: "breast", zip: "60611", age: 63, travelMiles: 500, biomarkers: { HR: "positive", HER2: "negative" } }), rel: /breast/i, not: /HER2[- ]?positive|HER2\+|triple|TNBC/i, x: { daily_activity: "0-1", sex: "female" } },
@@ -65,7 +67,7 @@ const PROFILES: P[] = [
 ];
 
 /** Hand-checkable v2 state from a profile's legacy answers plus its hand-written extras. */
-function stateFor(p: P): QuestionnaireState {
+export function stateFor(p: P): QuestionnaireState {
   const a = p.a;
   const catalog = getCatalog("cancer", a.cancerType);
   const grid = new Set(catalog.find((q) => q.id === "biomarkers")?.biomarkers ?? []);
@@ -84,18 +86,31 @@ function stateFor(p: P): QuestionnaireState {
   return { v: 2, area: "cancer", mode: "thorough", answers, history: Object.keys(answers), deferred: [], updatedAt: 1 };
 }
 
-const zips = loadZip();
-const { cards, sites } = loadSeedCards(zips);
-const labels = PROFILES.map((p) => {
-  const origin = zipCentroid(zips, p.a.zip);
-  const pass = cards.filter((c) => passesGroup(c, p.a.cancerType) && passesAge(c, p.a.age) && passesDistance(nearestSite(sites.get(c.id) ?? [], origin), p.a.travelMiles));
-  const text = (c: (typeof cards)[number]) => `${c.title} ${c.conditions.join(" ")}`;
-  const relevant = pass.filter((c) => p.rel.test(text(c)) && !(p.not && p.not.test(text(c)))).map((c) => c.id);
-  const excluded = p.not ? pass.filter((c) => p.not?.test(text(c))).map((c) => c.id) : [];
-  return { id: p.id, note: p.note, answers: p.a, state: stateFor(p), relevant, excluded, candidates: pass.length };
-});
-for (const l of labels) console.log(`${l.id} ${l.note.padEnd(55)} candidates=${l.candidates} relevant=${l.relevant.length} excluded=${l.excluded.length}`);
-writeFileSync(
-  "eval/labels.json",
-  JSON.stringify({ schema: 2, note: "SYNTHETIC, PROVISIONAL. Schema v2: 40 synthetic patient profiles (not real people), each with legacy `answers` (v1 pipeline) and a hand-written v2 questionnaire `state`. Relevance labels from hand-written per-profile title/condition rules (scripts/eval/make-labels.ts) over the committed ClinicalTrials.gov seed; not clinician-reviewed.", generatedAt: new Date().toISOString().slice(0, 10), profiles: labels }, null, 1),
-);
+/** Title + conditions text the label rules read (never the criteria facts or embeddings under test). */
+const labelText = (c: Pick<TrialCard, "title" | "conditions">) => `${c.title} ${c.conditions.join(" ")}`;
+
+/** Relevant / excluded ids for one profile over any trial set (seed or national): same hand-written rules. */
+export function labelProfile(p: P, cards: readonly TrialCard[], sites: ReadonlyMap<string, Site[]>, origin: LatLon | null) {
+  const pass = cards.filter((c) => passesGroup(c, p.a.cancerType) && passesAge(c, p.a.age) && passesDistance(nearestSite(sites.get(c.id) ?? [], origin), origin ? p.a.travelMiles : null));
+  const relevant = pass.filter((c) => p.rel.test(labelText(c)) && !(p.not && p.not.test(labelText(c)))).map((c) => c.id);
+  const excluded = p.not ? pass.filter((c) => p.not?.test(labelText(c))).map((c) => c.id) : [];
+  return { relevant, excluded, candidates: pass.length };
+}
+
+if (process.argv[1]?.endsWith("make-labels.ts")) {
+  const zips = loadZip();
+  const { cards, sites } = loadSeedCards(zips);
+  const labels = PROFILES.map((p) => {
+    const origin = zipCentroid(zips, p.a.zip);
+    // Seed labels keep the original behaviour (the distance limit applies even when the ZIP is unknown).
+    const pass = cards.filter((c) => passesGroup(c, p.a.cancerType) && passesAge(c, p.a.age) && passesDistance(nearestSite(sites.get(c.id) ?? [], origin), p.a.travelMiles));
+    const relevant = pass.filter((c) => p.rel.test(labelText(c)) && !(p.not && p.not.test(labelText(c)))).map((c) => c.id);
+    const excluded = p.not ? pass.filter((c) => p.not?.test(labelText(c))).map((c) => c.id) : [];
+    return { id: p.id, note: p.note, answers: p.a, state: stateFor(p), relevant, excluded, candidates: pass.length };
+  });
+  for (const l of labels) console.log(`${l.id} ${l.note.padEnd(55)} candidates=${l.candidates} relevant=${l.relevant.length} excluded=${l.excluded.length}`);
+  writeFileSync(
+    "eval/labels.json",
+    JSON.stringify({ schema: 2, note: "SYNTHETIC, PROVISIONAL. Schema v2: 40 synthetic patient profiles (not real people), each with legacy `answers` (v1 pipeline) and a hand-written v2 questionnaire `state`. Relevance labels from hand-written per-profile title/condition rules (scripts/eval/make-labels.ts) over the committed ClinicalTrials.gov seed; not clinician-reviewed.", generatedAt: new Date().toISOString().slice(0, 10), profiles: labels }, null, 1),
+  );
+}

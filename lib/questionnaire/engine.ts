@@ -221,15 +221,36 @@ function trialRelation(compiled: readonly CompiledAnswer[], facts: readonly Comp
 
 /** Score every pool trial that passes the live hard filters (definite sex) under the current answers. */
 function scorePool(state: QuestionnaireState, pool: CandidatePool, catalog: readonly QuestionDef[], policy: FactPolicyMap | undefined): Scored[] {
+  return analyze(state, pool, catalog, policy).scored;
+}
+
+/** Everything the engine derives from (state, pool, catalog, policy); computed once and shared by all the calls
+ *  the UI makes for the same state (live counter, next question, "about N more"), which used to repeat it. */
+interface Analysis {
+  scored: Scored[];
+  /** Questions ranked by utility; filled on first use. */
+  ranked?: Array<{ question: QuestionDef; gain: number; utility: number }>;
+}
+const analyses = new WeakMap<QuestionnaireState, WeakMap<CandidatePool, Array<{ catalog: readonly QuestionDef[]; policy: FactPolicyMap | undefined; value: Analysis }>>>();
+
+function analyze(state: QuestionnaireState, pool: CandidatePool, catalog: readonly QuestionDef[], policy: FactPolicyMap | undefined): Analysis {
+  let byPool = analyses.get(state);
+  if (!byPool) analyses.set(state, (byPool = new WeakMap()));
+  let entries = byPool.get(pool);
+  if (!entries) byPool.set(pool, (entries = []));
+  const hit = entries.find((e) => e.catalog === catalog && e.policy === policy);
+  if (hit) return hit.value;
   const compiled = compileState(state, catalog).filter((c) => c.rules.size > 0 || c.hardFilter);
   const filters = hardFilters(compiled);
-  const out: Scored[] = [];
+  const scored: Scored[] = [];
   for (const t of pool.trials) {
     if (!passesHardFilters(t.sex, filters)) continue;
     const r = trialRelation(compiled, t.facts, policy);
-    out.push({ t, score: t.prior - precheckPenalty(r.notes) + precheckBonus(r.notes), conflict: r.conflict, support: r.support });
+    scored.push({ t, score: t.prior - precheckPenalty(r.notes) + precheckBonus(r.notes), conflict: r.conflict, support: r.support });
   }
-  return out;
+  const value: Analysis = { scored };
+  entries.push({ catalog, policy, value });
+  return value;
 }
 
 /**
@@ -323,13 +344,42 @@ export function unknownPrior(q: QuestionDef, group: CancerGroupId): number {
   return per.reduce((a, b) => a + b, 0) / per.length;
 }
 
+const L_CONFLICT = Math.exp(-LAMBDA);
+const L_SUPPORT = Math.exp(MU);
+
+/** Relation of one compiled answer to a trial's facts: any conflicting fact wins, else any support (policy applied). */
+function relationOf(c: CompiledAnswer, facts: readonly CompactFact[], policy: FactPolicyMap | undefined): "conflict" | "support" | "neutral" {
+  let support = false;
+  for (const f of facts) {
+    const rel = applyPolicy(factRelation([c], f), f.key, policy);
+    if (rel === "conflict") return "conflict";
+    if (rel === "support") support = true;
+  }
+  return support ? "support" : "neutral";
+}
+
 /** Likelihood of a hypothetical answer for one trial: e^-LAMBDA on a conflict, e^MU on a support, else 1. */
 function likelihood(c: CompiledAnswer, t: PoolTrial, policy: FactPolicyMap | undefined): number {
   if (c.hardFilter && !passesHardFilters(t.sex, c.hardFilter)) return HARD_EXCLUDED_LIKELIHOOD;
-  const r = trialRelation([c], t.facts, policy);
-  if (r.conflict) return Math.exp(-LAMBDA);
-  if (r.support) return Math.exp(MU);
-  return 1;
+  const rel = relationOf(c, t.facts, policy);
+  return rel === "conflict" ? L_CONFLICT : rel === "support" ? L_SUPPORT : 1;
+}
+
+/** Hypotheses with their compiled answers, cached per question definition and group (catalog objects are stable,
+ *  and compiling an answer walks the question's option effects). */
+interface CompiledHypothesis extends Hypothesis {
+  compiled: CompiledAnswer;
+}
+const hypothesisCache = new WeakMap<QuestionDef, Map<string, CompiledHypothesis[][]>>();
+function compiledHypotheses(q: QuestionDef, group: CancerGroupId): CompiledHypothesis[][] {
+  let byGroup = hypothesisCache.get(q);
+  if (!byGroup) hypothesisCache.set(q, (byGroup = new Map()));
+  let subs = byGroup.get(group);
+  if (!subs) {
+    subs = hypotheses(q, group).map((sub) => sub.map((h) => ({ ...h, compiled: compileAnswer(q, h.value) })));
+    byGroup.set(group, subs);
+  }
+  return subs;
 }
 
 /** Expected information gain (bits) of asking q, over the top-K candidate distribution p. Never negative. */
@@ -337,12 +387,11 @@ export function informationGain(q: QuestionDef, group: CancerGroupId, top: reado
   if (top.length === 0) return 0;
   const h0 = entropy(p);
   let gain = 0;
-  for (const sub of hypotheses(q, group)) {
+  for (const sub of compiledHypotheses(q, group)) {
     let g = 0;
     for (const h of sub) {
       if (h.p <= 0) continue;
-      const c = compileAnswer(q, h.value);
-      const post = top.map((t, i) => (p[i] ?? 0) * likelihood(c, t, policy));
+      const post = top.map((t, i) => (p[i] ?? 0) * likelihood(h.compiled, t, policy));
       const z = post.reduce((a, b) => a + b, 0);
       const hp = z > 0 ? entropy(post.map((x) => x / z)) : 0;
       g += h.p * (h0 - hp);
@@ -358,10 +407,10 @@ function impactOf(q: QuestionDef, group: CancerGroupId, scored: readonly Scored[
   const base = scored.filter((s) => !s.conflict);
   const total = base.length;
   let narrowed = total;
-  for (const sub of hypotheses(q, group)) {
+  for (const sub of compiledHypotheses(q, group)) {
     for (const h of sub) {
-      const c = compileAnswer(q, h.value);
-      const m = base.filter((s) => (!c.hardFilter || passesHardFilters(s.t.sex, c.hardFilter)) && !trialRelation([c], s.t.facts, policy).conflict).length;
+      const c = h.compiled;
+      const m = base.filter((s) => (!c.hardFilter || passesHardFilters(s.t.sex, c.hardFilter)) && relationOf(c, s.t.facts, policy) !== "conflict").length;
       narrowed = Math.min(narrowed, m);
     }
   }
@@ -436,10 +485,11 @@ function nextEssential(state: QuestionnaireState, catalog: readonly QuestionDef[
 
 /** Utility of each eligible question now (for tests, debugging and the "about N more" estimate). */
 export function rankQuestions(state: QuestionnaireState, pool: CandidatePool, catalog: readonly QuestionDef[], opts: EngineOptions = {}): Array<{ question: QuestionDef; gain: number; utility: number }> {
+  const an = analyze(state, pool, catalog, opts.policy);
+  if (an.ranked) return an.ranked;
   const group = groupOf(state) ?? pool.group;
   const byId = new Map(catalog.map((q) => [q.id as string, q]));
-  const scored = scorePool(state, pool, catalog, opts.policy);
-  const top = [...scored].sort((a, b) => b.score - a.score || a.t.id.localeCompare(b.t.id)).slice(0, TOP_K);
+  const top = [...an.scored].sort((a, b) => b.score - a.score || a.t.id.localeCompare(b.t.id)).slice(0, TOP_K);
   const p = softmax(top.map((s) => s.score));
   const trials = top.map((s) => s.t);
   const streak = unknownStreak(state, byId);
@@ -450,6 +500,7 @@ export function rankQuestions(state: QuestionnaireState, pool: CandidatePool, ca
     if (streak.count >= UNKNOWN_STREAK && streak.family === q.type && unknownPrior(q, group) >= HIGH_UNKNOWN_PRIOR) utility *= FAMILY_DOWNWEIGHT;
     out.push({ question: q, gain, utility });
   }
+  an.ranked = out;
   return out;
 }
 

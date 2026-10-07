@@ -2,28 +2,17 @@
  * Browser search orchestration (client-only): load shard(s) + ZIP centroid + profile embedding
  * in parallel, then run the pure ranking pipeline (rank.ts). Nothing leaves the browser.
  */
-import MiniSearch from "minisearch";
 import { IntakeAnswersSchema, type IntakeAnswers } from "@/lib/types/intake";
 import type { SearchOutcome, SearchProgress } from "@/lib/types/match";
 import { loadLiteShard, loadManifest, loadShard, loadTrials, lookupZip } from "@/lib/data/loader";
 import { hydrateResults, liteToEntries } from "./lite";
-import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisearch-config";
+import { getShardIndex, keywordRanking } from "./keyword";
 import { buildProfileText } from "./query";
 import { embedProfile } from "./embedder";
 import { rankTrials, type MatchContext, type RankEntry } from "./rank";
 import { FACT_POLICY, getCatalog } from "@/config/questionnaire";
 
 export { applyAnalysis } from "./apply";
-
-const indexCache = new Map<string, MiniSearch<SearchDoc>>();
-function getIndex(shard: { info: { id: string }; indexJson: string }): MiniSearch<SearchDoc> {
-  let idx = indexCache.get(shard.info.id);
-  if (!idx) {
-    idx = MiniSearch.loadJSON<SearchDoc>(shard.indexJson, MINISEARCH_OPTIONS);
-    indexCache.set(shard.info.id, idx);
-  }
-  return idx;
-}
 
 export interface SearchOptions extends MatchContext {
   onProgress?: (p: SearchProgress) => void;
@@ -85,17 +74,8 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
 
   report({ stage: "ranking" });
   const entries: RankEntry[] = shards.flatMap((s) => s.entries);
-  const indexes = shards.map(getIndex);
-  const keywordSearch = (ids: ReadonlySet<string>) => {
-    const scores = new Map<string, number>();
-    for (const idx of indexes) {
-      for (const r of idx.search(queryText, { ...MINISEARCH_SEARCH, filter: (res) => ids.has(String(res.id)) })) {
-        const id = String(r.id);
-        scores.set(id, Math.max(scores.get(id) ?? 0, r.score));
-      }
-    }
-    return [...scores.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([id]) => id);
-  };
+  const indexes = shards.map((s) => getShardIndex({ id: s.info.id, indexJson: s.indexJson }));
+  const keywordSearch = (ids: ReadonlySet<string>) => keywordRanking(indexes, queryText, ids);
 
   let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector, ...ctx });
   if (infos.some((i) => i.kind === "lite")) {
