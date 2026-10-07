@@ -37,3 +37,7 @@
 - U.S. map: equal-tile grid map built in SVG/CSS with a single-hue sequential blue ramp and per-tile labels, not react-simple-maps. Reason: no geometry dependency, small states readable, colorblind-safe.
 - Theme: class-based dark mode set pre-paint by /theme-init.js (external file, CSP-safe). Reason: no inline scripts allowed.
 - Partner contact: mailto built from NEXT_PUBLIC_PARTNER_EMAIL (no form). Reason: no company address known; no data-storing forms.
+- National scope filter: records from the broad API query are kept only if MeSH includes Neoplasms or conditions/title contain cancer terms (drops e.g. myasthenia gravis, smoking cessation). Out-of-scope skips don't count toward the 5% validation-failure gate.
+- Group shards split into balanced parts (ceil(n/700) parts of equal size). National: 24 shards, largest 2.05 MB gzip (lung), lite "not sure" index 2.6 MB gzip, 999 trial buckets (max 52 KB gzip).
+- Full national public/data (174 MB, ~2k files) is produced by `npm run ingest` and deployed, not committed; the seed remains the committed offline dataset.
+- E2E serves a snapshot of ./out (.wrangler/e2e-out) via `wrangler dev --assets`, so a concurrent `next build` cannot break a run. Note: always build with `npm run build` (postbuild removes the >25 MiB ORT asyncify copy and externalizes inline scripts); a bare `next build` output is not deployable.

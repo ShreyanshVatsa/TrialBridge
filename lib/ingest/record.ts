@@ -9,6 +9,9 @@ export type BuildResult = { ok: true; card: TrialCard; sites: Site[] } | { ok: f
 
 const SUMMARY_MAX = 1200;
 export const OUT_OF_SCOPE = "no recruiting U.S. sites";
+export const NOT_CANCER = "not a cancer trial";
+/** Cancer scope check for records matched by the broad API query (e.g. "tumor" also matches non-cancer studies). */
+const CANCER_TEXT = /cancer|neoplas|tumou?r|carcinoma|lymphoma|leuk(a)?emia|myeloma|melanoma|sarcoma|glioma|blastoma|malignan|metasta|oncolog|myelodysplastic|myeloproliferative|mesothelioma|carcinoid/i;
 
 /**
  * Convert one validated ClinicalTrials.gov study into a TrialCard + U.S. sites, running
@@ -35,6 +38,9 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       ...(study.derivedSection?.conditionBrowseModule?.ancestors ?? []).map((m) => m.term),
     ];
     const conditions = ps.conditionsModule?.conditions ?? [];
+    if (!meshTerms.some((t) => /^neoplasms/i.test(t)) && !conditions.some((c) => CANCER_TEXT.test(c)) && !CANCER_TEXT.test(ps.identificationModule.briefTitle)) {
+      return { ok: false, id, reason: NOT_CANCER };
+    }
     const minAge = parseAge(elig.minimumAge);
     const maxAge = parseAge(elig.maximumAge);
     let summary = unescapeMarkdown(ps.descriptionModule?.briefSummary ?? "").trim();
