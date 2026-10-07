@@ -130,7 +130,7 @@ async function main(): Promise<void> {
   });
 
   const variantRows: { name: string; embRecall: number; embNdcg: number; hybRecall: number; hybNdcg: number; sysRecall: number; sysNdcg: number; excludedAt10: number; violations: number; results: number }[] = [];
-  let productionSystem: Map<string, string[]> = new Map();
+  const productionSystem = new Map<string, string[]>();
   for (const v of VARIANTS) {
     process.stdout.write(`Variant: ${v.name}\n`);
     const docVecs = await embedAll(v.model, v.dtype, cards.map(embeddingText));

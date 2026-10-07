@@ -119,3 +119,14 @@ describe("mapGroups", () => {
     expect(mapGroups([], ["Healthy"])).toEqual(["other"]);
   });
 });
+
+import { ingestAbortReason } from "@/lib/ingest/safety";
+describe("ingestion safety gates", () => {
+  it("aborts on >5% invalid, >40% drop, or empty output; otherwise proceeds", () => {
+    expect(ingestAbortReason({ rawCount: 100, invalidCount: 6, builtCount: 94, previousCount: null })).toMatch(/failed validation/);
+    expect(ingestAbortReason({ rawCount: 100, invalidCount: 5, builtCount: 95, previousCount: null })).toBeNull();
+    expect(ingestAbortReason({ rawCount: 100, invalidCount: 0, builtCount: 59, previousCount: 100 })).toMatch(/dropped/);
+    expect(ingestAbortReason({ rawCount: 100, invalidCount: 0, builtCount: 60, previousCount: 100 })).toBeNull();
+    expect(ingestAbortReason({ rawCount: 0, invalidCount: 0, builtCount: 0, previousCount: null })).toMatch(/no valid/);
+  });
+});

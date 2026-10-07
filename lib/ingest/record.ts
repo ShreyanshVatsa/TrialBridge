@@ -8,6 +8,7 @@ import { extractRuleFacts } from "./facts";
 export type BuildResult = { ok: true; card: TrialCard; sites: Site[] } | { ok: false; id: string; reason: string };
 
 const SUMMARY_MAX = 1200;
+export const OUT_OF_SCOPE = "no recruiting U.S. sites";
 
 /**
  * Convert one validated ClinicalTrials.gov study into a TrialCard + U.S. sites, running
@@ -27,7 +28,7 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       const c = zipLookup(s.zip);
       return c ? { ...s, lat: c.lat, lon: c.lon } : s;
     });
-    if (sites.length === 0) return { ok: false, id, reason: "no recruiting U.S. sites" };
+    if (sites.length === 0) return { ok: false, id, reason: OUT_OF_SCOPE };
 
     const meshTerms = [
       ...(study.derivedSection?.conditionBrowseModule?.meshes ?? []).map((m) => m.term),
