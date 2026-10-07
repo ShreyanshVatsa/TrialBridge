@@ -1,4 +1,4 @@
-import type { Site, TrialCard, FactKey, CriterionRef } from "./trial";
+import type { Site, TrialCard, FactKey, FactValue, CriterionRef } from "./trial";
 import type { FitLevel, TrialAnalysis } from "./analysis";
 
 /** A note from the rule-based eligibility pre-check (lib/match/precheck.ts). */
@@ -8,6 +8,11 @@ export interface PrecheckNote {
   kind: "conflict" | "support";
   quote: string;
   ref: CriterionRef;
+  /** The trial fact's direction (required/excluded); used for FACT_WEIGHT and the biomarker match bonus. */
+  value?: FactValue;
+  /** Where the fact came from; LLM facts count in proportion to `confidence` (RELIABILITY). */
+  source?: "rule" | "llm";
+  confidence?: number;
 }
 
 export interface NearestSite {
@@ -32,6 +37,8 @@ export interface RankedTrial {
     /** Normalized retrieval relevance 0..1 (RRF / max possible). */
     retrieval: number;
     precheckPenalty: number;
+    /** Phase-preference nudge (v2 questionnaire), ±PHASE_PREF_BONUS or 0. */
+    phaseBonus?: number;
     fit: FitLevel | null;
     final: number;
   };

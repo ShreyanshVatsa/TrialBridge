@@ -10,7 +10,7 @@ import { hydrateResults, liteToEntries } from "./lite";
 import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisearch-config";
 import { buildProfileText } from "./query";
 import { embedProfile } from "./embedder";
-import { rankTrials, type RankEntry } from "./rank";
+import { rankTrials, type MatchContext, type RankEntry } from "./rank";
 
 export { applyAnalysis } from "./apply";
 
@@ -24,15 +24,24 @@ function getIndex(shard: { info: { id: string }; indexJson: string }): MiniSearc
   return idx;
 }
 
-export interface SearchOptions {
+export interface SearchOptions extends MatchContext {
   onProgress?: (p: SearchProgress) => void;
   signal?: AbortSignal;
+}
+
+/** Catalog + fact policy that give questionnaire answers their meaning (explicit options win). */
+function matchContext(a: IntakeAnswers, opts: SearchOptions): MatchContext {
+  const ctx: MatchContext = {};
+  if (opts.catalog) ctx.catalog = opts.catalog;
+  if (opts.policy) ctx.policy = opts.policy;
+  return a.questionnaire ? ctx : {};
 }
 
 export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions = {}): Promise<SearchOutcome> {
   const a = IntakeAnswersSchema.parse(answers);
   const report = opts.onProgress ?? (() => undefined);
-  const queryText = buildProfileText(a);
+  const ctx = matchContext(a, opts);
+  const queryText = buildProfileText(a, ctx.catalog);
 
   report({ stage: "loading_shards", fraction: 0 });
   const manifest = await loadManifest();
@@ -89,11 +98,11 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
     return [...scores.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([id]) => id);
   };
 
-  let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector });
+  let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector, ...ctx });
   if (infos.some((i) => i.kind === "lite")) {
     // Lite index: load full cards for just the top results from per-trial buckets.
     const full = await loadTrials(outcome.results.map((r) => r.card.id), signalOpt);
-    outcome = hydrateResults(outcome, full, a, origin);
+    outcome = hydrateResults(outcome, full, a, origin, ctx);
   }
   // Never drop the distance limit silently: tell the UI when it could not be applied.
   if (a.travelMiles !== null && !origin) outcome = { ...outcome, distanceUnavailable: true };
