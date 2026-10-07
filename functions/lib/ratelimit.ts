@@ -1,0 +1,33 @@
+import type { KvStore } from "./store";
+import { sha256Hex, utcDay } from "./crypto";
+
+/** Per-route hourly limits (per salted, daily-rotating IP hash). */
+export const RATE_LIMITS = { analyze: 10, ask: 30 } as const;
+export type RateLimitedRoute = keyof typeof RATE_LIMITS;
+
+const HOUR_SECONDS = 3600;
+
+/**
+ * Hash an IP with a secret salt and the current UTC day. Raw IPs are never stored, and hashes
+ * cannot be linked across days.
+ */
+export async function hashIp(ip: string, salt: string, now: Date = new Date()): Promise<string> {
+  return (await sha256Hex(`${salt}|${utcDay(now)}|${ip}`)).slice(0, 32);
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  count: number;
+  limit: number;
+  /** Seconds until the current window resets. */
+  retryAfter: number;
+}
+
+/** Fixed one-hour window counter. */
+export async function checkRateLimit(store: KvStore, route: RateLimitedRoute, ipHash: string, now: Date = new Date()): Promise<RateLimitResult> {
+  const epochSec = Math.floor(now.getTime() / 1000);
+  const window = Math.floor(epochSec / HOUR_SECONDS);
+  const count = await store.incr(`rl:${route}:${ipHash}:${window}`, HOUR_SECONDS);
+  const limit = RATE_LIMITS[route];
+  return { allowed: count <= limit, count, limit, retryAfter: (window + 1) * HOUR_SECONDS - epochSec };
+}
