@@ -23,9 +23,15 @@ import {
   TRIPLE_NEGATIVE,
   WASHOUT,
 } from "@/config/criteria";
-import type { Criterion, CriterionSection, Fact, FactKey, FactValue } from "@/lib/types/trial";
+import type { CancerGroupId } from "@/config/cancer-groups";
+import type { Criterion, CriterionSection, Fact, FactKey, FactParam, FactValue } from "@/lib/types/trial";
+import { cohortSpecific, moreLenient, v2FactsForSegment } from "./eligibility-facts";
 
-type Candidate = { key: FactKey; value: FactValue };
+/** `quote` is set for v2 families (the clause); v1 facts quote the whole criterion. */
+/** Biomarkers added in v2 (§1.4): stricter direction rules (no history in v1 tests). */
+const V2_BIOMARKERS = new Set<string>(["MET", "RET", "HPV", "CLDN18", "PH", "NPM1", "TP53", "MGMT", "PIK3CA", "ESR1", "PALB2", "KIT"]);
+
+type Candidate = { key: FactKey; value: FactValue; param?: FactParam; quote?: string };
 
 /** Strength order when one key is found several times: a directional fact beats "mentioned". */
 const STRENGTH: Record<FactValue, number> = { required: 2, excluded: 2, mentioned: 1 };
@@ -39,13 +45,18 @@ export function segments(text: string): string[] {
     .filter(Boolean);
 }
 
-/** Extract rule-layer candidate facts from a single criterion. Pure; exported for tests. */
-export function factsForCriterion(section: CriterionSection, text: string): Candidate[] {
+/** Extract rule-layer candidate facts from a single criterion (v1 families; `v2: true` adds the v2 families). Pure; exported for tests. */
+export function factsForCriterion(section: CriterionSection, text: string, opts: { v2?: boolean; groups?: readonly CancerGroupId[] } = {}): Candidate[] {
   const best = new Map<FactKey, Candidate>();
-  for (const seg of segments(text)) {
-    for (const c of factsForSegment(section, seg)) {
+  const segs = segments(text);
+  // A criterion that opens with a cohort/part header ("Part B:", "Additional criteria for participants with mCRPC:")
+  // makes every clause in it cohort-specific.
+  const cohort = segs.length > 1 && cohortSpecific(segs[0] ?? "");
+  for (const seg of segs) {
+    const v2 = opts.v2 ? v2FactsForSegment(section, seg, { groups: opts.groups ?? [], cohort }) : [];
+    for (const c of [...factsForSegment(section, seg), ...v2]) {
       const prev = best.get(c.key);
-      if (!prev || STRENGTH[c.value] > STRENGTH[prev.value]) best.set(c.key, c);
+      if (!prev || STRENGTH[c.value] > STRENGTH[prev.value] || (STRENGTH[c.value] === STRENGTH[prev.value] && moreLenient(c.key, prev, c))) best.set(c.key, c);
     }
   }
   return [...best.values()];
@@ -137,10 +148,10 @@ function factsForSegment(section: CriterionSection, text: string): Candidate[] {
     } else if (m[0].endsWith("-")) {
       pos = false;
       neg = true;
-    } else if (/^\s*(\+|-?\s*positive|-?\s*pos\b|amplif|overexpress|mutat|mutant|fusion|rearrang|-?\s*high\b)/i.test(suffix)) {
+    } else if (/^\s*(\+|-?\s*positive|-?\s*pos\b|amplif|overexpress|mutat|mutant|fusion|rearrang|-?\s*high\b|(promoter |gene )?methylat|-(associated|related|driven|mediated)\b)/i.test(suffix)) {
       pos = true;
       neg = false;
-    } else if (/^\s*([-−](?![a-z0-9])|-?\s*negative|-?\s*neg\b|wild|-?\s*low\b|0\b)/i.test(suffix)) {
+    } else if (/^\s*([-−](?![a-z0-9])|-?\s*negative|-?\s*neg\b|wild|-?\s*low\b|0\b|(promoter |gene )?unmethylat)/i.test(suffix)) {
       pos = false;
       neg = true;
     } else {
@@ -149,6 +160,11 @@ function factsForSegment(section: CriterionSection, text: string): Candidate[] {
       neg = NEGATIVE_WORDS.test(window);
     }
     let value: FactValue = "mentioned";
+    // v2 markers: test-status or permissive wording without a decisive suffix stays "mentioned".
+    const decisive = m[0].endsWith("+") || m[0].endsWith("-") || /^\s*(\+|\(\+\)|-?\s*positive|-?\s*negative|amplif|mutat|fusion|rearrang|(promoter )?(un)?methylat|-?\s*high\b|-?\s*low\b)/i.test(suffix);
+    // v2 markers offered as one of several alternatives ("MET or RET", lists) are never required/excluded.
+    if (V2_BIOMARKERS.has(b.id) && (OR_NEAR.test(text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)) || LIST_CONTEXT.test(text) || /,\s*$/.test(text.slice(Math.max(0, m.index - 3), m.index)) || /^\s*,/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 3)))) pos = neg = false;
+    if (V2_BIOMARKERS.has(b.id) && !decisive && (/\b(status|analys[ie]s|testing|tested|test results?|assay|performed|known|may have|regardless|independent of|either|unknown|pending|e\.g|such as|including)\b/i.test(text) || insideParens(text, m.index))) pos = neg = false;
     // In inclusion text a marker offered as one of several options ("A or B", "one of the following cancers") is not required.
     const optional = incl && (listy || OR_NEAR.test(text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 25)));
     if (pos !== neg && !optional) {
@@ -167,14 +183,17 @@ function factsForSegment(section: CriterionSection, text: string): Candidate[] {
  * Rule layer: one fact per key with a verbatim quote and criterion reference.
  * Keeps the first directional occurrence (inclusion before exclusion), else the first mention.
  */
-export function extractRuleFacts(inclusion: Criterion[], exclusion: Criterion[]): Fact[] {
+export function extractRuleFacts(inclusion: Criterion[], exclusion: Criterion[], groups: readonly CancerGroupId[] = []): Fact[] {
   const best = new Map<FactKey, Fact>();
   const scan = (section: CriterionSection, list: Criterion[]) => {
     for (const c of list) {
-      for (const cand of factsForCriterion(section, c.text)) {
+      for (const cand of factsForCriterion(section, c.text, { v2: true, groups })) {
         const prev = best.get(cand.key);
-        if (prev && STRENGTH[prev.value] >= STRENGTH[cand.value]) continue;
-        best.set(cand.key, { key: cand.key, value: cand.value, quote: c.text, ref: { section, n: c.n }, source: "rule" });
+        if (prev && STRENGTH[prev.value] > STRENGTH[cand.value]) continue;
+        if (prev && STRENGTH[prev.value] === STRENGTH[cand.value] && !moreLenient(cand.key, prev, cand)) continue;
+        // v2 facts quote the clause; it must be a verbatim substring of the criterion (else quote the criterion).
+        const quote = cand.quote && c.text.includes(cand.quote) ? cand.quote : c.text;
+        best.set(cand.key, { key: cand.key, value: cand.value, quote, ref: { section, n: c.n }, source: "rule", ...(cand.param !== undefined ? { param: cand.param } : {}) });
       }
     }
   };

@@ -72,7 +72,7 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       exclusion,
       contacts: contacts(study),
       barriers: detectBarriers({ inclusion, exclusion, maxAge, minAge, ...(elig.maximumAge ? { maxAgeRaw: elig.maximumAge } : {}) }),
-      facts: extractRuleFacts(inclusion, exclusion),
+      facts: extractRuleFacts(inclusion, exclusion, groups),
       siteCount: sites.length,
       states: [...new Set(sites.map((s) => STATE_CODES[s.state] ?? s.state))].sort(),
       lastUpdated: ps.statusModule.lastUpdatePostDateStruct?.date ?? "",
