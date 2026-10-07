@@ -16,8 +16,10 @@ const PATTERNS: RegExp[] = [
   /\b(?:i live (?:at|in|on)|i reside (?:at|in)|my address is|vivo en|moro (?:em|na|no)|mwen rete)\b[^.;!?]{0,50}/gi, // "I live at ..."
   /\b(?:i am|i'?m|im|aged?|soy de|tengo|tenho|estou com|mwen gen)\s+(?:a\s+|an\s+)?\d{1,3}(?:\s*-?\s*(?:years?|yrs?|yo|y\/o|a[ñn]os|anos|ans))?(?:\s*-?\s*(?:years?\s+)?old)?\b/gi, // stated age
   /\b\d{1,3}\s*-?\s*(?:years?|yrs?|a[ñn]os|anos|ans)\s*-?\s*(?:old|de edad|de idade|d'age)\b|\b\d{1,3}\s*(?:y\/o|yo)\b/gi, // "67 year old", "67 yo"
+  /\b[a-z0-9._%+-]+\s*(?:\(|\[|\{)?\s*at\s*(?:\)|\]|\})?\s*[a-z0-9-]+\s*(?:\(|\[|\{)?\s*(?:dot|\.)\s*(?:\)|\]|\})?\s*(?:com|org|net|edu|gov|io|co|us|mil)\b/gi, // "jo at mail dot com"
   /\b\d{5}(?:-\d{4})?\b/g, // ZIP / ZIP+4
   /\b\d{6,}\b/g, // long digit strings (MRNs, IDs)
+  /(?<![\d.])\d(?:[\s._-]{1,2}\d){6,}(?![\d])/g, // digits spelled out with separators: "5 5 5 1 2 3 4"
 ];
 
 /** Alphanumeric IDs (e.g. MRN AB123456): >= 6 chars with letters and >= 3 digits. NCT trial IDs are public and kept. */
@@ -25,7 +27,8 @@ const ALNUM_ID = /\b(?=[A-Z0-9-]*[A-Z])(?=(?:[A-Z-]*\d){3})[A-Z0-9-]{6,}\b/gi;
 
 export function scrubPersonalInfo(text: string): { text: string; removed: number } {
   let removed = 0;
-  let out = text;
+  // Fold look-alike forms (full-width digits, zero-width/format characters) so they cannot dodge the patterns.
+  let out = text.normalize("NFKC").replace(/[\u200b-\u200f\u2060\ufeff\u00ad]/g, "");
   for (const re of PATTERNS) {
     out = out.replace(re, () => {
       removed++;

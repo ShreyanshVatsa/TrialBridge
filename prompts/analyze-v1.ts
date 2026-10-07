@@ -25,7 +25,7 @@ export interface PromptTrial {
 }
 
 /** Escape anything that could close or forge the data delimiter. */
-const safe = (s: string) => s.replace(/<\/?trial_data[^>]*>/gi, "[removed]");
+const safe = (s: string) => s.replace(/<\s*\/?\s*trial_data[^>]*>?/gi, "[removed]");
 
 export function buildAnalyzeUserPrompt(profile: object, language: keyof typeof LANGUAGE_NAMES, trials: readonly PromptTrial[]): string {
   const blocks = trials.map((t) => {

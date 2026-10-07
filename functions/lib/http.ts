@@ -50,6 +50,10 @@ export function apiError(code: ApiErrorCode, requestId: string, extra: Record<st
 export function isSameOrigin(request: Request, env: Pick<Env, "ENVIRONMENT" | "DEV_ALLOWED_ORIGINS">): boolean {
   const self = new URL(request.url).origin;
   const origin = request.headers.get("Origin");
+  const site = request.headers.get("Sec-Fetch-Site");
+  // Browsers set Sec-Fetch-Site and page script cannot forge it: in production a cross-site or
+  // same-site signal wins over a matching Origin (defense in depth).
+  if (isProduction(env) && site && site !== "same-origin") return false;
   if (origin) {
     if (origin === self) return true;
     if (!isProduction(env)) {
@@ -59,13 +63,15 @@ export function isSameOrigin(request: Request, env: Pick<Env, "ENVIRONMENT" | "D
     return false;
   }
   // No Origin: accept only an explicit same-origin fetch-metadata signal.
-  return request.headers.get("Sec-Fetch-Site") === "same-origin";
+  return site === "same-origin";
 }
 
 /** Read a JSON body with a hard size limit. Returns null on oversize, undefined on bad JSON. */
 export async function readJsonBody(request: Request): Promise<unknown | null | undefined> {
   const declared = Number(request.headers.get("Content-Length") ?? 0);
   if (declared > MAX_BODY_BYTES) return null;
+  // Only real JSON requests: "simple" cross-site content types (text/plain, form posts) are refused.
+  if (!/^application\/json\s*(;|$)/i.test(request.headers.get("Content-Type") ?? "")) return undefined;
   // Read through a limited stream reader so a chunked body without Content-Length is never fully buffered.
   let text: string;
   if (request.body) {

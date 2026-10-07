@@ -18,10 +18,15 @@ import { verifyTurnstile } from "./lib/turnstile";
 let isolateSalt: string | null = null;
 const getIsolateSalt = () => (isolateSalt ??= crypto.randomUUID()); // random values are not allowed at global scope
 
+export const isLoopbackHost = (h: string): boolean => h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h.endsWith(".localhost");
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    // Fail closed: development behavior (test Turnstile secret, extra allowed origins, dev salt)
+    // applies only on loopback hosts, even if ENVIRONMENT was left at its "development" default.
+    if (!isLoopbackHost(url.hostname)) env = { ...env, ENVIRONMENT: "production" };
 
     const requestId = crypto.randomUUID();
     const log = (e: Record<string, string | number>) => console.log(JSON.stringify(e));
@@ -36,7 +41,7 @@ export default {
           trials: new D1TrialStore(env.DB),
           providers: resolveProviders(env),
           breakerFor,
-          verifyTurnstile: (token, ip) => verifyTurnstile(token, ip, env),
+          verifyTurnstile: (token, ip) => verifyTurnstile(token, ip, env, fetch, url.hostname),
           salt: env.RATE_LIMIT_SALT || (isProduction(env) ? getIsolateSalt() : "trialbridge-dev-salt"),
           requestId,
           log,

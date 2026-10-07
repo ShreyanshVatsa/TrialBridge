@@ -36,9 +36,9 @@ This is a small project with no dedicated security team and no guaranteed respon
 - **Headers**: `public/_headers` sets a strict Content-Security-Policy (default-src 'self'; no 'unsafe-inline' for scripts, since the build externalizes inline scripts; Turnstile origins only; `object-src 'none'`; `frame-ancestors 'none'`), HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, Referrer-Policy `strict-origin-when-cross-origin`, a Permissions-Policy disabling unused features, and COOP `same-origin`. `'wasm-unsafe-eval'` is allowed because ONNX Runtime WebAssembly needs it, and `style-src` allows `'unsafe-inline'` for React style attributes.
 - **Self-hosted assets**: fonts, the embedding model, and ONNX Runtime are served from the same origin. No analytics, trackers, or third-party scripts other than Cloudflare Turnstile.
 - **Input validation**: shared zod schemas validate requests on the server (and client), unexpected fields are rejected, and request bodies over 16 KB are refused.
-- **Same-origin only**: AI endpoints accept only same-origin requests.
+- **Same-origin only**: AI endpoints accept only same-origin requests (Origin must match; in production a cross-site/same-site `Sec-Fetch-Site` is also refused) and only `application/json` bodies. Development-mode relaxations apply only on loopback hosts, so a public deploy that forgot `ENVIRONMENT=production` still fails closed.
 - **Turnstile**: bot check on AI endpoints; in production it fails closed if `TURNSTILE_SECRET_KEY` is missing.
-- **Rate limits and budgets**: per-IP hourly limits (analyze 10/h, ask 30/h) stored in D1, keyed by `sha256(salt | UTC day | IP)`, so the IP is never stored and the key rotates daily. Per-provider global daily budgets, a circuit breaker, and graceful degradation when providers fail.
+- **Rate limits and budgets**: per-IP hourly limits (analyze 10/h, ask 30/h) stored in D1, keyed by `sha256(salt | UTC day | IP)` (IPv6 bucketed by /64), so the IP is never stored and the key rotates daily. Per-provider global daily budgets, a circuit breaker, and graceful degradation when providers fail.
 - **No profile or question logging**: logs contain only request IDs, provider name, status, and latency.
 - **Data minimization**: the browser sends only a minimized profile (cancer type, age bracket, spread, treatments, biomarkers, pregnancy, concurrent trial, language). Exact age, ZIP code, and travel distance stay in the browser; a Playwright network test checks this. Questions have personal details scrubbed before any AI call.
 - **Safe rendering**: AI and trial text is rendered as plain text or React elements; `dangerouslySetInnerHTML` is not used. AI quotes are verified verbatim against trial text before display.
@@ -48,6 +48,7 @@ This is a small project with no dedicated security team and no guaranteed respon
 
 ## Known limitations
 
+- See SECURITY_AUDIT.md for the latest review, fixes, and remaining items.
 - No external security review has been done.
 - Not yet deployed at the time of writing; CI workflows and Dependabot are not set up yet (deferred in PROGRESS.md/DECISIONS.md), so dependency updates and `npm audit` are manual.
 - `npm audit --audit-level=high` previously failed on dev tooling only; it was addressed with overrides (DECISIONS.md). Re-run it to confirm the current state.
