@@ -10,7 +10,7 @@ import type { CancerGroupId } from "@/config/cancer-groups";
 import type { AnswerValue, FactPolicyMap, QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { UNKNOWN } from "@/lib/types/questionnaire";
 import { DEFAULT_BIOMARKER_PRIOR, DEFAULT_P_UNKNOWN } from "./constants";
-import { applyAnswer, nextQuestion, rankPool, setMode, type CandidatePool } from "./engine";
+import { applyAnswer, nextQuestion, optionPriors, rankPool, setMode, type CandidatePool } from "./engine";
 import { appliesToGroup, isNonResponseId, prerequisitesHold } from "./rules";
 
 /** Probability a patient says "don't know" (spec §7.2). Keyed by question id, then by answer type. */
@@ -27,7 +27,7 @@ export interface SimPatient {
 function sampleOption(r: () => number, q: QuestionDef, group: CancerGroupId): string | null {
   const ids = (q.options ?? []).map((o) => o.id).filter((id) => !isNonResponseId(id));
   if (ids.length === 0) return null;
-  const pri = q.priors?.[group];
+  const pri = optionPriors(q, group);
   const w = ids.map((id) => (pri ? (pri[id] ?? 0) : (1 - DEFAULT_P_UNKNOWN) / ids.length));
   const z = w.reduce((a, b) => a + b, 0);
   if (z <= 0) return ids[Math.floor(r() * ids.length)] as string;

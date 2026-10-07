@@ -15,6 +15,7 @@ import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "@/lib/mat
 import { buildProfileText } from "@/lib/match/query";
 import type { RankEntry } from "@/lib/match/rank";
 import type { QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
+import { getCatalog } from "@/config/questionnaire";
 import type { Site, TrialCard } from "@/lib/types/trial";
 import { Q_AGE, Q_TRAVEL } from "./constants";
 import type { CandidatePool, PoolTrial } from "./engine";
@@ -86,7 +87,7 @@ export async function buildCandidatePool(state: QuestionnaireState, opts: { sign
     typeof zip === "string" ? lookupZip(zip, signalOpt).catch(() => null) : Promise.resolve(null),
   ]);
   if (opts.signal?.aborted) throw opts.signal.reason;
-  const text = buildProfileText({ cancerType: group, spread: "not_sure", treatments: ["not_sure"], biomarkers: {}, questionnaire: state }, opts.catalog ?? []);
+  const text = buildProfileText({ cancerType: group, spread: "not_sure", treatments: ["not_sure"], biomarkers: {}, questionnaire: state }, opts.catalog ?? getCatalog("cancer", group));
   const indexes = shards.map((s) => {
     let idx = indexCache.get(s.id);
     if (!idx) {

@@ -11,6 +11,7 @@ import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisea
 import { buildProfileText } from "./query";
 import { embedProfile } from "./embedder";
 import { rankTrials, type MatchContext, type RankEntry } from "./rank";
+import { FACT_POLICY, getCatalog } from "@/config/questionnaire";
 
 export { applyAnalysis } from "./apply";
 
@@ -31,10 +32,8 @@ export interface SearchOptions extends MatchContext {
 
 /** Catalog + fact policy that give questionnaire answers their meaning (explicit options win). */
 function matchContext(a: IntakeAnswers, opts: SearchOptions): MatchContext {
-  const ctx: MatchContext = {};
-  if (opts.catalog) ctx.catalog = opts.catalog;
-  if (opts.policy) ctx.policy = opts.policy;
-  return a.questionnaire ? ctx : {};
+  if (!a.questionnaire) return {};
+  return { catalog: opts.catalog ?? getCatalog("cancer", a.cancerType), policy: opts.policy ?? FACT_POLICY };
 }
 
 export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions = {}): Promise<SearchOutcome> {
