@@ -9,7 +9,7 @@
 import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import { applyAnswer, createState, eligibleQuestions, rankPool, type CandidatePool } from "../../lib/questionnaire/engine";
-import { ndcgAt10, runAdaptive, runFixed, samplePatient, simContext } from "../../lib/questionnaire/simulate";
+import { runAdaptive, runFixed, samplePatient, simContext } from "../../lib/questionnaire/simulate";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
 import { loadSeedCards } from "./common";
 
