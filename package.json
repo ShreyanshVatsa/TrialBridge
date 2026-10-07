@@ -25,7 +25,8 @@
     "test:e2e": "playwright test --reporter=line",
     "build:web": "next build && tsx scripts/postbuild.ts",
     "db:migrate:local": "wrangler d1 migrations apply trialbridge --local",
-    "preview": "npm run db:migrate:local && npm run db:seed:local && wrangler dev"
+    "preview": "npm run db:migrate:local && npm run db:seed:local && wrangler dev",
+    "ingest:llm": "tsx scripts/ingest/llm.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

@@ -22,6 +22,8 @@ import { aggregateAccess } from "../../lib/access/aggregate";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
 import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
 import { embedTexts } from "./embed";
+import { LLM_CACHE_FILE, type LlmCacheEntry } from "./llm";
+import { llmCacheKey, mergeFacts } from "../../lib/ingest/llm-facts";
 import { fetchAllResumable, NATIONAL_CONDITION_QUERY, SCOPE_PARAMS } from "./ctgov";
 
 const OUT = "public/data";
@@ -118,6 +120,23 @@ async function main(): Promise<void> {
     fail(`trial count dropped from ${prev.totalTrials} to ${cards.length} (more than 40%)`);
   }
   cards.sort((a, b) => a.id.localeCompare(b.id));
+
+  // Optional local-LLM layer: merge cached LLM facts (from `npm run ingest:llm`) for unchanged trials.
+  let llmModel: string | null = null;
+  try {
+    const llmCache = JSON.parse(await readFile(LLM_CACHE_FILE, "utf8")) as Record<string, LlmCacheEntry>;
+    let merged = 0;
+    for (const c of cards) {
+      const hit = llmCache[llmCacheKey(c.id, c.lastUpdated)];
+      if (!hit) continue;
+      c.facts = mergeFacts(c.facts, hit.facts);
+      llmModel = hit.model;
+      merged++;
+    }
+    if (merged) console.log(`Merged cached LLM facts for ${merged} trials (${llmModel})`);
+  } catch {
+    /* no LLM cache: rule layer only */
+  }
 
   // 2. Embeddings (cached by NCT ID + last-updated + model so unchanged trials are not re-embedded).
   const vectors = await embedTexts(
@@ -245,7 +264,7 @@ async function main(): Promise<void> {
     countsByGroup,
     statesCovered: new Set(cards.flatMap((c) => c.states)).size,
     embeddingModel: EMBEDDING_MODEL,
-    llmModel: null,
+    llmModel,
     pipelineVersion: PIPELINE_VERSION,
     promptVersion: PROMPT_VERSION,
   };
@@ -268,7 +287,7 @@ async function main(): Promise<void> {
   // 8. Backend copy of trial criteria (the API never trusts trial text from the browser).
   await mkdir(BUILD, { recursive: true });
   const serverTrials = Object.fromEntries(
-    cards.map((c) => [c.id, { id: c.id, title: c.title, summary: c.summary, inclusion: c.inclusion, exclusion: c.exclusion, minAge: c.minAge, maxAge: c.maxAge, groups: c.groups, facts: c.facts, barriers: c.barriers }]),
+    cards.map((c) => [c.id, { id: c.id, title: c.title, summary: c.summary, inclusion: c.inclusion, exclusion: c.exclusion, minAge: c.minAge, maxAge: c.maxAge, groups: c.groups, facts: c.facts, barriers: c.barriers, lastUpdated: c.lastUpdated }]),
   );
   await writeJson(path.join(BUILD, "criteria.json"), { dataVersion, trials: serverTrials });
   const esc = (s: string) => s.replaceAll("'", "''");
