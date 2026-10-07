@@ -9,6 +9,10 @@
   "scripts": {
     "dev": "next dev",
     "dev:api": "wrangler dev",
+    "local": "tsx scripts/local.ts",
+    "local:national": "tsx scripts/local.ts --mode=national",
+    "local:check": "tsx scripts/local-check.ts",
+    "local:seed": "tsx scripts/local.ts --mode=seed",
     "setup": "npm run models:fetch && npm run ingest:seed",
     "models:fetch": "tsx scripts/fetch-models.ts",
     "seed:fetch": "tsx scripts/fetch-seed.ts",

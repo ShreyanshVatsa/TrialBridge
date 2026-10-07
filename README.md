@@ -164,7 +164,25 @@ Results are in `eval/RESULTS.md` (also summarized on the Methodology page). Numb
 | Accessibility | | Automated axe checks (`@axe-core/playwright`) were run across pages, languages, themes, and 390 px width (see `PROGRESS.md`) |
 | Static | `npm run lint`, `npm run typecheck` | |
 
+## Run locally with one command
+
+Prerequisites: Node 22 or newer and `npm install` (the script never installs for you).
+
+```
+npm install
+npm run local            # add -- --open to open the browser, -- --port=8800 to change the port
+```
+
+What it does: checks Node and dependencies, fetches the embedding model and ONNX runtime if missing, keeps the data you already have (national data is never replaced by seed), builds the data from the committed seed if there is none, creates an empty `.dev.vars` if missing, runs `npm run build` only when `./out` is missing or older than sources/data (`-- --rebuild` forces it), then runs `npm run preview` and prints the URL (default http://localhost:8787). Ctrl+C stops it. Once the server answers it runs a PASS/FAIL self-check (pages, data, model, mock AI, service worker) and only then opens the browser (`--open`); `npm run local:check` re-runs it against a running server, and `npm run local -- --check` prints the plan without doing anything.
+
+- **National data (~5,700 cancer trials):** `npm run local:national` runs the resumable national ingest first (about 12 s when cached, longer the first time because it downloads from ClinicalTrials.gov). `npm run local:seed` explicitly switches back to the small seed dataset.
+- **API keys:** optional. Paste them into `.dev.vars` yourself (never in chat or the repo); with no usable keys the mock AI provider is used and the script says so. A provider also needs `dataTermsVerified: true` in `config/ai-providers.ts`.
+- **Offline:** after the first run (model files and data downloaded) everything works without internet except real AI providers and data refreshes.
+- **Troubleshooting:** "dependencies are not installed" means run `npm install`; "port in use" means pass `-- --port=N`; a stale or odd page means `npm run local -- --rebuild`; a failed ingest keeps the previous data, just rerun it (it resumes).
+
 ## Quick start (no API keys needed)
+
+New to this? See [START_HERE.md](START_HERE.md): on a Mac, double-click `Start TrialBridge.command`.
 
 ```
 npm install
