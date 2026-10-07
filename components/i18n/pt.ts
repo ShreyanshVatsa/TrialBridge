@@ -499,6 +499,13 @@ export const pt: Messages = {
       ],
       evalTitle: "Avaliação",
       evalBody: "Medimos a qualidade da busca e a precisão da IA com perfis de pacientes sintéticos rotulados manualmente. Os resultados são publicados junto com o código-fonte do projeto.",
+      evalProvisional: "Sintético e provisório: {profiles} perfis de pacientes sintéticos (não são pessoas reais) em {types} tipos de câncer, com rótulos não revisados por profissionais de saúde. Medido em {date}.",
+      evalViolations: "Violações dos filtros obrigatórios (tipo de câncer, idade ou distância incorretos)",
+      evalRecall: "Estudos relevantes encontrados entre os 10 primeiros (recall@10)",
+      evalNdcg: "Qualidade da ordem dos 10 primeiros (nDCG@10)",
+      evalFacts: "Precisão dos dados de elegibilidade baseados em regras ({correct} de {sample} verificados)",
+      evalQuotes: "Citações da IA que corresponderam palavra por palavra ao texto oficial ({quotes} verificadas)",
+      evalReport: "Relatório completo: eval/RESULTS.md no código-fonte do projeto.",
     },
     about: {
       title: "Sobre o TrialBridge",

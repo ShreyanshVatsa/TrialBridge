@@ -501,6 +501,13 @@ export const en = {
       ],
       evalTitle: "Evaluation",
       evalBody: "We measure retrieval quality and AI accuracy against synthetic, hand-labeled patient profiles. Results are published with the project's source code.",
+      evalProvisional: "Synthetic, provisional: {profiles} synthetic patient profiles (not real people) across {types} cancer types, with labels that are not clinician-reviewed. Measured on {date}.",
+      evalViolations: "Hard-filter violations (wrong cancer type, age, or distance)",
+      evalRecall: "Relevant trials found in the top 10 (recall@10)",
+      evalNdcg: "Ranking quality of the top 10 (nDCG@10)",
+      evalFacts: "Precision of rule-based eligibility facts ({correct} of {sample} checked)",
+      evalQuotes: "AI quotes that matched the official text word for word ({quotes} checked)",
+      evalReport: "Full report: eval/RESULTS.md in the project's source code.",
     },
     about: {
       title: "About TrialBridge",

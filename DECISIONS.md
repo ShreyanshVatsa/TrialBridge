@@ -33,3 +33,7 @@
 - Local LLM layer: llama-server + Qwen3-14B Q4_K_M, thinking disabled, per-fact zod validation, verbatim-quote check; cached by NCT+lastUpdated+prompt version; disagreements stored as two needsReview facts which the pre-check ignores. Sample: 4 trials at ~13-30 s/trial (~1.5-2.5 h for the seed; full national run deferred).
 - Embedding model kept: MiniLM-L6-v2 q8 + int8 storage. Reason: eval shows all 6 variants within ~0.01 nDCG@10 (prod 0.819 full pipeline); bge-small is no better and int8/q8 is the smallest download.
 - Eval labels are synthetic and rule-generated from titles/conditions (not clinician-reviewed); fact precision labels hand-judged by the build agent. Reason: no clinical reviewer available; documented as provisional.
+- UI i18n: one typed messages file per language (components/i18n/{en,es,pt,ht}.ts) + localStorage language store, no locale routes. Reason: static export simplicity; TS enforces complete translations.
+- U.S. map: equal-tile grid map built in SVG/CSS with a single-hue sequential blue ramp and per-tile labels, not react-simple-maps. Reason: no geometry dependency, small states readable, colorblind-safe.
+- Theme: class-based dark mode set pre-paint by /theme-init.js (external file, CSP-safe). Reason: no inline scripts allowed.
+- Partner contact: mailto built from NEXT_PUBLIC_PARTNER_EMAIL (no form). Reason: no company address known; no data-storing forms.
