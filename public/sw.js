@@ -3,7 +3,11 @@
  * It never caches /api/* (AI responses), trial data, models, or anything sent by the user.
  * Intake answers live only in page memory and never pass through this worker.
  */
-const VERSION = "tb-shell-v1";
+// scripts/postbuild.ts replaces the placeholder with a hash of the built shell, so every deploy changes
+// this file's bytes (the browser then installs the new worker) and gets its own cache name.
+const BUILD_ID = "__TB_BUILD_ID__";
+const CACHE_PREFIX = "tb-shell-";
+const VERSION = CACHE_PREFIX + BUILD_ID;
 const SHELL_PAGES = ["/", "/find/", "/trial/", "/privacy/", "/access/", "/methodology/", "/about/", "/for-sites/", "/offline/"];
 const SHELL_ASSETS = ["/theme-init.js", "/logo.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.webmanifest"];
 
@@ -20,7 +24,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
