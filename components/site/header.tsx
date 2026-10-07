@@ -40,7 +40,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5 rounded-lg font-heading text-xl font-semibold tracking-tight">
           <LogoMark />
-          <span className="hidden min-[400px]:inline">{m.common.brand}</span>
+          <span className="sr-only min-[400px]:not-sr-only">{m.common.brand}</span>
         </Link>
         <nav aria-label={m.nav.label} className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (

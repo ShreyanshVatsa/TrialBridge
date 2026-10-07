@@ -2,7 +2,7 @@
 
 import { Info, Pencil, Printer, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { format, useMessages } from "@/components/i18n";
+import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
 import type { SearchSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
@@ -66,12 +66,13 @@ export function ResultsView({
 }) {
   const m = useMessages();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
+  const locale = localeFor(useLanguage());
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), [session.searchedAt]);
 
   const { results, outcome, analysis } = session;
   const shown = results.slice(0, visible);
-  const today = formatDate(new Date(session.searchedAt).toISOString());
+  const today = formatDate(new Date(session.searchedAt).toISOString(), locale);
 
   return (
     <div className="space-y-6">
@@ -86,8 +87,8 @@ export function ResultsView({
             {m.results.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {format(m.results.count, { shown: shown.length, total: formatNumber(outcome.candidateCount) })}{" "}
-            {format(m.results.searched, { count: formatNumber(outcome.searchedCount) })}
+            {format(m.results.count, { shown: shown.length, total: formatNumber(outcome.candidateCount, locale) })}{" "}
+            {format(m.results.searched, { count: formatNumber(outcome.searchedCount, locale) })}
           </p>
         </div>
         <div className="no-print flex flex-wrap gap-2">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ExternalLink, Mail, MapPin, MessageCircleQuestion, Phone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { format, useMessages } from "@/components/i18n";
+import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatMiles, formatPhases, loadErrorCode, officialUrl } from "@/components/format";
 import { BarrierBadge, Badge } from "@/components/results/badges";
 import { useSession } from "@/components/session/session-provider";
@@ -59,6 +59,7 @@ function ageText(card: TrialCard, m: ReturnType<typeof useMessages>): string {
 
 function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
   const m = useMessages();
+  const locale = localeFor(useLanguage());
   const { session } = useSession();
   const origin = session?.origin ?? null;
   const [showAll, setShowAll] = useState(false);
@@ -96,7 +97,7 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
           </div>
           <div>
             <dt className="sr-only">{m.trial.lastUpdated}</dt>
-            <dd className="text-muted-foreground">{format(m.trial.lastUpdated, { date: formatDate(card.lastUpdated) })}</dd>
+            <dd className="text-muted-foreground">{format(m.trial.lastUpdated, { date: formatDate(card.lastUpdated, locale) })}</dd>
           </div>
         </dl>
         <div className="no-print flex flex-wrap gap-3">

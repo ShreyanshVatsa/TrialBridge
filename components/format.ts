@@ -1,17 +1,16 @@
 /** Small display formatters shared by UI components. Pure functions, no I/O. */
 
-/** "PHASE1", "PHASE2" -> "Phase 1/2"; "EARLY_PHASE1" -> "Early Phase 1"; "NA" -> "". */
+/** "PHASE1", "PHASE2" -> "1/2"; "EARLY_PHASE1" -> "Early 1"; "NA" -> "". The word "Phase" comes from translated messages. */
 export function formatPhases(phases: readonly string[]): string {
   const parts = phases
     .filter((p) => p && p.toUpperCase() !== "NA")
     .map((p) => {
       const up = p.toUpperCase();
-      if (up.startsWith("EARLY_PHASE")) return `Early Phase ${up.replace("EARLY_PHASE", "")}`;
+      if (up.startsWith("EARLY_PHASE")) return `Early ${up.replace("EARLY_PHASE", "")}`;
       return up.replace(/^PHASE/, "");
     });
   if (parts.length === 0) return "";
-  if (parts.every((p) => /^\d$/.test(p))) return `Phase ${parts.join("/")}`;
-  return parts.map((p) => (/^\d$/.test(p) ? `Phase ${p}` : p)).join(", ");
+  return parts.join("/");
 }
 
 /** Format an ISO date ("2026-09-30" or full timestamp) for display without timezone drift. */
