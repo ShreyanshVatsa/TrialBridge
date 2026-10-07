@@ -256,6 +256,14 @@ Visual direction: a polished, modern health-tech startup, in the class of the be
 
 I have a limited usage window. Your goal is to deliver a complete, working, deployable product as efficiently as possible. Build in strict priority order so that if usage runs out at any point, what exists is a working app.
 
+## CURRENT PRIORITY OVERRIDE (set 2026-10-06; overrides everything below until the user removes it)
+The user is preparing a competition submission and will add new features. Until the user says the override is lifted:
+- Focus: the app working, functional with all features, fast, efficient, and good (UX, matching quality, speed, reliability). P0 and P1 are complete.
+- DEFER hosting and deployment: no Cloudflare deploy, no domain, no wrangler login/secrets, no deployment checkpoint, no CI/CD workflows, no monthly refresh workflow, no Dependabot. Local `npm run preview` is the target environment.
+- Keep as-is (do not rework): the Workers/D1 backend design and security/privacy rules. Only fix what breaks the working app.
+- P2 items that DO still apply: speed/performance work, bug fixes, test coverage toward 90%, accessibility, PWA/dark-mode/motion polish, README for running locally.
+- Do not start P2 or new work without the user's go-ahead; the user will bring new features.
+
 ## Priority tiers (build P0 fully end-to-end before starting P1, P1 before P2)
 
 P0: Core product (must work end-to-end first)
