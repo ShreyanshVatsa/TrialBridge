@@ -86,6 +86,8 @@ test.describe("adaptive questionnaire", () => {
     await answerCurrent(page, "skip");
     await expect(page.locator(`section[data-question="${first}"]`)).toHaveCount(0);
     // Edit from the transcript.
+    // Older answers are collapsed behind "Show N earlier answers" so the active question stays near the top.
+    await page.getByRole("button", { name: /^Show \d+ earlier answers?$/ }).click();
     await page.getByRole("button", { name: /^Edit answer:/ }).first().click();
     await expect(page.locator('section[data-question="cancer_type"]')).toBeVisible();
   });

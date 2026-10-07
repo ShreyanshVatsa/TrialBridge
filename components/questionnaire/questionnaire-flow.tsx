@@ -38,7 +38,8 @@ import {
 import { ModeToggle, TierProgress } from "./progress";
 import { QuestionCard } from "./question-card";
 import { SummaryCard } from "./summary-card";
-import { useKeyT } from "./t";
+import { IntroPanel } from "./intro-panel";
+import { useKeyT, variantKey } from "./t";
 
 type Notice = { kind: "resumed" | "cleared" } | { kind: "dropped"; ids: QuestionId[] } | null;
 
@@ -81,6 +82,24 @@ export function QuestionnaireFlow({
   const [studyLanguage, setStudyLanguage] = useState<Language | null>(null);
   const [pool, setPool] = useState<{ key: string; pool: CandidatePool | null } | null>(null);
   const resumeChecked = useRef(false);
+  // "I'm answering for someone else": wording only. A yes/no flag, never a name or relationship, kept in this tab.
+  const [caregiver, setCaregiverState] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("tb-caregiver") === "1") void Promise.resolve().then(() => setCaregiverState(true));
+    } catch {
+      /* storage unavailable: default wording */
+    }
+  }, []);
+  function setCaregiver(v: boolean) {
+    setCaregiverState(v);
+    try {
+      if (v) sessionStorage.setItem("tb-caregiver", "1");
+      else sessionStorage.removeItem("tb-caregiver");
+    } catch {
+      /* ignore */
+    }
+  }
 
   // The flow remounts after results, so a fill request seeds the queue once.
   useEffect(() => {
@@ -179,6 +198,7 @@ export function QuestionnaireFlow({
 
   function clearAll() {
     clearSession();
+    setCaregiver(false);
     setState(emptyState());
     setEditing(null);
     setFillQueue([]);
@@ -196,12 +216,12 @@ export function QuestionnaireFlow({
   const travelDone = state.answers.travel !== undefined;
   const transcript: ReactNode[] = transcriptIds.map((id, i) => {
     const q = byId.get(id)!;
-    const label = t(q.labelKey);
+    const label = t(variantKey(t, q.labelKey, caregiver));
     const older = i < transcriptIds.length - 1 && !showEarlier;
     const isLast = id === lastAnswered && interacted && !editing;
     const nonResp = !isEssential(id) && isNonResponse(state.answers[id]);
     return (
-      <div key={id} className={older ? "space-y-3 max-sm:hidden" : "space-y-3"}>
+      <div key={id} className={older ? "hidden" : "space-y-3"}>
         <AssistantBubble label={m.chat.assistant}>{label}</AssistantBubble>
         <UserBubble label={m.chat.you} onEdit={() => edit(id)} editLabel={t("questionnaire.ui.editAnswer", { question: label })}>
           {answerText(q, state, t, m)}
@@ -224,7 +244,7 @@ export function QuestionnaireFlow({
 
   return (
     <div className="space-y-5">
-      {state.history.length > 0 && <TierProgress tier={tier} remaining={remaining} count={count} />}
+      <TierProgress tier={tier} remaining={remaining} count={count} />
 
       {notice && (
         <p role="status" className="rounded-xl border border-border bg-secondary/60 px-4 py-3">
@@ -236,9 +256,9 @@ export function QuestionnaireFlow({
       )}
 
       <div role="log" aria-label={m.chat.logLabel} aria-live="polite" aria-relevant="additions" className="space-y-5">
-        <AssistantBubble label={m.chat.assistant}>{t("questionnaire.ui.intro")}</AssistantBubble>
+        {state.history.length === 0 && !interacted && <IntroPanel caregiver={caregiver} onCaregiver={setCaregiver} />}
         {earlierCount > 0 && (
-          <div className="sm:hidden">
+          <div>
             <Button variant="ghost" onClick={() => setShowEarlier((v) => !v)} aria-expanded={showEarlier} className="min-h-11">
               {showEarlier ? t("questionnaire.ui.hideEarlier") : t("questionnaire.ui.earlier", { count: earlierCount })}
             </Button>
@@ -257,6 +277,7 @@ export function QuestionnaireFlow({
       {currentQ && (
         <QuestionCard
           key={`${currentQ.id}:${group}`}
+          caregiver={caregiver}
           q={currentQ}
           initial={state.answers[currentQ.id]}
           impact={impact}
@@ -284,6 +305,7 @@ export function QuestionnaireFlow({
           catalog={catalog}
           findOut={findOut}
           deepLeft={deepLeft}
+          caregiver={caregiver}
           language={studyLanguage ?? uiLang}
           onLanguage={setStudyLanguage}
           onEdit={edit}

@@ -104,13 +104,28 @@ describe("QuestionCard markup", () => {
     expect(render(q({ cost: 3 }))).toContain("My doctor can fill this in later");
   });
 
-  it("renders the biomarker grid as a table of radio groups with row headers", () => {
+  it("renders the biomarker grid as a list of labelled radio groups with an answered count", () => {
     const html = render(q({ id: "biomarkers", type: "biomarker_grid", biomarkers: ["HER2", "EGFR"] as never, options: undefined, cost: 3 }));
-    expect(html).toContain("<table");
-    expect((html.match(/scope="row"/g) ?? []).length).toBe(2);
+    expect(html).toContain("<ul");
+    expect((html.match(/aria-labelledby=/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain("0 of 2 answered");
+    expect(html).not.toContain('type="search"'); // search only for long lists
     expect((html.match(/role="radiogroup"/g) ?? []).length).toBe(2);
     expect(html).toContain("Not tested");
     expect(html).toContain("I don&#x27;t know any of these");
+  });
+
+  it("shows the essential step, the what-is-this help and the number-key tip", () => {
+    const html = render(q({ id: "spread" }));
+    expect(html).toContain("What is this? Why we&#x27;re asking");
+    expect(html).toContain("press a number from 1 to");
+    const essential = renderToStaticMarkup(createElement(QuestionCard, { q: q({ id: "age", type: "age", tier: "essential", options: undefined }), autoFocus: false, onAnswer: () => undefined }));
+    expect(essential).toContain("Question 2 of 4");
+  });
+
+  it("uses the caregiver wording variant when one exists", () => {
+    const html = renderToStaticMarkup(createElement(QuestionCard, { q: q({ id: "age", type: "age", tier: "essential", labelKey: "questionnaire.age.label", options: undefined }), autoFocus: false, onAnswer: () => undefined, caregiver: true }));
+    expect(html).toContain("How old are they?");
   });
 
   it("shows the impact hint only when an answer could narrow the set", () => {

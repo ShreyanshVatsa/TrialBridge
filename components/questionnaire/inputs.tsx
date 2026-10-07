@@ -332,7 +332,11 @@ export function MultiChoice({
   );
 }
 
-/** Biomarker grid: a table of radio groups with row headers (spec §5.2). Stacks into cards on narrow screens. */
+/**
+ * Biomarker grid: one radio group per marker, each with a row label (spec §5.2). Everything starts at "Don't know",
+ * so a patient who has no report can skip the whole thing (the "I don't know any of these" chip below). Long lists
+ * get a search box; hidden rows keep their answers. Name above the choices so it fits at 320 px.
+ */
 export function BiomarkerGrid({
   ids,
   value,
@@ -345,45 +349,61 @@ export function BiomarkerGrid({
   const m = useMessages();
   const t = useKeyT();
   const base = useId();
+  const searchId = useId();
+  const [query, setQuery] = useState("");
   const statusLabel = (s: BiomarkerAnswer) => t(`questionnaire.ui.biomarker.${s}`);
+  const q = query.trim().toLowerCase();
+  const shown = q ? ids.filter((id) => `${id} ${biomarkerLabel(id, m)}`.toLowerCase().includes(q)) : ids;
+  const answered = ids.filter((id) => (value[id] ?? UNKNOWN) !== UNKNOWN).length;
   return (
     <div className="space-y-3">
-      <table className="w-full border-collapse">
-        <caption className="sr-only">{t("questionnaire.ui.biomarkerCaption")}</caption>
-        <thead className="sr-only">
-          <tr>
-            <th scope="col">{t("questionnaire.ui.biomarkerCol")}</th>
-            <th scope="col">{t("questionnaire.ui.biomarkerResultCol")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ids.map((id) => {
-            const name = biomarkerLabel(id, m);
-            const current = value[id] ?? UNKNOWN;
-            return (
-              <tr key={id} className="align-top">
-                <th scope="row" id={`${base}-${id}`} className="w-20 border-t border-border py-3 pe-2 text-start align-top font-medium break-words sm:w-40 sm:pe-3">
-                  {name}
-                </th>
-                <td className="border-t border-border py-3">
-                  <div role="radiogroup" aria-labelledby={`${base}-${id}`} className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                    {BIOMARKER_ANSWERS.map((s) => {
-                      const on = current === s;
-                      return (
-                        <label key={s} className={cn(chipClass, focusRing, "min-h-11 px-3 max-sm:rounded-xl", on ? chipOn : chipIdle)}>
-                          <input type="radio" name={`${base}-${id}`} value={s} checked={on} onChange={() => onChange({ ...value, [id]: s })} className="sr-only" />
-                          <span aria-hidden className={cn("size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
-                          {statusLabel(s)}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-base text-muted-foreground" role="status" aria-live="polite">
+          {t("questionnaire.ui.biomarkerCount", { answered, total: ids.length })}
+        </p>
+      </div>
+      {ids.length > 8 && (
+        <div>
+          <label htmlFor={searchId} className="sr-only">
+            {t("questionnaire.ui.biomarkerSearch")}
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("questionnaire.ui.biomarkerSearch")}
+            autoComplete="off"
+            className={inputClass}
+          />
+        </div>
+      )}
+      {shown.length === 0 && <p className="text-muted-foreground">{t("questionnaire.ui.biomarkerNone")}</p>}
+      <ul aria-label={t("questionnaire.ui.biomarkerCaption")} className="divide-y divide-border rounded-xl border border-border">
+        {shown.map((id) => {
+          const name = biomarkerLabel(id, m);
+          const current = value[id] ?? UNKNOWN;
+          return (
+            <li key={id} className={cn("space-y-2 px-3 py-3", current !== UNKNOWN && "bg-secondary/40")}>
+              <p id={`${base}-${id}`} className="font-medium break-words">
+                {name}
+              </p>
+              <div role="radiogroup" aria-labelledby={`${base}-${id}`} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {BIOMARKER_ANSWERS.map((s) => {
+                  const on = current === s;
+                  return (
+                    <label key={s} className={cn(chipClass, focusRing, "min-h-11 justify-start px-3 max-sm:rounded-xl", on ? chipOn : chipIdle)}>
+                      <input type="radio" name={`${base}-${id}`} value={s} checked={on} onChange={() => onChange({ ...value, [id]: s })} className="sr-only" />
+                      <span aria-hidden className={cn("size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
+                      {statusLabel(s)}
+                    </label>
+                  );
+                })}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

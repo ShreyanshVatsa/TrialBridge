@@ -13,7 +13,7 @@ export function LiveCounter({ count, className }: { count: LiveCount | null; cla
   const t = useKeyT();
   const text = count
     ? `${t("questionnaire.ui.counter", { count: count.total })}${count.noConflict !== count.total ? ` · ${t("questionnaire.ui.counterNoConflict", { count: count.noConflict })}` : ""}`
-    : "";
+    : t("questionnaire.ui.counterWaiting");
   const [shown, setShown] = useState(text);
   useEffect(() => {
     if (text === shown) return;
@@ -21,7 +21,7 @@ export function LiveCounter({ count, className }: { count: LiveCount | null; cla
     return () => clearTimeout(id);
   }, [text, shown]);
   return (
-    <p className={cn("text-base font-medium", className)}>
+    <p className={cn("text-base font-medium", !count && "font-normal text-muted-foreground", className)}>
       <span className="sr-only">{t("questionnaire.ui.counterLabel")}: </span>
       <span aria-live="polite" aria-atomic="true" data-testid="live-counter">
         {shown}
@@ -30,42 +30,42 @@ export function LiveCounter({ count, className }: { count: LiveCount | null; cla
   );
 }
 
-/** Tier steps ("Essentials · Helpful · Extra detail") with an honest estimate instead of a percentage. */
+/** Three-segment step bar ("Essentials, Helpful, Extra detail") with an honest range instead of a percentage. */
 export function TierProgress({ tier, remaining, count }: { tier: Tier | "summary"; remaining: number | null; count: LiveCount | null }) {
   const t = useKeyT();
   const currentIdx = tier === "summary" ? TIERS.length : TIERS.indexOf(tier);
+  // The engine decides when to stop, so show a range (never a fake exact number).
+  const remainingText =
+    remaining === null || tier === "summary"
+      ? null
+      : remaining <= 0
+        ? t("questionnaire.ui.remainingNone")
+        : remaining <= 2
+          ? t("questionnaire.ui.remainingFew")
+          : t("questionnaire.ui.remainingRange", { low: Math.max(2, remaining - 1), high: remaining + 2 });
   return (
     <div className="rounded-2xl border border-border bg-card px-4 py-3">
       <nav aria-label={t("questionnaire.ui.progressLabel")}>
-        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base">
+        <ol className="grid grid-cols-3 gap-2">
           {TIERS.map((x, i) => {
             const done = i < currentIdx;
             const current = i === currentIdx;
             return (
-              <li key={x} aria-current={current ? "step" : undefined} className="flex items-center gap-2">
-                {i > 0 && <span aria-hidden className="text-muted-foreground">·</span>}
-                <span
-                  aria-hidden
-                  className={cn(
-                    "flex size-5 items-center justify-center rounded-full border-2",
-                    done ? "border-primary bg-primary text-primary-foreground" : current ? "border-primary" : "border-muted-foreground/60",
-                  )}
-                >
-                  {done && <Check className="size-3" />}
+              <li key={x} aria-current={current ? "step" : undefined} className="min-w-0 space-y-1">
+                <span aria-hidden className={cn("block h-1.5 rounded-full motion-safe:transition-colors", done ? "bg-primary" : current ? "bg-primary/60" : "bg-muted")} />
+                <span className={cn("flex items-center gap-1 text-base leading-tight", current ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                  {done && <Check aria-hidden className="size-4 shrink-0 text-primary" />}
+                  <span className="min-w-0 break-words">{t(`questionnaire.ui.tiers.${x}`)}</span>
+                  {done && <span className="sr-only">{t("questionnaire.ui.stepDone")}</span>}
                 </span>
-                <span className={cn(current ? "font-semibold text-foreground" : "text-muted-foreground")}>{t(`questionnaire.ui.tiers.${x}`)}</span>
               </li>
             );
           })}
         </ol>
       </nav>
-      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <LiveCounter count={count} />
-        {remaining !== null && tier !== "summary" && (
-          <p className="text-base text-muted-foreground">
-            {remaining > 0 ? t("questionnaire.ui.remaining", { count: remaining }) : t("questionnaire.ui.remainingNone")}
-          </p>
-        )}
+        {remainingText && <p className="text-base text-muted-foreground">{remainingText}</p>}
       </div>
     </div>
   );

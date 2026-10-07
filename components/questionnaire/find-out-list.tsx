@@ -39,10 +39,8 @@ export function FindOutList({
             {/* Tick box for the printed checklist. */}
             <span aria-hidden className="print-only mt-1 size-5 shrink-0 rounded border-2 border-current" />
             <div className="min-w-0 space-y-1">
-              <p className="font-medium">
-                <span className="text-muted-foreground">{t("results.findOutAsk")}: </span>
-                {t(e.whatKey)}
-              </p>
+              {/* The text already starts with "Ask: ..." so no extra label (it used to read "Ask: Ask: ..."). */}
+              <p className="font-medium">{t(e.whatKey)}</p>
               {e.whereKey && t.has(e.whereKey) && (
                 <p>
                   <span className="text-muted-foreground">{t("results.findOutWhere")}: </span>

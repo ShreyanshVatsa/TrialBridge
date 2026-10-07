@@ -1,14 +1,14 @@
 "use client";
 
 import { ArrowLeft, ChevronDown, Lightbulb } from "lucide-react";
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useMessages } from "@/components/i18n";
 import { Button } from "@/components/ui/button";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import { cn } from "@/lib/utils";
-import { DEFER, PREFER_NOT, SKIP, UNKNOWN, isEssential, type AnswerValue, type QuestionDef } from "./contract";
+import { DEFER, ESSENTIAL_IDS, PREFER_NOT, SKIP, UNKNOWN, isEssential, type AnswerValue, type QuestionDef } from "./contract";
 import { AgeInput, BiomarkerGrid, CancerTypeInput, ChipButton, MultiChoice, SingleChoice, TravelInput, ZipInput, type ChoiceOption } from "./inputs";
-import { useKeyT } from "./t";
+import { useKeyT, variantKey } from "./t";
 
 const NON_RESPONSE = new Set<string>([UNKNOWN, PREFER_NOT, SKIP]);
 
@@ -21,6 +21,7 @@ export function QuestionCard({
   onBack,
   autoFocus,
   extra,
+  caregiver = false,
 }: {
   q: QuestionDef;
   initial?: AnswerValue;
@@ -29,6 +30,8 @@ export function QuestionCard({
   onBack?: () => void;
   autoFocus: boolean;
   extra?: ReactNode;
+  /** "I'm answering for someone else": uses the third-person wording variant when one exists (never stored). */
+  caregiver?: boolean;
 }) {
   const t = useKeyT();
   const m = useMessages();
@@ -74,8 +77,11 @@ export function QuestionCard({
     }
   }
 
-  const label = t(q.labelKey);
-  const help = q.helpKey && t.has(q.helpKey) ? t(q.helpKey) : null;
+  const label = t(variantKey(t, q.labelKey, caregiver));
+  const help = q.helpKey && t.has(q.helpKey) ? t(variantKey(t, q.helpKey, caregiver)) : null;
+  const aboutKey = `questionnaire.ui.about.${q.id}`;
+  const about = t.has(aboutKey) ? t(aboutKey) : null;
+  const essentialStep = essential ? ESSENTIAL_IDS.indexOf(q.id as (typeof ESSENTIAL_IDS)[number]) + 1 : 0;
   const why = q.whyKey && t.has(q.whyKey) ? t(q.whyKey) : null;
   const narrowed = impact && impact.narrowedTo !== null && impact.narrowedTo < impact.total ? impact : null;
   const exclusive: Record<string, string[]> = Object.fromEntries(allOptions.filter((o) => o.exclusiveWith).map((o) => [o.id, o.exclusiveWith ?? []]));
@@ -143,22 +149,13 @@ export function QuestionCard({
             q.tier === "deep" ? "border-dashed border-muted-foreground/60 text-muted-foreground" : "border-border text-muted-foreground",
           )}
         >
-          {t(`questionnaire.ui.tierBadge.${q.tier}`)}
+          {essential ? t("questionnaire.ui.essentialStep", { step: essentialStep, total: ESSENTIAL_IDS.length }) : t(`questionnaire.ui.tierBadge.${q.tier}`)}
         </span>
       </div>
       {help && (
         <p id={helpId} className="text-muted-foreground">
           {help}
         </p>
-      )}
-      {why && (
-        <details className="group rounded-xl border border-border bg-muted/40">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
-            {t("questionnaire.ui.whyAsk")}
-            <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform group-open:rotate-180" />
-          </summary>
-          <p className="px-4 pb-3">{why}</p>
-        </details>
       )}
       {narrowed && (
         <p className="flex items-start gap-2 text-base text-muted-foreground">
@@ -167,6 +164,23 @@ export function QuestionCard({
         </p>
       )}
       {body}
+      {(why || about) && (
+        <details className="group rounded-xl border border-border bg-muted/40">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
+            {about ? t("questionnaire.ui.whyAskAbout") : t("questionnaire.ui.whyAsk")}
+            <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="space-y-2 px-4 pb-3">
+            {why && <p>{why}</p>}
+            {about && (
+              <p>
+                <span className="font-medium">{t("questionnaire.ui.aboutTitle")} </span>
+                {about}
+              </p>
+            )}
+          </div>
+        </details>
+      )}
       {error && (
         <p id={errId} role="alert" className="text-base text-destructive">
           {error}
@@ -195,7 +209,10 @@ export function QuestionCard({
           </ChipButton>
         )}
       </div>
-      <p className="text-base text-muted-foreground">{t("questionnaire.ui.nonResponseHint")}</p>
+      <p className="text-base text-muted-foreground">
+        {t("questionnaire.ui.nonResponseHint")}
+        {q.type === "single" && choiceOptions.length > 1 && <span className="hidden sm:inline"> {t("questionnaire.ui.shortcutHint", { max: choiceOptions.length })}</span>}
+      </p>
     </div>
   );
 
@@ -219,8 +236,19 @@ export function QuestionCard({
       </div>
     ) : null;
 
+  // Keyboard shortcut: press 1-9 to choose that option (single choice only), then it answers like a tap.
+  function onKeyDown(e: KeyboardEvent<HTMLElement>) {
+    if (q.type !== "single" || e.altKey || e.ctrlKey || e.metaKey) return;
+    const n = Number(e.key);
+    const target = e.target as HTMLElement;
+    if (!Number.isInteger(n) || n < 1 || n > choiceOptions.length || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) && (target as HTMLInputElement).type !== "radio") return;
+    e.preventDefault();
+    const opt = choiceOptions[n - 1];
+    if (opt) onAnswer(opt.id);
+  }
+
   return (
-    <section ref={rootRef} aria-label={label} data-question={q.id} className="animate-fade-up space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section ref={rootRef} aria-label={label} data-question={q.id} onKeyDown={onKeyDown} className="animate-fade-up space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
       {needsContinue ? (
         <form onSubmit={commit} noValidate className="space-y-4">
           {fieldset}

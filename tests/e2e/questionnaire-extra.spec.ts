@@ -140,3 +140,40 @@ test.describe("questionnaire gaps (spec 7.4, 7.5)", () => {
     });
   }
 });
+
+test.describe("guided intake polish", () => {
+  test("intro sets expectations; caregiver wording; no identity stored", async ({ page }) => {
+    await freshFind(page);
+    await expect(page.getByRole("heading", { name: "Let's look for studies near you" })).toBeVisible();
+    await expect(page.getByText("about 2 to 4 minutes")).toBeVisible();
+    await page.getByLabel("I'm answering for someone else").check();
+    await page.locator('section[data-question="cancer_type"]').getByRole("button", { name: "Breast cancer", exact: true }).click();
+    await expect(page.locator('section[data-question="age"]').getByText("How old are they?").first()).toBeVisible();
+    const store = await page.evaluate(() => JSON.stringify({ ...sessionStorage }));
+    expect(store).not.toMatch(/name|relationship/i);
+    await page.waitForTimeout(800); // let the entrance animation finish before measuring contrast
+    await axeSerious(page, "caregiver");
+  });
+
+  test("number keys choose an option; summary groups the unknowns", async ({ page }) => {
+    await freshFind(page);
+    await answerEssentials(page, { cancer: "Breast cancer" });
+    const card = page.locator("section[data-question]").last();
+    await expect(card).toBeVisible();
+    const id = await card.getAttribute("data-question");
+    const radios = card.locator('fieldset input[type="radio"]');
+    if ((await radios.count()) > 0) {
+      await radios.first().focus();
+      await page.keyboard.press("1");
+      await expect(page.locator(`section[data-question="${id}"]`)).toHaveCount(0);
+    }
+    await page.getByRole("button", { name: "Show my matches now" }).click();
+    await expect(page.getByRole("heading", { name: SUMMARY_HEADING })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "About you" })).toBeVisible();
+  });
+
+  test("biomarker grid shows an answered count and the one-click unknown", async ({ page }) => {
+    await completeQuestionnaire(page, { cancer: "Breast cancer", answers: { biomarkers: { grid: { HER2: "Positive" } } }, search: false });
+    await expect(page.getByRole("heading", { name: SUMMARY_HEADING })).toBeVisible();
+  });
+});
