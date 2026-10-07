@@ -44,7 +44,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "3.10.1",
-    "shadcn": "4.21.3",
+    "shadcn": "file:vendor/shadcn-css",
     "tailwind-merge": "3.7.0",
     "zod": "4.3.1"
   },
@@ -75,5 +75,9 @@
     "unrs-resolver@1.12.2": true,
     "workerd@1.20261006.1": true,
     "fsevents": false
+  },
+  "overrides": {
+    "fast-glob": "file:./vendor/fast-glob",
+    "sharp": "0.35.5"
   }
 }
