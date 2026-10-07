@@ -216,6 +216,16 @@ function scorePool(state: QuestionnaireState, pool: CandidatePool, catalog: read
 }
 
 /**
+ * Pool trials passing the live hard filters, best first, with their current score (prior − penalties +
+ * bonuses) and whether any answer conflicts. Ties break by id, so the order is deterministic.
+ */
+export function rankPool(state: QuestionnaireState, pool: CandidatePool, catalog: readonly QuestionDef[], opts: EngineOptions = {}): Array<{ id: string; score: number; conflict: boolean }> {
+  return scorePool(state, pool, catalog, opts.policy)
+    .map((s) => ({ id: s.t.id, score: s.score, conflict: s.conflict }))
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+}
+
+/**
  * Live counter: "N possible trials near you · M with no likely conflicts". Hard filters change `total`;
  * definite answers change `noConflict`. Unknown answers change neither.
  */

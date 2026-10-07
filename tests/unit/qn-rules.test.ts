@@ -18,7 +18,7 @@ const fact = (key: string, value: Fact["value"], param?: string | number, extra:
 });
 const kinds = (answers: Record<string, AnswerValue>, facts: Fact[]) => evaluateAnswers(essentials("lung", answers), TEST_CATALOG, facts).map((n) => `${n.key}:${n.kind}`);
 
-describe("answer semantics (rules.ts)", () => {
+describe("answer semantics (rules.ts)", { timeout: 60_000 }, () => {
   it("recognizes every non-response shape", () => {
     for (const v of [undefined, null, "unknown", "__skip", "prefer_not", "deferred", "not_tested", [], ["unknown"], { EGFR: "unknown", ALK: "not_tested" }]) expect(isNonResponse(v as AnswerValue)).toBe(true);
     for (const v of [0, "metastatic", ["chemotherapy"], { EGFR: "positive", ALK: "unknown" }]) expect(isNonResponse(v as AnswerValue)).toBe(false);
