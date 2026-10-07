@@ -1,11 +1,14 @@
-import type { CancerGroupId } from "@/config/cancer-groups";
+import { basketAppliesTo, isBasketOnly, type CancerGroupId } from "@/config/cancer-groups";
 import { haversineMiles, type LatLon } from "@/lib/geo/distance";
 import type { Site, TrialCard } from "@/lib/types/trial";
 import type { NearestSite } from "@/lib/types/match";
 
-/** Hard filter: the trial's group list must include the selected group ("other" = any group). */
-export function passesGroup(card: TrialCard, group: CancerGroupId): boolean {
-  return group === "other" || card.groups.includes(group);
+/**
+ * Hard filter: the trial's group list must include the selected group ("other" = any group).
+ * Solid-tumor basket trials that name no specific cancer type also apply to every solid-tumor group.
+ */
+export function passesGroup(card: Pick<TrialCard, "groups">, group: CancerGroupId): boolean {
+  return group === "other" || card.groups.includes(group) || (basketAppliesTo(group) && isBasketOnly(card.groups));
 }
 
 /** Hard filter: age within [minAge, maxAge]; null bounds mean no limit. */

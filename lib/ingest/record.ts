@@ -13,6 +13,9 @@ export const NOT_CANCER = "not a cancer trial";
 /** Cancer scope check for records matched by the broad API query (e.g. "tumor" also matches non-cancer studies). */
 const CANCER_TEXT = /cancer|neoplas|tumou?r|carcinoma|lymphoma|leuk(a)?emia|myeloma|melanoma|sarcoma|glioma|blastoma|malignan|metasta|oncolog|myelodysplastic|myeloproliferative|mesothelioma|carcinoid/i;
 
+/** Stricter malignancy check for trials that fit no cancer group: benign neoplasms (cysts, hemangioma) don't count. */
+const MALIGNANCY_TEXT = /cancer|tumou?r|carcinoma|lymphoma|leuk(a)?emia|myeloma|melanoma|sarcoma|glioma|blastoma|malignan|metasta|oncolog|myelodysplastic|myeloproliferative|mesothelioma|carcinoid|neoplasms?,? (germ|plasma|nerve|neuroepithelial|glandular|squamous|gonadal|neuroendocrine|adnexal|connective|complex|second primary|residual|unknown primary|multiple primary|embryonal)|waldenstr|hemangioendothelioma|endocrine neoplasia|intraepithelial (neoplasia|lesion)|mycosis fungoides|histiocytosis|polycythemia|myelofibrosis|thrombocythemia|mastocytosis|hodgkin|seminoma|teratoma|thymoma|paraganglioma|pheochromocytoma|insulinoma|neurofibroma|meningioma|adenoma|polyps?\b/i;
+
 /**
  * Convert one validated ClinicalTrials.gov study into a TrialCard + U.S. sites, running
  * cancer-group mapping, barrier detection, and the rule fact layer. Never throws.
@@ -41,6 +44,11 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
     if (!meshTerms.some((t) => /^neoplasms/i.test(t)) && !conditions.some((c) => CANCER_TEXT.test(c)) && !CANCER_TEXT.test(ps.identificationModule.briefTitle)) {
       return { ok: false, id, reason: NOT_CANCER };
     }
+    const groups = mapGroups(meshTerms, conditions, ps.identificationModule.briefTitle, ps.identificationModule.officialTitle ?? "");
+    if (groups.length === 1 && groups[0] === "other") {
+      const text = [...conditions, ps.identificationModule.briefTitle, ps.identificationModule.officialTitle ?? "", ...meshTerms].join("\n");
+      if (!MALIGNANCY_TEXT.test(text)) return { ok: false, id, reason: NOT_CANCER };
+    }
     const minAge = parseAge(elig.minimumAge);
     const maxAge = parseAge(elig.maximumAge);
     let summary = unescapeMarkdown(ps.descriptionModule?.briefSummary ?? "").trim();
@@ -55,7 +63,7 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       phases: (ps.designModule?.phases ?? []).filter((p) => p !== "NA"),
       conditions,
       meshTerms: [...new Set(meshTerms)],
-      groups: mapGroups(meshTerms, conditions, ps.identificationModule.briefTitle),
+      groups,
       sponsor: ps.sponsorCollaboratorsModule?.leadSponsor?.name ?? "Not listed",
       minAge,
       maxAge,
@@ -63,7 +71,7 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       inclusion,
       exclusion,
       contacts: contacts(study),
-      barriers: detectBarriers({ inclusion, exclusion, maxAge, ...(elig.maximumAge ? { maxAgeRaw: elig.maximumAge } : {}) }),
+      barriers: detectBarriers({ inclusion, exclusion, maxAge, minAge, ...(elig.maximumAge ? { maxAgeRaw: elig.maximumAge } : {}) }),
       facts: extractRuleFacts(inclusion, exclusion),
       siteCount: sites.length,
       states: [...new Set(sites.map((s) => STATE_CODES[s.state] ?? s.state))].sort(),

@@ -1,7 +1,14 @@
 import { BIOMARKERS } from "@/config/biomarkers";
 import {
   ALLOWED,
+  ALTERNATIVE_NEAR,
   CONCURRENT_TRIAL,
+  EXAMPLE_CONTEXT,
+  LIST_CONTEXT,
+  OR_NEAR,
+  OTHER_MALIGNANCY,
+  OTHER_STAGES,
+  UNLESS,
   LOCAL_METASTASES_ONLY,
   METASTATIC,
   NEGATION,
@@ -23,8 +30,34 @@ type Candidate = { key: FactKey; value: FactValue };
 /** Strength order when one key is found several times: a directional fact beats "mentioned". */
 const STRENGTH: Record<FactValue, number> = { required: 2, excluded: 2, mentioned: 1 };
 
+/** Split a criterion into clause-level segments so a negation or list in one sentence cannot affect another. */
+export function segments(text: string): string[] {
+  const guarded = text.replace(/\b(e\.g|i\.e|vs|approx|incl|etc)\./gi, (m) => m.replace(".", "\u0001"));
+  return guarded
+    .split(/\n+|(?<=[.;?!])\s+(?=[A-Z0-9(\[*\u2022-])|\s+(?=\d{1,2}(?:\.\d{1,2})+\.?\s+[A-Z])/)
+    .map((x) => x.replace(/\u0001/g, ".").trim())
+    .filter(Boolean);
+}
+
 /** Extract rule-layer candidate facts from a single criterion. Pure; exported for tests. */
 export function factsForCriterion(section: CriterionSection, text: string): Candidate[] {
+  const best = new Map<FactKey, Candidate>();
+  for (const seg of segments(text)) {
+    for (const c of factsForSegment(section, seg)) {
+      const prev = best.get(c.key);
+      if (!prev || STRENGTH[c.value] > STRENGTH[prev.value]) best.set(c.key, c);
+    }
+  }
+  return [...best.values()];
+}
+
+/** True when an unclosed "(" precedes `index`, i.e. the match sits inside a parenthetical. */
+function insideParens(text: string, index: number): boolean {
+  const before = text.slice(0, index);
+  return before.lastIndexOf("(") > before.lastIndexOf(")");
+}
+
+function factsForSegment(section: CriterionSection, text: string): Candidate[] {
   const out: Candidate[] = [];
   const incl = section === "inclusion";
 
@@ -32,23 +65,44 @@ export function factsForCriterion(section: CriterionSection, text: string): Cand
   for (const [key, re] of Object.entries(THERAPY_PATTERNS) as [keyof typeof THERAPY_PATTERNS, RegExp][]) {
     const m = re.exec(text);
     if (!m || !PRIOR_CONTEXT.test(text)) continue;
-    // Negation only counts when it precedes the therapy word closely ("no prior chemotherapy").
-    const before = text.slice(Math.max(0, m.index - 40), m.index);
-    const negated = NEGATION.test(before) || /na[iï]ve/i.test(text.slice(m.index, m.index + m[0].length + 20));
-    if (WASHOUT.test(text) || ALLOWED.test(text)) out.push({ key, value: "mentioned" });
+    // Negation only counts when it precedes the therapy word closely, inside the same clause
+    // ("no prior chemotherapy"); the clause starts after the last comma/semicolon/colon.
+    const lead = text.slice(Math.max(0, m.index - 60), m.index);
+    const clause = lead.slice(Math.max(lead.lastIndexOf(","), lead.lastIndexOf(";"), lead.lastIndexOf(":")) + 1);
+    const negated = NEGATION.test(clause) || /na[iï]ve/i.test(text.slice(m.index, m.index + m[0].length + 20));
+    const context = EXAMPLE_CONTEXT.test(lead) || insideParens(text, m.index) || UNLESS.test(text);
+    if (WASHOUT.test(text) || ALLOWED.test(text) || context) out.push({ key, value: "mentioned" });
     else if (incl) out.push({ key, value: negated ? "excluded" : "required" });
-    else out.push({ key, value: "excluded" });
+    // Exclusion: "not (yet) treated with X" describes people lacking X, so having had X is not an exclusion.
+    else out.push({ key, value: negated ? "mentioned" : "excluded" });
   }
 
   // Metastatic disease. Brain/bone-metastasis-only exclusions do not exclude metastatic disease in general.
+  // Alternatives ("Stage III or IV", "advanced or metastatic", "primary or metastatic") never decide it.
   if (NON_METASTATIC.test(text)) out.push({ key: "metastatic", value: incl ? "excluded" : "mentioned" });
-  else if (METASTATIC.test(text)) {
-    if (incl) out.push({ key: "metastatic", value: "required" });
-    else if (!LOCAL_METASTASES_ONLY.test(text)) out.push({ key: "metastatic", value: "excluded" });
+  else {
+    const mm = METASTATIC.exec(text);
+    if (mm) {
+      const near = text.slice(Math.max(0, mm.index - 45), mm.index + mm[0].length + 30);
+      // Brain/CNS-only mentions and "may have / allowed" wording say who may join, not that metastatic disease is required.
+      const alternative = ALTERNATIVE_NEAR.test(near) || OTHER_STAGES.test(text) || UNLESS.test(text) || (incl && (LOCAL_METASTASES_ONLY.test(text) || ALLOWED.test(text)));
+      if (alternative) out.push({ key: "metastatic", value: "mentioned" });
+      else if (incl) out.push({ key: "metastatic", value: "required" });
+      else if (OTHER_MALIGNANCY.test(text)) out.push({ key: "metastatic", value: "mentioned" });
+      else if (!LOCAL_METASTASES_ONLY.test(text)) out.push({ key: "metastatic", value: "excluded" });
+    }
   }
 
-  if (incl && NEWLY_DIAGNOSED.test(text)) out.push({ key: "newly_diagnosed", value: "required" });
-  if (incl && PREVIOUSLY_TREATED.test(text)) out.push({ key: "previously_treated", value: "required" });
+  const untreatedWording = NEWLY_DIAGNOSED.test(text);
+  if (incl && untreatedWording) out.push({ key: "newly_diagnosed", value: "required" });
+  const pt = PREVIOUSLY_TREATED.exec(text);
+  if (incl && pt) {
+    // "No documented progression ...", "previously untreated ... or recurrent" do not mean "previously treated".
+    const lead = text.slice(Math.max(0, pt.index - 40), pt.index);
+    if (untreatedWording || NEGATION.test(lead) || ALTERNATIVE_NEAR.test(text.slice(Math.max(0, pt.index - 25), pt.index))) {
+      out.push({ key: "previously_treated", value: "mentioned" });
+    } else out.push({ key: "previously_treated", value: "required" });
+  }
 
   // Pregnancy: exclusion criteria, or inclusion requiring a negative pregnancy test / not pregnant.
   if (PREGNANCY.test(text) && (!incl || /negative|not (be )?pregnant|non-?pregnant/i.test(text))) out.push({ key: "pregnancy", value: "excluded" });
@@ -58,8 +112,14 @@ export function factsForCriterion(section: CriterionSection, text: string): Cand
   }
 
   // Triple-negative breast cancer required => HER2-positive and HR-positive patients are excluded.
-  if (incl && TRIPLE_NEGATIVE.test(text)) {
-    out.push({ key: "biomarker:HER2", value: "excluded" }, { key: "biomarker:HR", value: "excluded" });
+  // Only when TNBC is the criterion's subject, not one item in a list of tumor types or an "either ... or" option.
+  const tn = TRIPLE_NEGATIVE.exec(text);
+  const listy = LIST_CONTEXT.test(text);
+  if (incl && tn) {
+    const tnList = /[,;/]\s*$/.test(text.slice(Math.max(0, tn.index - 4), tn.index)) || /^\s*[,;/]/.test(text.slice(tn.index + tn[0].length, tn.index + tn[0].length + 3));
+    const tnAlt = OR_NEAR.test(text.slice(Math.max(0, tn.index - 25), tn.index + tn[0].length + 40)) || /\beither\b/i.test(text);
+    if (listy || tnList || tnAlt) out.push({ key: "biomarker:HER2", value: "mentioned" }, { key: "biomarker:HR", value: "mentioned" });
+    else out.push({ key: "biomarker:HER2", value: "excluded" }, { key: "biomarker:HR", value: "excluded" });
   }
 
   // Biomarkers: direction from positive/negative wording near the marker.
@@ -89,7 +149,9 @@ export function factsForCriterion(section: CriterionSection, text: string): Cand
       neg = NEGATIVE_WORDS.test(window);
     }
     let value: FactValue = "mentioned";
-    if (pos !== neg) {
+    // In inclusion text a marker offered as one of several options ("A or B", "one of the following cancers") is not required.
+    const optional = incl && (listy || OR_NEAR.test(text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 25)));
+    if (pos !== neg && !optional) {
       // inclusion+positive => required; inclusion+negative => positive patients excluded;
       // exclusion+positive => excluded; exclusion+negative => negative patients excluded (positive required).
       if (incl) value = pos ? "required" : "excluded";

@@ -110,6 +110,37 @@ describe("rule facts", () => {
   });
 });
 
+describe("rule facts: misread criteria (H2)", () => {
+  const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
+  it("treats stage III or IV and advanced-or-metastatic alternatives as mentioned", () => {
+    expect(v("inclusion", "Unresectable Stage III or Stage IV HER2 negative breast cancer (either triple negative or hormone receptor positive)", "metastatic")).toBe("mentioned");
+    expect(v("inclusion", "Metastatic disease or unresectable locally-advanced disease", "metastatic")).toBe("mentioned");
+    expect(v("inclusion", "Lesions on PET or CT concerning for primary or metastatic malignancy", "metastatic")).toBe("mentioned");
+    expect(v("inclusion", "Locally advanced/metastatic breast cancer", "metastatic")).toBe("mentioned");
+    expect(v("inclusion", "Histologically confirmed metastatic NSCLC", "metastatic")).toBe("required");
+    expect(v("exclusion", "History of another primary or metastatic malignancy within 3 years", "metastatic")).toBe("mentioned");
+    expect(v("exclusion", "Untreated metastases to the Central Nervous System (CNS).", "metastatic")).toBeUndefined();
+  });
+  it("does not invert negations or read therapy lists as requirements", () => {
+    expect(v("exclusion", "Spinal cord compression not definitively treated with surgery or radiation", "prior_surgery")).toBe("mentioned");
+    expect(v("exclusion", "Spinal cord compression not definitively treated with surgery or radiation", "prior_radiation")).toBe("mentioned");
+    expect(v("exclusion", "Malabsorption or any condition that will interfere with drug absorption (e.g., gastrectomy, prior surgery of the small bowel)", "prior_surgery")).toBe("mentioned");
+    expect(v("exclusion", "Prior chemotherapy for this cancer", "prior_chemotherapy")).toBe("excluded");
+    expect(v("inclusion", "No documented PSA progression following the initial PSA nadir after starting ADT.", "previously_treated")).toBe("mentioned");
+    expect(v("inclusion", "Previously untreated Ph-positive ALL or relapsed CML. These participants could have received one or two courses of chemotherapy.", "previously_treated")).toBe("mentioned");
+    expect(v("inclusion", "Patient must have washed out of prior chemotherapy (at least 3 weeks), radiotherapy or surgery", "prior_surgery")).toBe("mentioned");
+    expect(v("inclusion", "Subjects must be PD-L1 negative and not be eligible for standard of care chemotherapy", "prior_chemotherapy")).not.toBe("required");
+  });
+  it("does not read TNBC in a tumor-type list as a HER2/HR exclusion", () => {
+    const list = "Tumor types expected to express lower levels of FcRn including: STS, TNBC, cervical cancer, NSCLC, ovarian cancer";
+    expect(v("inclusion", list, "biomarker:HER2")).toBe("mentioned");
+    expect(v("inclusion", list, "biomarker:HR")).toBe("mentioned");
+    expect(v("inclusion", "Participants must have one of the following cancers: TNBC, HER2+ gastric cancer", "biomarker:HER2")).toBe("mentioned");
+    expect(v("inclusion", "Unresectable Stage IV breast cancer (either triple negative or hormone receptor positive)", "biomarker:HR")).toBe("mentioned");
+    expect(v("inclusion", "Histologically confirmed triple-negative breast cancer", "biomarker:HER2")).toBe("excluded");
+  });
+});
+
 describe("mapGroups", () => {
   it("maps MeSH to groups, falls back to text, flags baskets, and defaults to other", () => {
     expect(mapGroups(["Breast Neoplasms"], [])).toEqual(["breast"]);

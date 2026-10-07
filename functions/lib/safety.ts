@@ -5,19 +5,35 @@ import type { RefusalReason } from "@/lib/types/ask";
  * Deterministic safety pre-checks for Trial Q&A (run before any AI call), in all four languages.
  * Crisis always wins. Eligibility/diagnosis/treatment-advice requests are politely refused.
  */
+/** Crisis patterns run on accent-stripped, lowercased text (so "suicídio" and "suicidio" both match). */
 const CRISIS = [
-  /\bsuicid/i,
-  /\bkill(ing)? (myself|me)\b/i,
-  /\bend (my life|it all)\b/i,
-  /\b(want|wanna|going) to die\b/i,
-  /\bdon'?t want to (live|be alive|go on)\b/i,
-  /\bno reason to live\b/i,
-  /\bself[- ]?harm\b|\bhurt(ing)? myself\b/i,
-  /\bcan'?t go on\b|\bbetter off dead\b|\bgive up on life\b/i,
-  /quitarme la vida|matarme|no quiero vivir|quiero morir(me)?|hacerme da[ñn]o/i,
-  /me matar|tirar (a )?minha (pr[oó]pria )?vida|n[aã]o quero (mais )?viver|quero morrer/i,
-  /touye t[eè]t mwen|mwen vle mouri|mwen pa vle viv ank[oò]/i,
+  /\bsuicid/,
+  /\bswisid/,
+  /\bkill(ing)? (myself|me)\b/,
+  /\b(end|ending) (my (own )?life|it all|everything)\b/,
+  /\b(take|taking) my own life\b|\b(end|ending) my own life\b/,
+  /\b(want|wanna|going|wish|wished|hope|ready|plan(ning)?|thinking of|thinking about) (to )?(die|dying|be dead)\b/,
+  /\bwish (i|that i) (were|was|am) (dead|gone|never born)\b|\bwish i (could )?(disappear|die)\b|\bwish i was never born\b/,
+  /\b(don'?t|do not|no longer) want to (live|be alive|be here|go on|exist|wake up)( anymore| any more)?\b/,
+  /\bwhat'?s the point (of|in) (living|life|going on|anything)\b|\bno point (in )?(living|going on|life)\b/,
+  /\bno reason to (live|go on|be here)\b/,
+  /\bself[- ]?harm\b|\b(hurt|hurting|harm|harming|cut|cutting) myself\b/,
+  /\bcan'?t go on\b|\bbetter off dead\b|\bgive up on life\b|\bnot worth living\b|\blife (is|isn'?t) worth\b.{0,10}\b(living|it)\b/,
+  /\b(overdose|overdosing|od)\b.{0,25}\b(on purpose|myself|pills|to die)\b|\b(i might|i will|i'?m going to|i want to|thinking of|going to) overdose\b|\bmight overdose\b/,
+  /\b(everyone|everybody|they|family) (would be|is|are) better off without me\b|\bbetter off without me\b/,
+  // Spanish
+  /quitarme la vida|quitar(me)? mi vida|matarme|suicidarme|no quiero vivir|no quiero seguir viviendo|quiero morir(me)?|quiero acabar con (mi vida|todo)|acabar con mi vida|terminar con mi vida|terminar mi vida|hacerme dano|ya no quiero estar aqui|mejor muerto|mejor muerta/,
+  // Portuguese
+  /me matar|tirar (a )?minha (propria )?vida|nao quero (mais )?viver|quero morrer|quero acabar com (a minha|minha) vida|acabar com a minha vida|acabar com minha vida|acabar com tudo|me machucar|melhor morto|melhor morta|nao aguento mais viver/,
+  // Haitian Creole
+  /touye (tet )?mwen|touye tet mwen|mwen vle mouri|mwen pa vle viv ank(o|a)?|mwen pa vle viv|met fen (a )?(lavi|vi) mwen|fini ak lavi mwen|pran lavi mwen|mwen vle fini ak (tout bagay|lavi)|mwen vle swisid|(pi bon|mye) mwen mouri/,
 ];
+
+/** Lowercase and strip diacritics so accented and unaccented spellings match the same pattern. */
+export function normalizeForSafety(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\u2018\u2019]/g, "'");
+}
+
 
 const REFUSALS: [RefusalReason, RegExp[]][] = [
   [
@@ -60,7 +76,8 @@ const REFUSALS: [RefusalReason, RegExp[]][] = [
 ];
 
 export function detectCrisis(question: string): boolean {
-  return CRISIS.some((re) => re.test(question));
+  const q = normalizeForSafety(question);
+  return CRISIS.some((re) => re.test(q));
 }
 
 export function detectRefusal(question: string): RefusalReason | null {
@@ -68,12 +85,36 @@ export function detectRefusal(question: string): RefusalReason | null {
   return null;
 }
 
+/**
+ * Deterministic post-filter for model-written text: it must never tell a person they are (not)
+ * eligible/qualified, or advise a treatment. Prompts forbid it; this enforces it on the output.
+ */
+const BANNED_OUTPUT = [
+  /\b(you|you're|you are|you'll|you would|you will|you may|you might|you could)\s+(also\s+|likely\s+|probably\s+|definitely\s+)?(be\s+)?(eligible|qualified|ineligible|a (good |strong )?(candidate|match|fit))\b/i,
+  /\byou\s+(?:(?:do|does|would|wouldn'?t|will|won'?t|likely|probably|might|may|could|can|can'?t|cannot|not|don'?t)\s+)*qualify\b/i,
+  /\byou should (take|stop|start|try|choose|skip|avoid|switch|refuse|get|have)\b|\bi (recommend|advise|suggest) (that )?you\b/i,
+  /\b(usted|ud\.?) (es elegible|califica|no califica)\b|\b(es|eres) elegible\b|\busted debe (tomar|dejar|empezar)\b/i,
+  /\bvoc[eê] ([eé] eleg[ií]vel|se qualifica|n[aã]o se qualifica|deve (tomar|parar|come[cç]ar))\b/i,
+  /\bou (kalifye|pa kalifye|elijib)\b/i,
+];
+export function violatesWording(text: string): boolean {
+  const t = text.replace(/[\u2018\u2019]/g, "'");
+  return BANNED_OUTPUT.some((re) => re.test(t));
+}
+
+export const NEUTRAL_NOTE: Record<Language, string> = {
+  en: "Please discuss this with your care team and the trial contact.",
+  es: "Hable de esto con su equipo médico y con el contacto del estudio.",
+  pt: "Converse sobre isso com sua equipe de saúde e com o contato do estudo.",
+  ht: "Tanpri pale sou sa ak ekip swen ou ak kontak etid la.",
+};
+
 type Msg = "crisis" | RefusalReason | "not_in_text" | "answer_intro";
 export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
   en: {
     crisis:
       "I'm really sorry you're going through this. You don't have to face it alone. In the U.S., you can call or text 988 to reach the Suicide & Crisis Lifeline, any time. If you are in immediate danger, call 911. Please also tell your care team how you are feeling.",
-    eligibility: "I can't tell whether you qualify for this trial. Only the trial team and your doctor can decide that. I can explain what a specific requirement says, so try asking about one.",
+    eligibility: "I can't tell whether this trial is a match for you. Only the trial team and your doctor can decide that. I can explain what a specific requirement says, so try asking about one.",
     diagnosis: "I can't interpret a diagnosis, stage, or test results. Your care team knows your full history and is the best place to ask.",
     treatment_advice: "I can't recommend treatments. Your care team can help you weigh your options, including whether this trial is worth discussing.",
     off_topic: "I can only answer questions about this trial's official information. Try asking about who can join, what is being tested, or the study requirements.",
@@ -83,7 +124,7 @@ export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
   es: {
     crisis:
       "Siento mucho que esté pasando por esto. No tiene que enfrentarlo solo. En EE. UU., puede llamar o enviar un mensaje de texto al 988 para comunicarse con la Línea de Prevención del Suicidio y Crisis, a cualquier hora. Si está en peligro inmediato, llame al 911. Cuéntele también a su equipo médico cómo se siente.",
-    eligibility: "No puedo decir si usted califica para este estudio. Solo el equipo del estudio y su médico pueden decidirlo. Puedo explicar lo que dice un requisito específico; pregunte por uno.",
+    eligibility: "No puedo decir si este estudio es una opción adecuada para usted. Solo el equipo del estudio y su médico pueden decidirlo. Puedo explicar lo que dice un requisito específico; pregunte por uno.",
     diagnosis: "No puedo interpretar un diagnóstico, una etapa ni resultados de pruebas. Su equipo médico conoce su historial completo y es el mejor lugar para preguntar.",
     treatment_advice: "No puedo recomendar tratamientos. Su equipo médico puede ayudarle a evaluar sus opciones, incluido si vale la pena hablar de este estudio.",
     off_topic: "Solo puedo responder preguntas sobre la información oficial de este estudio. Pregunte quién puede participar, qué se está probando o cuáles son los requisitos.",
@@ -93,7 +134,7 @@ export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
   pt: {
     crisis:
       "Sinto muito que você esteja passando por isso. Você não precisa enfrentar isso sozinho. Nos EUA, ligue ou envie uma mensagem de texto para 988 para falar com a Linha de Prevenção ao Suicídio e Crise, a qualquer hora. Se estiver em perigo imediato, ligue para 911. Conte também à sua equipe de saúde como você está se sentindo.",
-    eligibility: "Não posso dizer se você se qualifica para este estudo. Somente a equipe do estudo e seu médico podem decidir isso. Posso explicar o que diz um requisito específico; pergunte sobre um.",
+    eligibility: "Não posso dizer se este estudo é uma boa opção para você. Somente a equipe do estudo e seu médico podem decidir isso. Posso explicar o que diz um requisito específico; pergunte sobre um.",
     diagnosis: "Não posso interpretar diagnósticos, estágios ou resultados de exames. Sua equipe de saúde conhece todo o seu histórico e é o melhor lugar para perguntar.",
     treatment_advice: "Não posso recomendar tratamentos. Sua equipe de saúde pode ajudar você a avaliar suas opções, inclusive se vale a pena conversar sobre este estudo.",
     off_topic: "Só posso responder perguntas sobre as informações oficiais deste estudo. Pergunte quem pode participar, o que está sendo testado ou quais são os requisitos.",
@@ -103,7 +144,7 @@ export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
   ht: {
     crisis:
       "Mwen regrèt anpil ou ap pase sa a. Ou pa oblije fè fas ak li pou kont ou. Ozetazini, ou ka rele oswa voye tèks bay 988 pou jwenn Liy Sekou pou Swisid ak Kriz la, nenpòt lè. Si ou an danje kounye a, rele 911. Tanpri di ekip swen ou tou kijan ou santi ou.",
-    eligibility: "Mwen pa ka di si ou kalifye pou etid sa a. Se sèlman ekip etid la ak doktè ou ki ka deside sa. Mwen ka eksplike sa yon kondisyon espesifik di; poze kesyon sou youn.",
+    eligibility: "Mwen pa ka di si etid sa a se yon bon chwa pou ou. Se sèlman ekip etid la ak doktè ou ki ka deside sa. Mwen ka eksplike sa yon kondisyon espesifik di; poze kesyon sou youn.",
     diagnosis: "Mwen pa ka entèprete yon dyagnostik, yon etap, oswa rezilta tès. Ekip swen ou konnen tout istwa ou e se pi bon kote pou mande.",
     treatment_advice: "Mwen pa ka rekòmande tretman. Ekip swen ou ka ede ou konsidere opsyon ou yo, enkli si li vo lapenn pale sou etid sa a.",
     off_topic: "Mwen ka reponn sèlman kesyon sou enfòmasyon ofisyèl etid sa a. Mande kiyès ki ka patisipe, kisa y ap teste, oswa ki kondisyon yo.",

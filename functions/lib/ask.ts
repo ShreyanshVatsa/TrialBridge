@@ -5,7 +5,7 @@ import { apiError, devCorsHeaders, isSameOrigin, json, readJsonBody } from "./ht
 import { checkRateLimit, hashIp } from "./ratelimit";
 import { sha256Hex, stableStringify, utcDay } from "./crypto";
 import { tryConsumeBudget } from "./budget";
-import { detectCrisis, detectRefusal, SAFE_REPLIES } from "./safety";
+import { detectCrisis, detectRefusal, SAFE_REPLIES, violatesWording } from "./safety";
 import { runWithFailover } from "./ai/failover";
 import { dailyBudget } from "./ai/providers";
 import { parseAskOutput, verifyCitations } from "./ai/ask-output";
@@ -74,7 +74,8 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
 
   const outcome = await runWithFailover(
     deps.providers,
-    async (p) => {
+    async (p, reserve) => {
+      await reserve();
       const raw = await p.complete({
         messages: [
           { role: "system", content: ASK_SYSTEM_PROMPT },
@@ -84,6 +85,8 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
         ask: { question, language },
       });
       const out = parseAskOutput(raw);
+      // Model text must not claim eligibility or advise treatment: replace it with the safe refusal.
+      if (violatesWording(out.answer)) return { kind: "refusal" as const, refusalReason: "eligibility" as const, answer: SAFE_REPLIES[language].eligibility, citations: [] };
       const citations = verifyCitations(out.citations, trial);
       // Grounded-only: an "answer" without any verified citation becomes "not in the text".
       if (out.kind === "answer" && citations.length === 0) return { kind: "not_in_text" as const, refusalReason: null, answer: SAFE_REPLIES[language].not_in_text, citations: [] };

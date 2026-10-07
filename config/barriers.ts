@@ -2,7 +2,7 @@
  * Access-barrier rules (rule-based, transparent, versioned). Each flag stores the exact
  * triggering sentence. See lib/ingest/barriers.ts for how they are applied.
  */
-export const BARRIER_RULES_VERSION = "1";
+export const BARRIER_RULES_VERSION = "2";
 
 /** Upper age limit below this (years) is flagged. */
 export const UPPER_AGE_LIMIT_THRESHOLD = 75;
@@ -26,10 +26,15 @@ export const ENGLISH_REQUIRED_EXCLUSION = [
 /** If a sentence offers another language or interpreters, it is not an English-only requirement. */
 export const ENGLISH_ALTERNATIVE = /\b(or|and\/or)\s+(spanish|another language|other languages?|chinese|french|portuguese)\b|\bspanish\s+or\b|\binterpret(er|ation)|\btranslat(ed|ion|or)\b|\bany language\b/i;
 
+/** Names of languages: a sentence that lists two or more of them is not an English-only requirement. */
+export const LANGUAGE_NAMES = /\b(english|spanish|french|german|russian|mandarin|chinese|cantonese|vietnamese|portuguese|korean|arabic|hindi|japanese|italian|tagalog|polish|creole|haitian|urdu|bengali|farsi|persian|hebrew|greek|turkish|armenian)\b/gi;
+/** "may be registered/enrolled without ..." style exceptions. */
+export const ENGLISH_EXCEPTION = /\bmay (still )?be (registered|enrolled|included|considered|eligible)\b|\b(exception|waived?)\b/i;
+
 /** Exclusion sentences referencing disability or impairment. */
 export const DISABILITY_PATTERNS = [
-  /\bdisabilit(y|ies)\b/i,
-  /\bhandicap/i,
+  /\b(with|having|has|have|of)\s+(an?\s+|any\s+)?(physical|intellectual|cognitive|learning|developmental|mental|severe)?\s*(disabilit(y|ies)|handicap)\b/i,
+  /\bdisabled\b/i,
   /\bwheelchair/i,
   /\b(blind|blindness|deaf|deafness)\b/i,
   /\b(hearing|visual|vision|cognitive|intellectual|mental)(ly)?\s+(impair|disab|deficit|incapac)/i,

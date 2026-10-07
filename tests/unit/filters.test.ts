@@ -20,6 +20,14 @@ describe("filters", () => {
     expect(passesGroup(makeCard(), "lung")).toBe(false);
     expect(passesGroup(makeCard(), "other")).toBe(true);
   });
+  it("solid-tumor basket trials apply to solid-tumor groups but not blood cancers or other baskets (H3)", () => {
+    const basket = makeCard({ groups: ["solid-tumors"] });
+    for (const g of ["lung", "breast", "sarcoma", "brain", "prostate"] as const) expect(passesGroup(basket, g)).toBe(true);
+    for (const g of ["leukemia", "lymphoma", "myeloma"] as const) expect(passesGroup(basket, g)).toBe(false);
+    expect(passesGroup(basket, "solid-tumors")).toBe(true);
+    // a card that names another specific type is not a pure basket
+    expect(passesGroup(makeCard({ groups: ["breast", "solid-tumors"] }), "lung")).toBe(false);
+  });
   it("age filter with open bounds", () => {
     expect(passesAge({ minAge: 18, maxAge: 70 }, 71)).toBe(false);
     expect(passesAge({ minAge: 18, maxAge: 70 }, 17)).toBe(false);

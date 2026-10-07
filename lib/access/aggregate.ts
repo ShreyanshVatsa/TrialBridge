@@ -18,7 +18,39 @@ function addTrial(c: CountsTuple, card: Pick<TrialCard, "barriers">): void {
 }
 
 const stateCode = (s: string): string => STATE_CODES[s] ?? s;
-const siteKey = (s: Site) => `${s.facility.toLowerCase().replace(/\s*\(site[^)]*\)\s*/g, " ").replace(/[^a-z0-9]+/g, " ").trim()}|${s.city.toLowerCase()}|${stateCode(s.state)}`;
+
+/** Placeholder facility names used by sponsors; not real institutions, so they never form a site row. */
+const GENERIC_FACILITY = /^\s*((research|clinical|investigational|investigator|local|study|trial)\s+(site|center|centre|institution)s?|(gsk|pfizer|novartis|lilly|merck|bms|astrazeneca|roche|amgen)?\s*investigational (site|center)|site\s*#?\d+)\s*(#?\d+)?\s*$/i;
+
+/** Aliases for the largest cancer centers, whose name varies by trial ("M D Anderson", "UT MD Anderson", "(All Protocol Activities)"). */
+const SITE_ALIASES: [RegExp, string][] = [
+  [/\b(banner|rush|baptist|cooper|cancer center at)\b.*\banderson\b|\banderson\b.*\b(banner|rush|baptist|cooper)\b/i, ""],
+  [/\bm\.?\s?d\.?\s?anderson\b/i, "MD Anderson Cancer Center"],
+  [/\bmemorial sloan[- ]?kettering\b|\bmskcc\b/i, "Memorial Sloan Kettering Cancer Center"],
+  [/\bdana[- ]?farber\b/i, "Dana-Farber Cancer Institute"],
+  [/^mayo clinic(?! health)/i, "Mayo Clinic"],
+  [/^city of hope\b/i, "City of Hope"],
+  [/\bemory\b|\bwinship\b/i, "Emory University"],
+];
+
+/**
+ * Canonical identity of a site: major centers are merged across name variants (per city, so separate
+ * campuses stay separate); generic placeholder names return null and are left out of the site table.
+ */
+export function canonicalSite(s: Site): { key: string; facility: string } | null {
+  const raw = s.facility.trim();
+  if (!raw || GENERIC_FACILITY.test(raw)) return null;
+  const city = s.city.toLowerCase();
+  const st = stateCode(s.state);
+  for (const [re, name] of SITE_ALIASES) {
+    if (re.test(raw)) {
+      if (name === "") break; // a differently-owned partner site: keep its own name
+      return { key: `alias:${name.toLowerCase()}|${city}|${st}`, facility: name };
+    }
+  }
+  const norm = raw.toLowerCase().replace(/\s*\((site|all protocol|limited protocol|consent only|data collection)[^)]*\)\s*/g, " ").replace(/\s*\(\s*site[^)]*\)\s*/g, " ").replace(/^the\s+/, "").replace(/[^a-z0-9]+/g, " ").trim();
+  return { key: `${norm}|${city}|${st}`, facility: raw };
+}
 
 /** Compute national Access Intelligence aggregates from cards + sites. Pure; deterministic. */
 export function aggregateAccess(cards: readonly TrialCard[], sitesById: ReadonlyMap<string, readonly Site[]>, dataDate: string, dataVersion: string): AccessData {
@@ -40,11 +72,13 @@ export function aggregateAccess(cards: readonly TrialCard[], sitesById: Readonly
     }
     const seen = new Set<string>();
     for (const s of trialSites) {
-      const key = siteKey(s);
+      const canon = canonicalSite(s);
+      if (!canon) continue;
+      const key = canon.key;
       if (seen.has(key)) continue; // a trial counts once per site
       seen.add(key);
       let entry = sites.get(key);
-      if (!entry) sites.set(key, (entry = { site: s, counts: zero(), groups: {} }));
+      if (!entry) sites.set(key, (entry = { site: { ...s, facility: canon.facility }, counts: zero(), groups: {} }));
       addTrial(entry.counts, card);
       for (const g of card.groups) addTrial((entry.groups[g] ??= zero()), card);
     }
