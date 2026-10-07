@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { chooseLanguage } from "./i18n-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { answerCurrent, answerEssentials, completeIntake, freshFind, RESULTS_HEADING, sampleTrialId, SUMMARY_HEADING } from "./helpers";
 
@@ -39,7 +40,7 @@ test("axe: results view and Spanish UI", async ({ page }) => {
   await expect(page.getByText(RESULTS_HEADING)).toBeVisible({ timeout: 90_000 });
   await expectNoSeriousViolations(page, "results");
   await page.goto("/");
-  await page.getByLabel("Language").first().selectOption("es");
+  await chooseLanguage(page, "es");
   await expect(page.locator("h1")).toHaveText(/Encuentre/);
   await expectNoSeriousViolations(page, "landing-es");
 });

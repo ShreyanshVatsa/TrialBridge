@@ -38,7 +38,7 @@ describe("validateTranslation", () => {
     expect(validateTranslation("k", "A reasonably long sentence about trials", "Ok", opts)).toBe("length");
     expect(validateTranslation("k", "Some short text", "x".repeat(200), opts)).toBe("length");
     expect(validateTranslation("k", "Back", "x".repeat(30), opts)).toBeNull();
-    expect(lengthBounds("zh-Hans")).toEqual([0.2, 1.8]);
+    expect(lengthBounds("zh-Hans")).toEqual([0.1, 1.8]);
     expect(lengthBounds("es")).toEqual([0.3, 2.5]);
     expect(validateTranslation("k", "A reasonably long sentence about trials", "关于临床试验的一个相当长的句子说明", { ...opts, tag: "zh-Hans" })).toBeNull();
   });

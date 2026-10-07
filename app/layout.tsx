@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: /theme-init.js may add the "dark" class before React hydrates.
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="en" dir="ltr" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
       <head>
         {/* Blocking on purpose: sets theme + language before first paint (tiny, same-origin, CSP-safe). */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
