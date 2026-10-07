@@ -534,3 +534,7 @@ export function clearSession(): void {
     /* ignore */
   }
 }
+
+// Contract C3 also lists the pool builder and the adapter here (they live in their own modules).
+export { buildCandidatePool, poolFromEntries } from "./pool";
+export { toIntakeAnswers } from "./adapter";
