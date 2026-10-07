@@ -7,4 +7,4 @@ export const EMBEDDING_DTYPE = "q8" as const;
 export const INT8_SCALE = 127;
 /** Pipeline/prompt versions recorded in meta.json and used in cache keys. */
 export const PIPELINE_VERSION = "1.0.0";
-export const PROMPT_VERSION = "analyze-v1";
+export const PROMPT_VERSION = "analyze-v2";

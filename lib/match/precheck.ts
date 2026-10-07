@@ -27,9 +27,18 @@ const TREATMENT_FACTS: Record<string, Exclude<Treatment, "none" | "not_sure">> =
  * "prefer not to say" never penalize. "mentioned" facts (direction unknown) and facts where the
  * rule and LLM layers disagree (needsReview) are ignored.
  */
-export function precheck(answers: Pick<IntakeAnswers, "spread" | "treatments" | "biomarkers" | "pregnant" | "inAnotherTrial">, facts: readonly Fact[]): PrecheckNote[] {
+export interface PrecheckAnswers {
+  spread: IntakeAnswers["spread"];
+  /** v1 treatments; the AI-side profile may also list hormone_therapy / stem_cell_transplant (no v1 facts). */
+  treatments: readonly string[];
+  biomarkers: IntakeAnswers["biomarkers"];
+  pregnant: IntakeAnswers["pregnant"];
+  inAnotherTrial: "yes" | "no" | "not_sure";
+}
+
+export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): PrecheckNote[] {
   const notes: PrecheckNote[] = [];
-  const t = new Set(answers.treatments);
+  const t = new Set<string>(answers.treatments);
   const treatmentsKnown = !t.has("not_sure");
   const hadNone = t.has("none") && t.size === 1;
   const hadAny = treatmentsKnown && !hadNone;

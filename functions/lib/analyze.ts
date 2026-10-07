@@ -1,6 +1,6 @@
 import { AnalyzeRequestSchema, type AnalyzeResponse, type MinimizedProfile, type TrialAnalysis } from "@/lib/types/analysis";
-import { PROMPT_VERSION } from "@/config/embedding";
-import { ANALYZE_SYSTEM_PROMPT, buildAnalyzeUserPrompt, buildRepairPrompt } from "@/prompts/analyze-v1";
+import { isAiExperimental } from "@/lib/i18n/ai-language";
+import { ANALYZE_PROMPT_VERSION, ANALYZE_SYSTEM_PROMPT, buildAnalyzeUserPrompt, buildRepairPrompt } from "@/prompts/analyze-v2";
 import type { Env } from "./env";
 import { apiError, devCorsHeaders, isSameOrigin, json, readJsonBody } from "./http";
 import type { KvStore } from "./store";
@@ -101,7 +101,7 @@ export async function handleAnalyze(request: Request, deps: AnalyzeDeps): Promis
 
   const ids = [...new Set(nctIds)].sort(); // sorted: one cache entry per set, whatever order the client sent
   const trials = await deps.trials.getTrials(ids);
-  const experimental = profile.language === "ht";
+  const experimental = isAiExperimental(profile.language);
   const dataVersion = env.DATA_VERSION ?? "unknown";
   if (trials.length === 0) {
     const empty: AnalyzeResponse = { status: "degraded", provider: null, results: [], experimental, cached: false, degradedReason: "ai_unavailable" };
@@ -110,7 +110,7 @@ export async function handleAnalyze(request: Request, deps: AnalyzeDeps): Promis
 
   // Include a hash of the trials' own text so cached analyses refresh whenever trial data changes.
   const contentHash = (await sha256Hex(stableStringify(trials))).slice(0, 16);
-  const cacheKey = await analysisCacheKey(profile, ids, `${dataVersion}:${contentHash}`, PROMPT_VERSION);
+  const cacheKey = await analysisCacheKey(profile, ids, `${dataVersion}:${contentHash}`, ANALYZE_PROMPT_VERSION);
   const hit = await deps.store.get(cacheKey);
   if (hit) {
     const cached = JSON.parse(hit) as { provider: string; results: TrialAnalysis[] };
