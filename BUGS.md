@@ -205,3 +205,17 @@ No Blocker found: the app builds, runs with no keys, and all tests pass. The def
 
 ## Deferred by user (not reported as bugs)
 Hosting and deployment (Cloudflare, D1 import, domain, secrets, production Turnstile keys), CI workflows, monthly refresh workflow, Dependabot, full Ollama/llama.cpp LLM fact extraction (only 4 trials tested), `npm run eval:live`, partner email (`NEXT_PUBLIC_PARTNER_EMAIL`), founder story text, clinician-reviewed labels, native-speaker translation review.
+
+---
+
+## Fix status (2026-10-07)
+
+Fixed (commits 4643ebc backend/data, 8046053 UI): H1, H2, H3, M1, M2, M3, M4, M5, M6, M7, M8, L1, L2, L3, L4, L5, L7, L8, L9, L10, L11, L12.
+
+Partial: M9 (psychiatric-compliance exclusions stay flagged by design, see DECISIONS.md).
+
+Still open: L6 (service worker never evicts old caches; needs a build id baked in by `scripts/postbuild.ts` and cache cleanup in `public/sw.js`), L13 (eval is weak evidence for the national product; judgement call, `eval:live` deferred).
+
+Effects on national data after the rule fixes (5,726 trials; 53 non-cancer studies dropped): `metastatic:required` 2,156 to 817; `upper_age_limit` 526 to 185; any barrier 1,603 to 1,270. Seed nDCG@10 moved 0.819 to 0.800 because fewer rule penalties now reorder results; labels are synthetic.
+
+Verified after fixes: lint, typecheck, 219 unit tests, `npm audit` (0), build, eval (0% hard-filter violations). Agents report 40/40 e2e passing; not re-run by the coordinator.
