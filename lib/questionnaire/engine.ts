@@ -31,6 +31,7 @@ import {
   DEFAULT_BIOMARKER_PRIOR,
   DEFAULT_P_UNKNOWN,
   ESSENTIAL_ORDER,
+  FALLBACK_PRIORS,
   FAMILY_DOWNWEIGHT,
   HARD_EXCLUDED_LIKELIHOOD,
   HIGH_UNKNOWN_PRIOR,
@@ -53,6 +54,7 @@ import {
   compileAnswer,
   compileState,
   factRelation,
+  fitAnswer,
   groupOf,
   hardFilters,
   isNonResponse,
@@ -128,8 +130,8 @@ function removeQuestion(state: QuestionnaireState, id: string): QuestionnaireSta
 /**
  * Record an answer. `DEFER` ("My doctor can fill this in later") stores null and lists the question under
  * `deferred`; it counts as unknown for matching. Editing an earlier answer keeps its place in the history
- * and drops later answers whose prerequisites no longer hold (cascading), returned in `dropped` so the UI
- * can say so. `opts.gain` (the step's utility) orders the Find-out list.
+ * and drops (or trims) other answers that no longer apply, returned in `dropped` so the UI can say so. When the
+ * cancer type changes, pass the new group's catalog. `opts.gain` (the step's utility) orders the Find-out list.
  */
 export function applyAnswer(
   state: QuestionnaireState,
@@ -148,16 +150,31 @@ export function applyAnswer(
   };
   if (opts.gain !== undefined && Number.isFinite(opts.gain) && opts.gain >= 0) next.gains = { ...state.gains, [q]: opts.gain };
 
+  // Re-check every other answer against this catalog (pass the catalog of the CURRENT cancer type): answers to
+  // questions that no longer exist or apply, whose prerequisites fail, or whose options / biomarkers are not
+  // offered for this group (e.g. a lung biomarker grid after switching to breast) are dropped or trimmed.
   const dropped: string[] = [];
+  const byId = new Map(catalog.map((d) => [d.id as string, d]));
+  for (const id of Object.keys(next.answers)) {
+    if (id !== q && !byId.has(id) && !ESSENTIALS.includes(id)) {
+      next = removeQuestion(next, id);
+      dropped.push(id);
+    }
+  }
   for (let changed = true; changed; ) {
     changed = false;
     const group = groupOf(next);
     for (const d of catalog) {
-      if (d.id === q || next.answers[d.id] === undefined || isEssential(d, d.id)) continue;
-      if (!appliesToGroup(d, group) || !prerequisitesHold(d, next)) {
+      const v = next.answers[d.id];
+      if (d.id === q || v === undefined || isEssential(d, d.id)) continue;
+      const fitted = appliesToGroup(d, group) && prerequisitesHold(d, next) ? fitAnswer(d, v) : undefined;
+      if (fitted === undefined) {
         next = removeQuestion(next, d.id);
         dropped.push(d.id);
         changed = true;
+      } else if (fitted !== v) {
+        next = { ...next, answers: { ...next.answers, [d.id]: fitted } };
+        dropped.push(d.id);
       }
     }
   }
@@ -266,8 +283,13 @@ interface Hypothesis {
 }
 
 /** Definite answer hypotheses with P(a), grouped into independent sub-questions (one per biomarker). */
+/** Answer priors for a question in a group: the catalog's, else the engine fallback (constants.ts), else none. */
+export function optionPriors(q: QuestionDef, group: CancerGroupId): Record<string, number> | undefined {
+  return q.priors?.[group] ?? FALLBACK_PRIORS[q.id]?.(group);
+}
+
 function hypotheses(q: QuestionDef, group: CancerGroupId): Hypothesis[][] {
-  const priors = q.priors?.[group];
+  const priors = optionPriors(q, group);
   if (q.type === "biomarker_grid") {
     return (q.biomarkers ?? []).map((m) => {
       const pos = priors?.[`${m}:positive`] ?? DEFAULT_BIOMARKER_PRIOR.positive;
@@ -301,7 +323,7 @@ export function unknownPrior(q: QuestionDef, group: CancerGroupId): number {
   return per.reduce((a, b) => a + b, 0) / per.length;
 }
 
-/** Likelihood of a hypothetical answer for one trial. */
+/** Likelihood of a hypothetical answer for one trial: e^-LAMBDA on a conflict, e^MU on a support, else 1. */
 function likelihood(c: CompiledAnswer, t: PoolTrial, policy: FactPolicyMap | undefined): number {
   if (c.hardFilter && !passesHardFilters(t.sex, c.hardFilter)) return HARD_EXCLUDED_LIKELIHOOD;
   const r = trialRelation([c], t.facts, policy);
@@ -404,7 +426,8 @@ function nextEssential(state: QuestionnaireState, catalog: readonly QuestionDef[
   const ordered = [...ESSENTIALS.map((id) => byId.get(id)).filter((q): q is QuestionDef => q !== undefined), ...catalog.filter((q) => q.tier === "essential" && !ESSENTIALS.includes(q.id))];
   const group = groupOf(state);
   for (const q of ordered) {
-    if (state.answers[q.id] !== undefined && state.answers[q.id] !== null) continue;
+    // Answered = present. null is a valid essential answer (travel "anywhere" may be stored as null).
+    if (state.answers[q.id] !== undefined) continue;
     if (!ESSENTIALS.includes(q.id) && (!appliesToGroup(q, group) || !prerequisitesHold(q, state))) continue;
     return q;
   }
@@ -487,7 +510,9 @@ export function findOutList(state: QuestionnaireState, catalog: readonly Questio
       (Array.isArray(v) && v.length > 0 && v.every((x) => isNonResponseId(x) && x !== PREFER_NOT)) ||
       (v !== null && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((x) => isNonResponseId(x)));
     if (!gap) continue;
-    const def = items?.[q.id] ?? (q.findOutKey ? { whatKey: q.findOutKey, whereKey: q.findOutKey, whyKey: q.whyKey } : null);
+    // Items are keyed by question id or by find-out id ("findOut.<id>.what" -> <id>, config/questionnaire/find-out.ts).
+    const findOutId = q.findOutKey?.match(/^findOut\.(.+)\.what$/)?.[1];
+    const def = items?.[q.id] ?? (findOutId ? items?.[findOutId] : undefined) ?? (q.findOutKey ? { whatKey: q.findOutKey, whereKey: q.findOutKey, whyKey: q.whyKey } : null);
     if (!def) continue;
     entries.push({ question: q.id, whatKey: def.whatKey, whereKey: def.whereKey, whyKey: def.whyKey, deferred });
   }

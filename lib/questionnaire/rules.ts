@@ -20,7 +20,7 @@ import {
   type QuestionDef,
   type QuestionnaireState,
 } from "@/lib/types/questionnaire";
-import { Q_CANCER_TYPE } from "./constants";
+import { Q_AGE, Q_CANCER_TYPE } from "./constants";
 
 /** A trial fact without its quote (enough for matching; lite cards and the candidate pool carry only this). */
 export interface CompactFact {
@@ -81,8 +81,11 @@ function answerIds(v: AnswerValue): string[] {
   return isNonResponse(v) ? [UNKNOWN] : ["*"];
 }
 
-/** All prerequisites hold. Unanswered prerequisite questions fail `anyOf` and pass `negate` rules. */
+/** All prerequisites hold (and the patient is not older than the question's `maxAge`, e.g. pregnancy 59).
+ *  Unanswered prerequisite questions fail `anyOf` and pass `negate` rules; an unanswered age passes maxAge. */
 export function prerequisitesHold(q: QuestionDef, state: QuestionnaireState): boolean {
+  const age = state.answers[Q_AGE];
+  if (q.maxAge !== undefined && typeof age === "number" && age > q.maxAge) return false;
   for (const p of q.prerequisites ?? []) {
     const v = state.answers[p.question];
     if (v === undefined) {
@@ -237,4 +240,30 @@ export function passesHardFilters(trialSex: "ALL" | "FEMALE" | "MALE", f: HardFi
 /** English profile phrases from the chosen options, in catalog order. Non-responses add nothing. */
 export function queryTermsOf(compiled: readonly CompiledAnswer[]): string[] {
   return compiled.flatMap((c) => c.queryTerms);
+}
+
+/**
+ * An answer re-checked against a (possibly different group's) question definition: single answers must be one
+ * of its options, multi answers keep only its options, grid answers keep only its biomarkers. Returns the
+ * cleaned answer, or undefined when nothing valid is left (the answer is then dropped).
+ */
+export function fitAnswer(q: QuestionDef, v: AnswerValue): AnswerValue | undefined {
+  if (v === null || q.tier === "essential" || (typeof v === "string" && isNonResponseId(v))) return v;
+  const ids = new Set((q.options ?? []).map((o) => o.id));
+  const ok = (id: string) => ids.has(id) || isNonResponseId(id);
+  if (q.type === "single") return typeof v === "string" && ok(v) ? v : undefined;
+  if (q.type === "multi") {
+    if (!Array.isArray(v)) return undefined;
+    const kept = v.filter(ok);
+    return kept.length === v.length ? v : kept.length > 0 ? kept : undefined;
+  }
+  if (q.type === "biomarker_grid") {
+    if (typeof v !== "object" || Array.isArray(v)) return undefined;
+    if (!q.biomarkers) return v;
+    const allowed: readonly string[] = q.biomarkers;
+    const kept = Object.entries(v).filter(([m]) => allowed.includes(m));
+    if (kept.length === Object.keys(v).length) return v;
+    return kept.length > 0 ? Object.fromEntries(kept) : undefined;
+  }
+  return v;
 }

@@ -21,7 +21,7 @@ import {
   unknownPrior,
   type CandidatePool,
 } from "@/lib/questionnaire/engine";
-import { SESSION_KEY, SESSION_MAX_AGE_MS, STOP_RULES } from "@/lib/questionnaire/constants";
+import { SESSION_KEY, SESSION_MAX_AGE_MS, STOP_RULES, TAU } from "@/lib/questionnaire/constants";
 import type { QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { essentials, FIND_OUT, makePool, TEST_CATALOG } from "./qn-fixtures";
 
@@ -106,7 +106,7 @@ describe("engine: selection", () => {
     expect(entropy([0.5, 0.5])).toBeCloseTo(1, 12);
     expect(entropy([1, 0])).toBe(0);
     expect(softmax([])).toEqual([]);
-    const s = softmax([0, 0.15]);
+    const s = softmax([0, TAU]);
     expect(s[1]! / s[0]!).toBeCloseTo(Math.E, 9);
   });
 
@@ -149,7 +149,8 @@ describe("engine: selection", () => {
 describe("engine: stop rules", () => {
   it("quick mode asks at most 7 adaptive questions", () => {
     const catalog = [...TEST_CATALOG, ...Array.from({ length: 10 }, (_, i) => ({ ...Q("daily_activity"), id: `extra_${i}` }) as unknown as QuestionDef)];
-    const res = answerAll(essentials(), POOL, (q) => (q.options?.[0]?.id ?? "unknown"), catalog);
+    const first = (q: QuestionDef) => (q.type === "multi" ? [q.options![0]!.id] : q.type === "biomarker_grid" ? { EGFR: "positive" } : (q.options?.[0]?.id ?? "unknown"));
+    const res = answerAll(essentials(), POOL, first, catalog);
     expect(res.asked.length).toBeLessThanOrEqual(STOP_RULES.quick.maxQuestions);
     expect(["max_questions", "small_set", "low_gain", "exhausted"]).toContain(res.reason);
     const many = { ...essentials(), history: [...essentials().history, ...Array.from({ length: 7 }, (_, i) => `extra_${i}`)], answers: { ...essentials().answers, ...Object.fromEntries(Array.from({ length: 7 }, (_, i) => [`extra_${i}`, "unknown"])) } };

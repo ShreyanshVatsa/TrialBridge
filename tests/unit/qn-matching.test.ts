@@ -285,8 +285,12 @@ describe("candidate pool", () => {
     // searchTrials uses the catalog semantics when given a questionnaire + catalog.
     const out = await searchTrials(toIntakeAnswers(essentials("lung", { sex: "female" })), { catalog: TEST_CATALOG });
     expect(out.results.map((r) => r.card.id)).toEqual(["NCT00000011"]);
-    const legacy = await searchTrials(toIntakeAnswers(essentials("lung", { sex: "female" })));
-    expect(legacy.results).toHaveLength(2);
+    // Without an explicit catalog the real catalog (config/questionnaire) is used: sex still filters.
+    expect((await searchTrials(toIntakeAnswers(essentials("lung", { sex: "female" })))).results).toHaveLength(1);
+    // Without a questionnaire (v1 intake) there is no sex filter.
+    const { questionnaire: _q, ...v1 } = toIntakeAnswers(essentials("lung", { sex: "female" }));
+    void _q;
+    expect((await searchTrials(v1)).results).toHaveLength(2);
   });
 });
 

@@ -1,3 +1,5 @@
+import type { CancerGroupId } from "@/config/cancer-groups";
+
 /**
  * Named constants of the adaptive questionnaire engine (QUESTIONNAIRE_SPEC §2). Every number that
  * shapes which question is asked next lives here, with the reason, so the behavior is auditable.
@@ -12,9 +14,11 @@ export const ESSENTIAL_ORDER = [Q_CANCER_TYPE, Q_AGE, Q_ZIP, Q_TRAVEL] as const;
 
 /** Information gain is measured over the K best-scoring candidates (the ones a patient would actually see). */
 export const TOP_K = 60;
-/** Softmax temperature over candidate scores: p(t) ∝ exp(score / TAU). Scores live roughly in 0..1, so 0.15
- *  makes a 0.15 score gap ≈ e (2.7x) more probability mass, i.e. the same size as one rule conflict. */
-export const TAU = 0.15;
+/** Softmax temperature over candidate scores: p(t) ∝ exp(score / TAU). The spec proposed 0.15, which puts
+ *  almost all mass on the top 1-3 trials once one pulls ahead, so information gain went to ~0 while trials 4-10
+ *  (what the patient sees) could still change. 0.5 spreads mass over roughly the top 10-20: in the national
+ *  simulation (5,726 trials, 120 patients) adaptive nDCG@10 at k = 1..7 rose from 0.731-0.825 to 0.746-0.901. */
+export const TAU = 0.5;
 /** Likelihood of an answer for a trial it conflicts with: e^-LAMBDA. */
 export const LAMBDA = 1.2;
 /** Likelihood of an answer for a trial it supports: e^+MU. LAMBDA : MU mirrors CONFLICT_PENALTY : SUPPORT_BONUS damped. */
@@ -64,6 +68,21 @@ export const FAMILY_DOWNWEIGHT = 0.5;
 export const DEFAULT_P_UNKNOWN = 0.2;
 /** Default biomarker priors per marker (spec §7.2: patients answer "don't know" to biomarkers ~40% of the time). */
 export const DEFAULT_BIOMARKER_PRIOR = { positive: 0.2, negative: 0.4, unknown: 0.4 } as const;
+
+/** P(female) by group, for the fallback sex prior (structured-sex evidence, §0.1: breast 99%+ female, etc.). */
+export const P_FEMALE: Partial<Record<CancerGroupId, number>> = { breast: 0.99, ovarian: 1, "uterine-cervical": 1, prostate: 0 };
+/**
+ * Fallback answer priors for questions the catalog gives none for. Without them every definite option is
+ * equally likely, so "pregnant: yes" looked 40% likely and pregnancy was asked first in breast cancer.
+ * Catalog priors (config/questionnaire) always win.
+ */
+export const FALLBACK_PRIORS: Readonly<Record<string, (group: CancerGroupId) => Record<string, number>>> = {
+  pregnancy: () => ({ yes: 0.02, no: 0.88, unknown: 0.04, prefer_not: 0.06 }),
+  sex: (g) => {
+    const f = P_FEMALE[g] ?? 0.5;
+    return { female: 0.95 * f, male: 0.95 * (1 - f), prefer_not: 0.05 };
+  },
+};
 
 /** Session resume: tab-scoped sessionStorage only (never localStorage, IndexedDB or a server). */
 export const SESSION_KEY = "tb-questionnaire-v2";
