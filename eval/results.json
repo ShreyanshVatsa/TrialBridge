@@ -87,6 +87,12 @@
   "correct": 33,
   "precision": 0.66
  },
+ "assertions": {
+  "total": 45,
+  "passed": 38,
+  "regressions": 0,
+  "knownGaps": 7
+ },
  "mockAi": {
   "calls": 30,
   "jsonValidRate": 1,

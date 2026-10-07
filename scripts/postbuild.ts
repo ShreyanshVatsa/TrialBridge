@@ -8,10 +8,13 @@
  * 4. Remove ONNX Runtime .wasm copies the bundler emits into _next/static/media: the worker loads
  *    the runtime from /ort/ (explicit wasmPaths), and the bundler's asyncify copy exceeds
  *    Cloudflare's 25 MiB per-asset limit.
+ * 5. Stamp public/sw.js (copied to out/sw.js) with a build id derived from the built shell, so each
+ *    deploy has new worker bytes and its own cache name (old caches are deleted on activate).
  */
 import { readdir, readFile, writeFile, mkdir, stat, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { SW_PLACEHOLDER, computeBuildId, stampServiceWorker } from "./sw-build";
 
 const OUT = "out";
 // Must live under /_next/: Next's runtime checks document.currentScript.src contains "/_next/".
@@ -23,6 +26,12 @@ const SECRET_PATTERNS: [string, RegExp][] = [
   ["OpenAI-style key", /\bsk-[A-Za-z0-9]{32,}/],
   ["Private key", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ["Turnstile secret (non-test)", /0x4AAAAAAA[A-Za-z0-9_-]{20,}/],
+  ["Bearer token", /Bearer\s+[A-Za-z0-9._~+/-]{24,}/],
+  ["AWS access key", /\bAKIA[0-9A-Z]{16}\b/],
+  ["GitHub token", /\bgh[pousr]_[A-Za-z0-9]{30,}\b/],
+  ["Slack token", /\bxox[abprs]-[A-Za-z0-9-]{10,}/],
+  ["Hugging Face token", /\bhf_[A-Za-z0-9]{30,}\b/],
+  ["Env secret assignment", /\b(?:GROQ|CEREBRAS|OPENROUTER)_API_KEY\s*[:=]\s*["'][^"']{8,}|RATE_LIMIT_SALT\s*[:=]\s*["'][^"']{8,}|TURNSTILE_SECRET_KEY\s*[:=]\s*["'][^"']{8,}/],
   ["Cloudflare API token var", /CLOUDFLARE_API_TOKEN\s*[:=]\s*["'][^"']+/],
 ];
 const TEXT_EXT = new Set([".html", ".js", ".mjs", ".css", ".json", ".txt", ".map", ".webmanifest", ".xml"]);
@@ -81,6 +90,20 @@ async function main(): Promise<void> {
       const text = await readFile(file, "utf8");
       for (const [name, re] of SECRET_PATTERNS) if (re.test(text)) problems.push(`possible ${name} in ${file}`);
     }
+  }
+  // Runs after the HTML rewrite above so the id reflects the final shell.
+  const swFile = path.join(OUT, "sw.js");
+  const swSource = await readFile(swFile, "utf8");
+  if (!swSource.includes(SW_PLACEHOLDER)) problems.push(`${swFile} has no ${SW_PLACEHOLDER} placeholder`);
+  else {
+    const shell: [string, Buffer][] = [];
+    for await (const file of walk(OUT)) {
+      const rel = path.relative(OUT, file).split(path.sep).join("/");
+      if (rel.endsWith(".html") || rel.startsWith("_next/static/")) shell.push([rel, await readFile(file)]);
+    }
+    const buildId = computeBuildId(shell);
+    await writeFile(swFile, stampServiceWorker(swSource, buildId));
+    console.log(`postbuild: service worker build id ${buildId} (${shell.length} shell files)`);
   }
   if (problems.length) {
     console.error(`postbuild FAILED:\n  ${problems.join("\n  ")}`);

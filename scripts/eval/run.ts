@@ -23,6 +23,7 @@ import { verifyQuotes } from "../../functions/lib/quotes";
 import type { IntakeAnswers } from "../../lib/types/intake";
 import type { TrialCard } from "../../lib/types/trial";
 import { INT8_SCALE } from "../../config/embedding";
+import { loadAssertionCases, runAssertions } from "./assertions";
 
 const MODEL_DIR = path.resolve("data/cache/models");
 const MODELS = {
@@ -174,6 +175,9 @@ async function main(): Promise<void> {
   const factLabels = JSON.parse(readFileSync("eval/facts-labels.json", "utf8")) as { items: { correct: boolean; key: string }[] };
   const factCorrect = factLabels.items.filter((i) => i.correct).length;
 
+  // Hand-checkable rule assertions (second, independent evidence source).
+  const assertions = runAssertions(loadAssertionCases());
+
   // Mock AI analysis over the production system's top 15.
   let jsonValid = 0, calls = 0, quotesTotal = 0, quotesFailed = 0, agree = 0, labeled = 0;
   for (const p of profiles) {
@@ -217,6 +221,7 @@ async function main(): Promise<void> {
     variants: variantRows,
     hardFilterViolationRate: totalViolations / Math.max(1, variantRows.reduce((s, r) => s + r.results, 0)),
     facts: { sample: factLabels.items.length, correct: factCorrect, precision: factCorrect / factLabels.items.length },
+    assertions: { total: assertions.total, passed: assertions.passed, regressions: assertions.failed.length, knownGaps: assertions.knownFailing.length },
     mockAi: { calls, jsonValidRate: jsonValid / Math.max(1, calls), quotePassRate: 1 - quotesFailed / Math.max(1, quotesTotal), quotes: quotesTotal, agreement: agree / Math.max(1, labeled), labeled },
   };
   writeFileSync("eval/results.json", JSON.stringify(results, null, 1));
@@ -245,6 +250,11 @@ ${table}
 ## Eligibility facts (rule layer)
 - Precision on a ${results.facts.sample}-item hand-labeled random sample: **${pc(results.facts.precision)}** (${factCorrect}/${results.facts.sample}). Labels and reasons: \`eval/facts-labels.json\`. Typical errors: alternatives read as requirements ("recurrent OR metastatic"), planned (future) procedures read as prior treatment, and lists of eligible subtypes read as exclusions. Uncertain directions are stored as "mentioned" and never penalize; the optional local-LLM layer marks disagreements "needs review", which the pre-check also ignores.
 
+### Hand-checkable assertions (second evidence source)
+- \`eval/assertions.json\`: ${assertions.total} short criterion sentences with the facts a human reader expects, written before running the extractor and independent of both label files above. Exact-match on the set of facts per sentence.
+- Regression cases passing: **${assertions.passed}/${assertions.total - assertions.knownFailing.length - assertions.knownStale.length}**. Documented known gaps (extractor wrong today, not hidden): **${assertions.knownFailing.length}**${assertions.knownFailing.length ? ":\n" + assertions.knownFailing.map((o) => `  - ${o.case.section}: "${o.case.text}" expected ${JSON.stringify(o.case.expect)}, got ${JSON.stringify(o.got)}`).join("\n") : "."}
+- The suite is deliberately small and hand-checkable; it catches rule regressions but says nothing about the prevalence of each error on real trials (that is what the 50-item sample estimates, imprecisely).
+
 ## AI analysis (mock provider)
 - JSON validity: **${pc(results.mockAi.jsonValidRate)}** (${calls} batched calls)
 - Quote verification pass rate: **${pc(results.mockAi.quotePassRate)}** (${quotesTotal} quoted criteria)
@@ -253,6 +263,12 @@ ${table}
 
 ## Model choice
 See DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
+
+## What this evidence does and does not show
+- **Hard-filter safety (0% violations)** is the strongest result: it is a deterministic invariant re-checked independently of the ranker, and does not depend on labels. It was measured on the seed, but the filters are pure functions of cancer group, age, and distance, so the property transfers to the national set; it is not re-measured there by this script.
+- **Retrieval quality is weakly evidenced.** Hybrid nDCG@10 is not meaningfully better than keyword-only (differences of ~0.00-0.01 on 30 profiles are within noise); the full-pipeline gain comes from the rule-based pre-check, which uses the same fact layer whose precision is imperfect, and the labels are coarse and synthetic.
+- **No national-scale or real-user evaluation exists.** Seed nDCG moves when rules change (0.819 to 0.800 after the M-series rule fixes) because penalties reorder results, not necessarily because quality changed.
+- Nothing here is a clinical accuracy claim. No labels were fabricated: all label files are either rule-derived (\`labels.json\`), hand-reviewed (\`facts-labels.json\`), or hand-authored (\`assertions.json\`), and each says so.
 
 ## Limitations
 - Small seed (${cards.length} trials) and coarse, rule-generated labels: many profiles have most candidates labeled relevant, so recall@10 is bounded and differences between variants are small.
