@@ -54,7 +54,7 @@ export const en = {
     statLoading: "Loading the latest trial data…",
     statTrials: "recruiting interventional cancer trials indexed",
     statStates: "states and territories with at least one trial site",
-    statDate: "Data from ClinicalTrials.gov, updated {date}",
+    statDate: "Data from ClinicalTrials.gov, updated {date}.",
     statSeed: "Preview dataset: a sample of real trials from ClinicalTrials.gov.",
     statError: "Trial statistics are unavailable right now.",
     demoLabel: "Animated example of a TrialBridge conversation and result. Illustrative only, not a real trial.",
