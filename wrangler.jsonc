@@ -23,7 +23,8 @@
   ],
   "vars": {
     "ENVIRONMENT": "development",
-    "DATA_VERSION": "seed",
+    // Label only (cache keys also hash trial content): the deployed dataset is the national ingest.
+    "DATA_VERSION": "national",
     // Global daily request budget per provider (kept below each free tier's daily limit).
     "DAILY_BUDGET_GROQ": "800",
     "DAILY_BUDGET_CEREBRAS": "800",

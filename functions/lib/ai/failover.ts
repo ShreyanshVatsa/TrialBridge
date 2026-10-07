@@ -5,9 +5,19 @@ export type FailoverResult<T> =
   | { ok: true; provider: string; value: T }
   | { ok: false; reason: "budget_exhausted" | "ai_unavailable" | "invalid_output"; lastError: ProviderErrorKind | null };
 
+/** Thrown by `reserve()` when the provider's daily budget is used up; never counts as a provider failure. */
+export class BudgetExhaustedError extends Error {
+  constructor() {
+    super("budget_exhausted");
+  }
+}
+
+/** Reserve one unit of the provider's daily budget; call it before EVERY provider request (repair retries included). */
+export type Reserve = () => Promise<void>;
+
 export interface FailoverDeps {
   breakerFor(name: string): CircuitBreaker;
-  /** Reserve one request from the provider's daily budget; false = exhausted (skip). */
+  /** Reserve one request from the provider's daily budget; false = exhausted. Called once per provider request via `reserve`. */
   consumeBudget(provider: AiProvider): Promise<boolean>;
   log?: (event: { provider: string; status: string; latencyMs: number }) => void;
 }
@@ -16,23 +26,26 @@ export interface FailoverDeps {
  * Try providers in priority order. On 429, 5xx, timeout, network, or invalid output, move to the
  * next provider. Open circuits and exhausted budgets are skipped.
  */
-export async function runWithFailover<T>(providers: readonly AiProvider[], attempt: (p: AiProvider) => Promise<T>, deps: FailoverDeps): Promise<FailoverResult<T>> {
+export async function runWithFailover<T>(providers: readonly AiProvider[], attempt: (p: AiProvider, reserve: Reserve) => Promise<T>, deps: FailoverDeps): Promise<FailoverResult<T>> {
   let lastError: ProviderErrorKind | null = null;
   let budgetSkips = 0;
   for (const p of providers) {
     const breaker = deps.breakerFor(p.name);
     if (!breaker.canRequest()) continue;
-    if (!p.isMock && !(await deps.consumeBudget(p))) {
-      budgetSkips++;
-      continue;
-    }
+    const reserve: Reserve = async () => {
+      if (!p.isMock && !(await deps.consumeBudget(p))) throw new BudgetExhaustedError();
+    };
     const t0 = Date.now();
     try {
-      const value = await attempt(p);
+      const value = await attempt(p, reserve);
       breaker.recordSuccess();
       deps.log?.({ provider: p.name, status: "ok", latencyMs: Date.now() - t0 });
       return { ok: true, provider: p.name, value };
     } catch (err) {
+      if (err instanceof BudgetExhaustedError) {
+        budgetSkips++;
+        continue;
+      }
       lastError = err instanceof ProviderError ? err.kind : "server";
       breaker.recordFailure();
       deps.log?.({ provider: p.name, status: lastError, latencyMs: Date.now() - t0 });

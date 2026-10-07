@@ -11,7 +11,8 @@ import { sha256Hex, stableStringify } from "./crypto";
 import { tryConsumeBudget } from "./budget";
 import { verifyQuotes } from "./quotes";
 import { parseModelOutput } from "./ai/output";
-import { runWithFailover, type FailoverDeps } from "./ai/failover";
+import { NEUTRAL_NOTE, violatesWording } from "./safety";
+import { runWithFailover, type FailoverDeps, type Reserve } from "./ai/failover";
 import { ProviderError, type AiProvider, type ChatMessage } from "./ai/types";
 import { dailyBudget } from "./ai/providers";
 
@@ -41,17 +42,31 @@ export function splitBatches(trials: readonly ServerTrial[], maxChars: number, s
 
 const trialChars = (t: ServerTrial) => t.title.length + [...t.inclusion, ...t.exclusion].reduce((s, c) => s + c.text.length + 6, 0);
 
+/** Replace any model-written text that claims eligibility or advises treatment with a neutral note. */
+export function sanitizeAnalysis(a: TrialAnalysis, language: MinimizedProfile["language"]): TrialAnalysis {
+  const note = NEUTRAL_NOTE[language];
+  const clean = (t: string) => (violatesWording(t) ? note : t);
+  return {
+    ...a,
+    summary: clean(a.summary),
+    doctorQuestions: a.doctorQuestions.map(clean),
+    criteria: a.criteria.map((c) => ({ ...c, explanation: clean(c.explanation) })),
+  };
+}
+
 /** One provider attempt over all batches, with quote verification and a single repair retry per batch. */
-async function analyzeWith(provider: AiProvider, profile: MinimizedProfile, trials: readonly ServerTrial[]): Promise<TrialAnalysis[]> {
+async function analyzeWith(provider: AiProvider, profile: MinimizedProfile, trials: readonly ServerTrial[], reserve: Reserve): Promise<TrialAnalysis[]> {
   const results: TrialAnalysis[] = [];
   for (const batch of splitBatches(trials, provider.maxInputChars, trialChars)) {
     const messages: ChatMessage[] = [
       { role: "system", content: ANALYZE_SYSTEM_PROMPT },
       { role: "user", content: buildAnalyzeUserPrompt(profile, profile.language, batch) },
     ];
+    await reserve();
     const raw = await provider.complete({ messages, profile, trials: batch });
     let check = verifyQuotes(parseModelOutput(raw), batch);
     if (check.total > 0 && check.failed / check.total > MAX_QUOTE_FAILURE_RATE) {
+      await reserve();
       const repaired = await provider.complete({
         messages: [...messages, { role: "assistant", content: raw }, { role: "user", content: buildRepairPrompt(`${check.failed} of ${check.total} quotes were not verbatim.`) }],
         profile,
@@ -60,7 +75,7 @@ async function analyzeWith(provider: AiProvider, profile: MinimizedProfile, tria
       check = verifyQuotes(parseModelOutput(repaired), batch);
       if (check.total > 0 && check.failed / check.total > MAX_QUOTE_FAILURE_RATE) throw new ProviderError("invalid_output", "quote verification failed after repair");
     }
-    results.push(...check.analyses);
+    results.push(...check.analyses.map((a) => sanitizeAnalysis(a, profile.language)));
   }
   return results;
 }
@@ -104,7 +119,7 @@ export async function handleAnalyze(request: Request, deps: AnalyzeDeps): Promis
     return json(res, 200, requestId, cors);
   }
 
-  const outcome = await runWithFailover(deps.providers, (p) => analyzeWith(p, profile, trials), {
+  const outcome = await runWithFailover(deps.providers, (p, reserve) => analyzeWith(p, profile, trials, reserve), {
     breakerFor: deps.breakerFor,
     consumeBudget: (p) => tryConsumeBudget(deps.store, p.name, dailyBudget(env, p.name)),
     log: (e) => deps.log({ requestId, route: "analyze", ...e }),

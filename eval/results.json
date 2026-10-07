@@ -14,11 +14,11 @@
    "embNdcg": 0.7836740575236859,
    "hybRecall": 0.8405555555555556,
    "hybNdcg": 0.786152599750103,
-   "sysRecall": 0.8701851851851852,
-   "sysNdcg": 0.8191987617477001,
-   "excludedAt10": 0.2605555555555556,
+   "sysRecall": 0.8546296296296295,
+   "sysNdcg": 0.800090517631461,
+   "excludedAt10": 0.27055555555555555,
    "violations": 0,
-   "results": 377
+   "results": 379
   },
   {
    "name": "MiniLM q8 + float32",
@@ -26,59 +26,59 @@
    "embNdcg": 0.7912925205886523,
    "hybRecall": 0.8438888888888889,
    "hybNdcg": 0.7942540401828012,
-   "sysRecall": 0.8701851851851852,
-   "sysNdcg": 0.8256077091332709,
-   "excludedAt10": 0.2605555555555556,
+   "sysRecall": 0.8546296296296295,
+   "sysNdcg": 0.8008271212575845,
+   "excludedAt10": 0.27055555555555555,
    "violations": 0,
-   "results": 377
+   "results": 379
   },
   {
    "name": "MiniLM fp32 + int8",
-   "embRecall": 0.8463888888888889,
-   "embNdcg": 0.7868887779536426,
+   "embRecall": 0.8422222222222222,
+   "embNdcg": 0.7844515500055124,
    "hybRecall": 0.843888888888889,
    "hybNdcg": 0.7871814591421529,
-   "sysRecall": 0.8701851851851852,
-   "sysNdcg": 0.8192036479102767,
-   "excludedAt10": 0.2605555555555556,
+   "sysRecall": 0.8546296296296295,
+   "sysNdcg": 0.7999366905921199,
+   "excludedAt10": 0.27555555555555555,
    "violations": 0,
-   "results": 377
+   "results": 379
   },
   {
    "name": "bge-small q8 + int8",
    "embRecall": 0.8480555555555557,
-   "embNdcg": 0.7854831534607387,
-   "hybRecall": 0.8613888888888889,
-   "hybNdcg": 0.7900109682768818,
-   "sysRecall": 0.8710185185185184,
-   "sysNdcg": 0.8146895531720423,
-   "excludedAt10": 0.2755555555555556,
+   "embNdcg": 0.7853614468659031,
+   "hybRecall": 0.8572222222222222,
+   "hybNdcg": 0.7875737403287515,
+   "sysRecall": 0.8579629629629629,
+   "sysNdcg": 0.8037201260990058,
+   "excludedAt10": 0.27555555555555555,
    "violations": 0,
-   "results": 377
+   "results": 379
   },
   {
    "name": "bge-small q8 + float32",
    "embRecall": 0.8491666666666666,
-   "embNdcg": 0.7841507779032463,
-   "hybRecall": 0.8525000000000001,
-   "hybNdcg": 0.7864436875170033,
-   "sysRecall": 0.8743518518518518,
-   "sysNdcg": 0.8177889169103896,
-   "excludedAt10": 0.2705555555555556,
+   "embNdcg": 0.7840290713084107,
+   "hybRecall": 0.8483333333333334,
+   "hybNdcg": 0.7841281661637084,
+   "sysRecall": 0.8579629629629629,
+   "sysNdcg": 0.8082004240404248,
+   "excludedAt10": 0.2755555555555556,
    "violations": 0,
-   "results": 377
+   "results": 379
   },
   {
    "name": "bge-small fp32 + int8",
-   "embRecall": 0.8458333333333333,
-   "embNdcg": 0.784878841512335,
+   "embRecall": 0.8416666666666667,
+   "embNdcg": 0.7822909570410901,
    "hybRecall": 0.8483333333333334,
-   "hybNdcg": 0.7855038722107981,
-   "sysRecall": 0.8701851851851852,
-   "sysNdcg": 0.8191065855898985,
-   "excludedAt10": 0.27055555555555555,
+   "hybNdcg": 0.7856613750011087,
+   "sysRecall": 0.8579629629629629,
+   "sysNdcg": 0.8053066314609059,
+   "excludedAt10": 0.27555555555555555,
    "violations": 0,
-   "results": 377
+   "results": 379
   }
  ],
  "hardFilterViolationRate": 0,
@@ -90,9 +90,9 @@
  "mockAi": {
   "calls": 30,
   "jsonValidRate": 1,
-  "quotePassRate": 0.9984350547730829,
-  "quotes": 1278,
-  "agreement": 0.6224188790560472,
-  "labeled": 339
+  "quotePassRate": 0.998274374460742,
+  "quotes": 1159,
+  "agreement": 0.6190476190476191,
+  "labeled": 336
  }
 }

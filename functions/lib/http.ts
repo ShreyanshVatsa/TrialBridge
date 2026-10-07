@@ -66,8 +66,33 @@ export function isSameOrigin(request: Request, env: Pick<Env, "ENVIRONMENT" | "D
 export async function readJsonBody(request: Request): Promise<unknown | null | undefined> {
   const declared = Number(request.headers.get("Content-Length") ?? 0);
   if (declared > MAX_BODY_BYTES) return null;
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return null;
+  // Read through a limited stream reader so a chunked body without Content-Length is never fully buffered.
+  let text: string;
+  if (request.body) {
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+    const all = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) {
+      all.set(c, off);
+      off += c.byteLength;
+    }
+    text = new TextDecoder().decode(all);
+  } else {
+    text = await request.text();
+    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return null;
+  }
   try {
     return JSON.parse(text) as unknown;
   } catch {

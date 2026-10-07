@@ -19,7 +19,7 @@ import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match
 import { ManifestSchema, MetaSchema, trialBucketKey, type Fact, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
 import { aggregateAccess } from "../../lib/access/aggregate";
-import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
+import { BASKET_SHARD_ID, CANCER_GROUP_IDS, basketAppliesTo, isBasketOnly, type CancerGroupId } from "../../config/cancer-groups";
 import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
 import { embedTexts } from "./embed";
 import { ingestAbortReason } from "../../lib/ingest/safety";
@@ -184,6 +184,15 @@ async function main(): Promise<void> {
       ids.push(id);
     }
     groups[g] = ids;
+  }
+  // Basket-only shard: solid-tumor trials that name no specific cancer type are searched for every
+  // solid-tumor group, so a lung patient also sees "advanced solid tumor" studies that allow NSCLC.
+  {
+    const basket = cards.filter((c) => isBasketOnly(c.groups));
+    if (basket.length > 0) {
+      await writeShard(BASKET_SHARD_ID, "solid-tumors", basket);
+      for (const g of CANCER_GROUP_IDS) if (groups[g] && basketAppliesTo(g)) groups[g] = [...(groups[g] as string[]), BASKET_SHARD_ID];
+    }
   }
   // Cross-group LITE index for "Other / not sure": no criteria text, summaries, contacts, or
   // site details; keyword index over title/conditions/MeSH only. Full cards for the final top

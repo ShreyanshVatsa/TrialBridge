@@ -10,7 +10,7 @@ const BASKET_THRESHOLD = 4;
  * to free-text conditions. Basket / multi-cancer trials also get "solid-tumors".
  * Trials matching nothing go to "other" so they are still searchable via "not sure".
  */
-export function mapGroups(meshTerms: string[], conditions: string[], title = ""): CancerGroupId[] {
+export function mapGroups(meshTerms: string[], conditions: string[], title = "", officialTitle = ""): CancerGroupId[] {
   const groups = new Set<CancerGroupId>();
   for (const g of SPECIFIC) {
     if (g.mesh.some((re) => meshTerms.some((t) => re.test(t)))) groups.add(g.id);
@@ -20,7 +20,12 @@ export function mapGroups(meshTerms: string[], conditions: string[], title = "")
       if (g.text.some((re) => conditions.some((c) => re.test(c)))) groups.add(g.id);
     }
   }
-  const solidText = SOLID?.text.some((re) => conditions.some((c) => re.test(c)) || re.test(title)) ?? false;
+  if (groups.size === 0) {
+    // Last resort before "other": the titles often name the disease or an abbreviation (e.g. "in HNSCC").
+    const titles = `${title}\n${officialTitle}`;
+    for (const g of SPECIFIC) if (g.text.some((re) => re.test(titles))) groups.add(g.id);
+  }
+  const solidText = SOLID?.text.some((re) => conditions.some((c) => re.test(c)) || re.test(title) || re.test(officialTitle)) ?? false;
   if (groups.size >= BASKET_THRESHOLD || solidText) groups.add("solid-tumors");
   if (groups.size === 0) groups.add("other");
   return [...groups];

@@ -1,11 +1,13 @@
 /**
  * Per-provider circuit breaker. After `threshold` consecutive failures the circuit opens and the
- * provider is skipped for `cooldownMs`; then one trial request is allowed (half-open). A success
+ * provider is skipped for `cooldownMs`; then exactly one trial request (probe) is allowed (half-open) while
+ * concurrent requests keep skipping the provider until the probe finishes (or its slot expires after `cooldownMs`). A success
  * closes it again. State is per Worker isolate (best effort, no storage writes).
  */
 export class CircuitBreaker {
   private failures = 0;
   private openedAt: number | null = null;
+  private probeStartedAt: number | null = null;
 
   constructor(
     private readonly threshold = 3,
@@ -13,24 +15,31 @@ export class CircuitBreaker {
     private readonly clock: () => number = () => Date.now(),
   ) {}
 
+  /** True if a request may go to the provider. In half-open state this claims the single probe slot. */
   canRequest(): boolean {
     if (this.openedAt === null) return true;
-    return this.clock() - this.openedAt >= this.cooldownMs; // half-open after cooldown
+    const now = this.clock();
+    if (now - this.openedAt < this.cooldownMs) return false;
+    if (this.probeStartedAt !== null && now - this.probeStartedAt < this.cooldownMs) return false; // a probe is in flight
+    this.probeStartedAt = now;
+    return true;
   }
 
   recordSuccess(): void {
     this.failures = 0;
     this.openedAt = null;
+    this.probeStartedAt = null;
   }
 
   recordFailure(): void {
     this.failures++;
+    this.probeStartedAt = null;
     if (this.failures >= this.threshold) this.openedAt = this.clock();
   }
 
   get state(): "closed" | "open" | "half-open" {
     if (this.openedAt === null) return "closed";
-    return this.canRequest() ? "half-open" : "open";
+    return this.clock() - this.openedAt >= this.cooldownMs ? "half-open" : "open";
   }
 }
 

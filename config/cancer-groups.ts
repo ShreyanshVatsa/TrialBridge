@@ -57,7 +57,7 @@ export const CANCER_GROUPS: readonly CancerGroup[] = [
   { id: "bladder", label: "Bladder and urothelial cancer", synonyms: ["bladder", "urothelial", "ureter"], mesh: [/^urinary bladder neoplasms/i, /urothelial/i, /^urologic neoplasms/i], text: [/bladder|urothelial/i] },
   { id: "kidney", label: "Kidney cancer", synonyms: ["renal cell", "RCC", "kidney"], mesh: [/^kidney neoplasms/i, /carcinoma, renal cell/i], text: [/kidney|renal cell/i] },
   { id: "liver", label: "Liver and bile duct cancer", synonyms: ["hepatocellular", "HCC", "cholangiocarcinoma", "biliary"], mesh: [/^liver neoplasms/i, /carcinoma, hepatocellular/i, /cholangiocarcinoma/i, /biliary tract neoplasms/i], text: [/liver|hepatocellular|cholangio|biliary|\bHCC\b/i] },
-  { id: "head-neck", label: "Head and neck cancer", synonyms: ["oral", "throat", "larynx", "oropharyngeal", "nasopharyngeal"], mesh: [/^head and neck neoplasms/i, /squamous cell carcinoma of head and neck/i, /^mouth neoplasms/i, /^laryngeal neoplasms/i, /^pharyngeal neoplasms/i], text: [/head and neck|oral cavity|oropharyn|laryn|nasopharyn/i] },
+  { id: "head-neck", label: "Head and neck cancer", synonyms: ["oral", "throat", "larynx", "oropharyngeal", "nasopharyngeal"], mesh: [/^head and neck neoplasms/i, /squamous cell carcinoma of head and neck/i, /^mouth neoplasms/i, /^laryngeal neoplasms/i, /^pharyngeal neoplasms/i], text: [/head and neck|head & neck|\bHNSCC\b|\bSCCHN\b|oral cavity|oropharyn|laryn|nasopharyn|hypopharyn|salivary/i] },
   { id: "gastroesophageal", label: "Stomach and esophageal cancer", synonyms: ["stomach", "gastric", "esophagus", "GEJ"], mesh: [/^stomach neoplasms/i, /^esophageal neoplasms/i], text: [/gastric|stomach|esophag|gastroesophageal/i] },
   { id: "uterine-cervical", label: "Uterine and cervical cancer", synonyms: ["endometrial", "uterus", "cervix", "cervical"], mesh: [/^uterine neoplasms/i, /^endometrial neoplasms/i, /^uterine cervical neoplasms/i], text: [/endometri|uterine|uterus|cervical cancer|cervix/i] },
   { id: "sarcoma", label: "Sarcoma", synonyms: ["soft tissue", "bone", "osteosarcoma", "GIST"], mesh: [/^sarcoma/i, /osteosarcoma/i, /gastrointestinal stromal/i], text: [/sarcoma|\bGIST\b/i] },
@@ -73,4 +73,20 @@ export function getCancerGroup(id: CancerGroupId): CancerGroup {
   const g = CANCER_GROUPS.find((x) => x.id === id);
   if (!g) throw new Error(`Unknown cancer group ${id}`);
   return g;
+}
+
+/** Blood cancers: basket trials for "solid tumors" never apply to these. */
+export const HEMATOLOGIC_GROUPS: readonly CancerGroupId[] = ["leukemia", "lymphoma", "myeloma"];
+
+/** Specific cancer types whose patients can also join "any solid tumor" basket trials. */
+export function basketAppliesTo(group: CancerGroupId): boolean {
+  return group !== "other" && group !== "solid-tumors" && !HEMATOLOGIC_GROUPS.includes(group);
+}
+
+/** Shard id of the basket-only shard (solid-tumor trials that name no specific cancer type). */
+export const BASKET_SHARD_ID = "solid-basket";
+
+/** A solid-tumor basket trial that is not tied to any specific cancer group. */
+export function isBasketOnly(groups: readonly CancerGroupId[]): boolean {
+  return groups.includes("solid-tumors") && groups.every((g) => g === "solid-tumors");
 }
