@@ -14,7 +14,8 @@ import { resolveProviders } from "./lib/ai/providers";
 import { verifyTurnstile } from "./lib/turnstile";
 
 /** Fallback salt when RATE_LIMIT_SALT is unset: fixed in dev, random per isolate in production. */
-const ISOLATE_SALT = crypto.randomUUID();
+let isolateSalt: string | null = null;
+const getIsolateSalt = () => (isolateSalt ??= crypto.randomUUID()); // random values are not allowed at global scope
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -35,7 +36,7 @@ export default {
           providers: resolveProviders(env),
           breakerFor,
           verifyTurnstile: (token, ip) => verifyTurnstile(token, ip, env),
-          salt: env.RATE_LIMIT_SALT || (isProduction(env) ? ISOLATE_SALT : "trialbridge-dev-salt"),
+          salt: env.RATE_LIMIT_SALT || (isProduction(env) ? getIsolateSalt() : "trialbridge-dev-salt"),
           requestId,
           log,
         });

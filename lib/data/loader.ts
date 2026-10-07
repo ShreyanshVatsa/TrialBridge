@@ -130,9 +130,9 @@ export interface LoadedShard {
   embeddings: Int8Array;
 }
 
-export function loadShard(info: ShardInfo, opts: FetchOptions = {}): Promise<LoadedShard> {
-  return memo(`shard:${info.id}`, async () => {
-    const base = `${DATA_BASE}/shards/${info.id}/`;
+export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedShard> {
+  return memo(`shard:${shardBase}/${info.id}`, async () => {
+    const base = `${shardBase}/${info.id}/`;
     // Progress is weighted by the shard's recorded size; cards dominate.
     const fractions = [0, 0, 0, 0];
     const report = (i: number) => (f: number) => {
@@ -164,7 +164,7 @@ export async function loadTrial(nctId: string, opts: FetchOptions = {}): Promise
   if (!shardId) return null;
   const info = manifest.shards.find((s) => s.id === shardId);
   if (!info) return null;
-  const shard = await loadShard(info, opts);
+  const shard = await loadShard(info, manifest.shardBase, opts);
   const card = shard.cards.find((c) => c.id === id);
   return card ? { card, sites: shard.sites[id] ?? [] } : null;
 }

@@ -17,12 +17,15 @@
     "ingest:seed": "tsx scripts/ingest/index.ts --source=seed",
     "db:seed:local": "wrangler d1 execute trialbridge --local --file=data/build/criteria.sql",
     "prebuild": "tsx scripts/ensure-data.ts",
-    "build": "next build",
+    "build": "next build && tsx scripts/postbuild.ts && wrangler deploy --dry-run --outdir .wrangler/dist",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test --reporter=line"
+    "test:e2e": "playwright test --reporter=line",
+    "build:web": "next build && tsx scripts/postbuild.ts",
+    "db:migrate:local": "wrangler d1 migrations apply trialbridge --local",
+    "preview": "npm run db:migrate:local && npm run db:seed:local && wrangler dev"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
