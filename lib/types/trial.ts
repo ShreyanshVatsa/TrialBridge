@@ -115,6 +115,8 @@ export type ShardSites = z.infer<typeof ShardSitesSchema>;
 export const ShardInfoSchema = z.object({
   id: z.string(),
   group: CancerGroupIdSchema,
+  /** full = TrialCard[] + Site[]; lite = cross-group "not sure" index (LiteCard[] + coordinates only). */
+  kind: z.enum(["full", "lite"]),
   count: z.number().int(),
   /** File names relative to `${manifest.shardBase}/<id>/` */
   files: z.object({ cards: z.string(), sites: z.string(), index: z.string(), embeddings: z.string() }),
@@ -130,8 +132,10 @@ export const ManifestSchema = z.object({
   embedding: z.object({ model: z.string(), dims: z.number().int(), quantization: z.literal("int8"), scale: z.number() }),
   groups: z.partialRecord(CancerGroupIdSchema, z.array(z.string())),
   shards: z.array(ShardInfoSchema),
-  /** Cross-group index for "not sure": a shard id containing every trial. */
+  /** Cross-group lite index for "not sure": a shard id containing every trial (kind "lite"). */
   allShard: z.string(),
+  /** Per-trial buckets: `${trialBase}/<last 3 digits of NCT ID>.json` (TrialBucket). */
+  trialBase: z.string().startsWith("/data/"),
 });
 export type Manifest = z.infer<typeof ManifestSchema>;
 
@@ -150,5 +154,27 @@ export const MetaSchema = z.object({
 });
 export type Meta = z.infer<typeof MetaSchema>;
 
-/** /data/lookup.json: NCT ID -> shard id holding its full card (used by the trial detail page). */
-export const LookupSchema = z.record(z.string(), z.string());
+/** Lite card for the cross-group "not sure" index: just what hard filters, ranking, and pre-check need. */
+export const LiteCardSchema = z.object({
+  id: z.string().regex(/^NCT\d{8}$/),
+  title: z.string(),
+  conditions: z.array(z.string()),
+  groups: z.array(CancerGroupIdSchema).min(1),
+  minAge: z.number().nullable(),
+  maxAge: z.number().nullable(),
+  /** Facts as [key, value] (quotes omitted; full cards are loaded for the final top results). */
+  f: z.array(z.tuple([FactKeySchema, FactValueSchema])),
+  /** Barrier types present. */
+  b: z.array(BarrierTypeSchema),
+});
+export type LiteCard = z.infer<typeof LiteCardSchema>;
+
+/** Lite sites: NCT ID -> [lat, lon] pairs (sites without coordinates omitted). */
+export const LiteSitesSchema = z.record(z.string(), z.array(z.tuple([z.number(), z.number()])));
+
+/** Per-trial bucket file: NCT ID -> full card + sites (trial detail page, "not sure" top results). */
+export const TrialBucketSchema = z.record(z.string(), z.object({ card: TrialCardSchema, sites: z.array(SiteSchema) }));
+export type TrialBucket = z.infer<typeof TrialBucketSchema>;
+
+/** Bucket key for an NCT ID (last 3 digits). */
+export const trialBucketKey = (nctId: string): string => nctId.slice(-3);

@@ -5,7 +5,8 @@
 import MiniSearch from "minisearch";
 import { IntakeAnswersSchema, type IntakeAnswers } from "@/lib/types/intake";
 import type { SearchOutcome, SearchProgress } from "@/lib/types/match";
-import { loadManifest, loadShard, lookupZip, type LoadedShard } from "@/lib/data/loader";
+import { loadLiteShard, loadManifest, loadShard, loadTrials, lookupZip } from "@/lib/data/loader";
+import { hydrateResults, liteToEntries } from "./lite";
 import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisearch-config";
 import { buildProfileText } from "./query";
 import { embedProfile } from "./embedder";
@@ -14,7 +15,7 @@ import { rankTrials, type RankEntry } from "./rank";
 export { applyAnalysis } from "./apply";
 
 const indexCache = new Map<string, MiniSearch<SearchDoc>>();
-function getIndex(shard: LoadedShard): MiniSearch<SearchDoc> {
+function getIndex(shard: { info: { id: string }; indexJson: string }): MiniSearch<SearchDoc> {
   let idx = indexCache.get(shard.info.id);
   if (!idx) {
     idx = MiniSearch.loadJSON<SearchDoc>(shard.indexJson, MINISEARCH_OPTIONS);
@@ -50,19 +51,24 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   });
 
   const shardFractions = infos.map(() => 0);
+  const signalOpt = opts.signal ? { signal: opts.signal } : {};
+  const progressFor = (i: number) => (f: number) => {
+    shardFractions[i] = f;
+    report({ stage: "loading_shards", fraction: shardFractions.reduce((x, y) => x + y, 0) / infos.length });
+  };
   const [shards, origin] = await Promise.all([
     Promise.all(
-      infos.map((info, i) =>
-        loadShard(info, manifest.shardBase, {
-          ...(opts.signal ? { signal: opts.signal } : {}),
-          onProgress: (f) => {
-            shardFractions[i] = f;
-            report({ stage: "loading_shards", fraction: shardFractions.reduce((x, y) => x + y, 0) / infos.length });
-          },
-        }),
-      ),
+      infos.map(async (info, i) => {
+        if (info.kind === "lite") {
+          const lite = await loadLiteShard(info, manifest.shardBase, { ...signalOpt, onProgress: progressFor(i) });
+          return { info, indexJson: lite.indexJson, entries: liteToEntries(lite, dims) };
+        }
+        const s = await loadShard(info, manifest.shardBase, { ...signalOpt, onProgress: progressFor(i) });
+        const entries: RankEntry[] = s.cards.map((card, j) => ({ card, sites: s.sites[card.id] ?? [], vector: s.embeddings.subarray(j * dims, (j + 1) * dims) }));
+        return { info, indexJson: s.indexJson, entries };
+      }),
     ),
-    lookupZip(a.zip, opts.signal ? { signal: opts.signal } : {}).catch(() => null),
+    lookupZip(a.zip, signalOpt).catch(() => null),
   ]);
 
   report({ stage: "loading_model", fraction: modelFraction });
@@ -70,9 +76,7 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   if (opts.signal?.aborted) throw opts.signal.reason;
 
   report({ stage: "ranking" });
-  const entries: RankEntry[] = shards.flatMap((s) =>
-    s.cards.map((card, i) => ({ card, sites: s.sites[card.id] ?? [], vector: s.embeddings.subarray(i * dims, (i + 1) * dims) })),
-  );
+  const entries: RankEntry[] = shards.flatMap((s) => s.entries);
   const indexes = shards.map(getIndex);
   const keywordSearch = (ids: ReadonlySet<string>) => {
     const scores = new Map<string, number>();
@@ -85,7 +89,12 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
     return [...scores.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([id]) => id);
   };
 
-  const outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector });
+  let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector });
+  if (infos.some((i) => i.kind === "lite")) {
+    // Lite index: load full cards for just the top results from per-trial buckets.
+    const full = await loadTrials(outcome.results.map((r) => r.card.id), signalOpt);
+    outcome = hydrateResults(outcome, full, a, origin);
+  }
   report({ stage: "done" });
   return outcome;
 }

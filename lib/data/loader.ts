@@ -4,8 +4,13 @@
  */
 import { z } from "zod";
 import {
-  LookupSchema,
+  LiteCardSchema,
+  LiteSitesSchema,
   ManifestSchema,
+  TrialBucketSchema,
+  trialBucketKey,
+  type LiteCard,
+  type TrialBucket,
   MetaSchema,
   ShardSitesSchema,
   TrialCardSchema,
@@ -151,22 +156,70 @@ export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions
   });
 }
 
-function loadLookup(): Promise<Record<string, string>> {
-  return memo("lookup", () => fetchJson(`${DATA_BASE}/lookup.json`, LookupSchema));
+/** The cross-group lite index used for "Other / not sure". */
+export interface LoadedLiteShard {
+  info: ShardInfo;
+  cards: LiteCard[];
+  /** NCT ID -> [lat, lon][] */
+  sites: Record<string, [number, number][]>;
+  indexJson: string;
+  embeddings: Int8Array;
+}
+
+export function loadLiteShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedLiteShard> {
+  return memo(`lite:${shardBase}/${info.id}`, async () => {
+    const base = `${shardBase}/${info.id}/`;
+    const fractions = [0, 0, 0, 0];
+    const report = (i: number) => (f: number) => {
+      fractions[i] = f;
+      opts.onProgress?.(fractions.reduce((a, b) => a + b, 0) / fractions.length);
+    };
+    const [cards, sites, indexBytes, embBytes] = await Promise.all([
+      fetchJson(base + info.files.cards, z.array(LiteCardSchema), { ...opts, onProgress: report(0) }),
+      fetchJson(base + info.files.sites, LiteSitesSchema, { ...opts, onProgress: report(1) }),
+      fetchBytes(base + info.files.index, { ...opts, onProgress: report(2) }),
+      fetchBytes(base + info.files.embeddings, { ...opts, onProgress: report(3) }),
+    ]);
+    const embeddings = new Int8Array(embBytes.buffer, embBytes.byteOffset, embBytes.byteLength);
+    if (cards.length > 0 && embeddings.length % cards.length !== 0) throw new DataLoadError("invalid", `Embedding size mismatch in shard ${info.id}`);
+    return { info, cards, sites, indexJson: new TextDecoder().decode(indexBytes), embeddings };
+  });
+}
+
+function loadBucket(trialBase: string, key: string, opts: FetchOptions = {}) {
+  return memo(`bucket:${trialBase}/${key}`, () => fetchJson(`${trialBase}/${key}.json`, TrialBucketSchema, opts));
+}
+
+/** Load several trials (card + sites) by NCT ID from per-trial buckets. Unknown IDs are omitted. */
+export async function loadTrials(nctIds: readonly string[], opts: FetchOptions = {}): Promise<Map<string, { card: TrialCard; sites: Site[] }>> {
+  const manifest = await loadManifest();
+  const keys = [...new Set(nctIds.map(trialBucketKey))];
+  const buckets = await Promise.all(
+    keys.map((k) =>
+      loadBucket(manifest.trialBase, k, opts).catch((err: unknown) => {
+        if (err instanceof DataLoadError && err.code === "not_found") return {} as TrialBucket;
+        throw err;
+      }),
+    ),
+  );
+  const out = new Map<string, { card: TrialCard; sites: Site[] }>();
+  for (const id of nctIds) {
+    for (const b of buckets) {
+      const hit = b[id];
+      if (hit) {
+        out.set(id, hit);
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 /** Load one trial (card + U.S. sites) by NCT ID for the trial detail page. null = unknown ID. */
 export async function loadTrial(nctId: string, opts: FetchOptions = {}): Promise<{ card: TrialCard; sites: Site[] } | null> {
   const id = nctId.trim().toUpperCase();
   if (!/^NCT\d{8}$/.test(id)) return null;
-  const [lookup, manifest] = await Promise.all([loadLookup(), loadManifest()]);
-  const shardId = lookup[id];
-  if (!shardId) return null;
-  const info = manifest.shards.find((s) => s.id === shardId);
-  if (!info) return null;
-  const shard = await loadShard(info, manifest.shardBase, opts);
-  const card = shard.cards.find((c) => c.id === id);
-  return card ? { card, sites: shard.sites[id] ?? [] } : null;
+  return (await loadTrials([id], opts)).get(id) ?? null;
 }
 
 const ZipTableSchema = z.record(z.string(), z.tuple([z.number(), z.number()]));
