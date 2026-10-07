@@ -28,7 +28,7 @@ export const DO_NOT_TRANSLATE = ["TrialBridge", "ClinicalTrials.gov", "988", "91
 const CJK = new Set(["zh-Hans", "zh-Hant", "ko", "ja"]);
 
 export function lengthBounds(tag: string): [number, number] {
-  return CJK.has(tag) ? [0.2, 1.8] : [0.3, 2.5];
+  return CJK.has(tag) ? [0.1, 1.8] : [0.3, 2.5];
 }
 
 function strip(s: string): string {

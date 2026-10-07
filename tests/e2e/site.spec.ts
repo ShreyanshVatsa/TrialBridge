@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseLanguage } from "./i18n-helpers";
 import { completeIntake, RESULTS_HEADING, sampleTrialId } from "./helpers";
 
 const id = sampleTrialId();
@@ -6,23 +7,23 @@ const id = sampleTrialId();
 test("language switching translates the UI and persists across reloads", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
-  await page.getByLabel("Language").first().selectOption("es");
+  await chooseLanguage(page, "es");
   await expect(page.locator("h1")).toHaveText(/Encuentre estudios clínicos/);
   await page.reload();
   await expect(page.locator("h1")).toHaveText(/Encuentre estudios clínicos/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
-  await page.getByLabel(/Idioma|Language/).first().selectOption("en");
+  await chooseLanguage(page, "en");
   await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
 });
 
 test("tab title and meta description follow the language on non-trial pages", async ({ page }) => {
   await page.goto("/privacy/");
   await expect(page).toHaveTitle(/^Privacy/);
-  await page.getByLabel("Language").first().selectOption("es");
+  await chooseLanguage(page, "es");
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await expect(page).toHaveTitle(/^Privacidad · TrialBridge/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /Búsqueda gratuita y privada/);
-  await page.getByLabel(/Idioma/).first().selectOption("ht");
+  await chooseLanguage(page, "ht");
   await expect(page).toHaveTitle(/TrialBridge/);
   await expect(page).not.toHaveTitle(/^Privacy ·/);
   await page.goto("/offline/");

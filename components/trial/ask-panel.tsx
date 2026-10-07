@@ -3,6 +3,7 @@
 import { HeartHandshake, MessageCircleQuestion, ShieldAlert, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { format, useLanguage, useMessages } from "@/components/i18n";
+import { CrisisLine } from "@/components/i18n/crisis-line";
 import { TypingDots } from "@/components/site/spinner";
 import { Button } from "@/components/ui/button";
 import { detectCrisisLocal, localCrisisResponse } from "@/lib/api/crisis";
@@ -203,6 +204,9 @@ export function AskPanel({ nctId }: { nctId: string }) {
         {m.ask.title}
       </h2>
       <p className="mt-2 max-w-prose text-muted-foreground">{m.ask.intro}</p>
+      <div className="mt-4 max-w-prose">
+        <CrisisLine context="qa" />
+      </div>
 
       {turns.length > 0 && (
         <ol className="mt-6 space-y-5" aria-live="polite">
