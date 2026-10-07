@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ExternalLink, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, ExternalLink, Mail, MapPin, MessageCircleQuestion, Phone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { format, useMessages } from "@/components/i18n";
 import { formatDate, formatMiles, formatPhases, loadErrorCode, officialUrl } from "@/components/format";
@@ -11,6 +11,7 @@ import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
 import { TypingDots } from "@/components/site/spinner";
+import { AskPanel } from "./ask-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { loadTrial, sortSitesByDistance } from "@/lib/data/loader";
 import { NctIdSchema, type Criterion, type Site, type TrialCard } from "@/lib/types";
@@ -98,11 +99,17 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
             <dd className="text-muted-foreground">{format(m.trial.lastUpdated, { date: formatDate(card.lastUpdated) })}</dd>
           </div>
         </dl>
-        <a href={officialUrl(card.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline" })}>
-          {m.trial.official}
-          <ExternalLink aria-hidden />
-          <span className="sr-only">{m.common.opensNewTab}</span>
-        </a>
+        <div className="no-print flex flex-wrap gap-3">
+          <a href="#ask" className={buttonVariants({ variant: "default" })}>
+            <MessageCircleQuestion aria-hidden />
+            {m.ask.button}
+          </a>
+          <a href={officialUrl(card.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline" })}>
+            {m.trial.official}
+            <ExternalLink aria-hidden />
+            <span className="sr-only">{m.common.opensNewTab}</span>
+          </a>
+        </div>
       </header>
 
       <Disclaimer />
@@ -199,6 +206,8 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
           </ul>
         )}
       </Section>
+
+      <AskPanel nctId={card.id} />
     </article>
   );
 }
