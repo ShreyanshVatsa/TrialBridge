@@ -38,3 +38,6 @@ export const CONCURRENT_TRIAL =
 /** Biomarker direction words. */
 export const POSITIVE_WORDS = /\b(positive|positivity|mutat(ion|ed|ions)|mutant|amplif(ied|ication)|overexpress(ion|ing)?|fusion|rearrange(d|ment)|high|deficient|altered|alteration|variant|expressing)\b|\+/i;
 export const NEGATIVE_WORDS = /\b(negative|wild[- ]?type|absence|non-?(mutated|amplified)|not (mutated|amplified)|low|proficient)\b|-negative|\bwt\b/i;
+
+/** Triple-negative breast cancer (ER-, PR-, HER2-). */
+export const TRIPLE_NEGATIVE = /\btriple[- ]negative\b|\bTNBC\b/i;
