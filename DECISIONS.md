@@ -41,3 +41,4 @@
 - Group shards split into balanced parts (ceil(n/700) parts of equal size). National: 24 shards, largest 2.05 MB gzip (lung), lite "not sure" index 2.6 MB gzip, 999 trial buckets (max 52 KB gzip).
 - Full national public/data (174 MB, ~2k files) is produced by `npm run ingest` and deployed, not committed; the seed remains the committed offline dataset.
 - E2E serves a snapshot of ./out (.wrangler/e2e-out) via `wrangler dev --assets`, so a concurrent `next build` cannot break a run. Note: always build with `npm run build` (postbuild removes the >25 MiB ORT asyncify copy and externalizes inline scripts); a bare `next build` output is not deployable.
+- Priority override (2026-10-06): user has a competition submission; focus on functionality, speed, quality. Hosting, deployment, domain, CI, Dependabot deferred. Reason: user request.
