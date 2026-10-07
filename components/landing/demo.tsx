@@ -60,16 +60,16 @@ export function LandingDemo() {
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{m.landing.demoTag}</span>
         </div>
         <div className="flex min-h-[25rem] flex-col gap-3 text-[0.95rem]">
-          <Reveal show={step >= 0} className="max-w-[85%] rounded-2xl rounded-bl-md bg-bubble px-3.5 py-2.5">
+          <Reveal show={step >= 0} className="max-w-[85%] rounded-2xl rounded-es-md bg-bubble px-3.5 py-2.5">
             {m.landing.demoQ1}
           </Reveal>
-          <Reveal show={step >= 1} className="ml-auto rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground">
+          <Reveal show={step >= 1} className="ms-auto rounded-2xl rounded-ee-md bg-primary px-3.5 py-2.5 text-primary-foreground">
             {m.landing.demoA1}
           </Reveal>
-          <Reveal show={step >= 2} className="max-w-[85%] rounded-2xl rounded-bl-md bg-bubble px-3.5 py-2.5">
+          <Reveal show={step >= 2} className="max-w-[85%] rounded-2xl rounded-es-md bg-bubble px-3.5 py-2.5">
             {m.landing.demoQ2}
           </Reveal>
-          <Reveal show={step >= 3} className="ml-auto rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground">
+          <Reveal show={step >= 3} className="ms-auto rounded-2xl rounded-ee-md bg-primary px-3.5 py-2.5 text-primary-foreground">
             {m.landing.demoA2}
           </Reveal>
           <Reveal show={searching} className="flex h-5 items-center gap-2 text-sm text-muted-foreground">
@@ -93,7 +93,7 @@ export function LandingDemo() {
               {m.landing.demoCardMeta}
             </p>
             <p className="mt-3 text-sm font-semibold text-success-foreground">{m.landing.demoWhy}</p>
-            <p className="mt-1 border-l-2 border-primary/50 pl-2.5 text-sm italic">{m.landing.demoQuote}</p>
+            <p className="mt-1 border-s-2 border-primary/50 ps-2.5 text-sm italic">{m.landing.demoQuote}</p>
           </Reveal>
         </div>
       </div>

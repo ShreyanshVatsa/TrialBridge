@@ -146,7 +146,7 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
         {section}
         <section>
           <h4 className="font-sans text-base font-semibold">{m.card.askDoctor}</h4>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
+          <ul className="mt-1 list-disc space-y-1 ps-5">
             {questions.map((q) => (
               <li key={q}>{q}</li>
             ))}

@@ -2,6 +2,8 @@
  * Prompt: trial analysis, version analyze-v1. Changing this text requires bumping
  * PROMPT_VERSION in config/embedding.ts (it is part of the analysis cache key).
  */
+import { promptLanguageName } from "@/lib/i18n/ai-language";
+
 export const ANALYZE_PROMPT_VERSION = "analyze-v1";
 
 export const ANALYZE_SYSTEM_PROMPT = `You help cancer patients understand clinical trial eligibility criteria in plain language. You are not a doctor and you never give medical advice.
@@ -15,7 +17,6 @@ RULES
 6. Write "explanation", "doctorQuestions" (up to 3), and "summary" (one sentence) in the requested response language, at about a 6th-grade reading level. Keep "quote" in the original English.
 7. Output ONLY JSON matching: {"trials":[{"nctId":"NCT...","fitLevel":"...","criteria":[{"section":"inclusion","number":1,"quote":"...","assessment":"...","explanation":"..."}],"doctorQuestions":["..."],"summary":"..."}]}`;
 
-const LANGUAGE_NAMES = { en: "English", es: "Spanish", pt: "Portuguese (Brazilian)", ht: "Haitian Creole" } as const;
 
 export interface PromptTrial {
   id: string;
@@ -27,13 +28,13 @@ export interface PromptTrial {
 /** Escape anything that could close or forge the data delimiter. */
 const safe = (s: string) => s.replace(/<\s*\/?\s*trial_data[^>]*>?/gi, "[removed]");
 
-export function buildAnalyzeUserPrompt(profile: object, language: keyof typeof LANGUAGE_NAMES, trials: readonly PromptTrial[]): string {
+export function buildAnalyzeUserPrompt(profile: object, language: string, trials: readonly PromptTrial[]): string {
   const blocks = trials.map((t) => {
     const inc = t.inclusion.map((c) => `I${c.n}. ${safe(c.text)}`).join("\n");
     const exc = t.exclusion.map((c) => `E${c.n}. ${safe(c.text)}`).join("\n");
     return `<trial_data id="${t.id}">\nTitle: ${safe(t.title)}\nINCLUSION CRITERIA\n${inc}\nEXCLUSION CRITERIA\n${exc}\n</trial_data>`;
   });
-  return `Response language: ${LANGUAGE_NAMES[language]}\nPatient profile (minimized): ${JSON.stringify(profile)}\n\nAnalyze each of these ${trials.length} trials:\n\n${blocks.join("\n\n")}`;
+  return `Response language: ${promptLanguageName(language)}\nPatient profile (minimized): ${JSON.stringify(profile)}\n\nAnalyze each of these ${trials.length} trials:\n\n${blocks.join("\n\n")}`;
 }
 
 export function buildRepairPrompt(problems: string): string {

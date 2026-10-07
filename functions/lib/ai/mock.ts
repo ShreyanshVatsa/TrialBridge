@@ -1,5 +1,6 @@
 import type { Assessment, FitLevel, MinimizedProfile, TrialAnalysis } from "@/lib/types/analysis";
 import type { Language } from "@/lib/types/intake";
+import { withEnglishFallback } from "@/lib/i18n/ai-language";
 import type { CriterionRef } from "@/lib/types/trial";
 import { precheck } from "@/lib/match/precheck";
 import type { ServerTrial } from "../trials";
@@ -12,7 +13,7 @@ import { mockAsk } from "./mock-ask";
  * works with no API keys. Used when no provider is enabled, and always in tests.
  */
 
-const EXPLAIN: Record<Language, Record<Assessment, string>> = {
+const EXPLAIN: Record<Language, Record<Assessment, string>> = withEnglishFallback({
   en: {
     likely_met: "Your answers suggest you may meet this requirement. Your care team can confirm.",
     likely_not_met: "Based on your answers, this might rule you out. Ask your care team to check.",
@@ -33,9 +34,9 @@ const EXPLAIN: Record<Language, Record<Assessment, string>> = {
     likely_not_met: "Dapre repons ou yo, sa a ka anpeche ou patisipe. Mande ekip swen ou verifye sa.",
     needs_doctor: "Repons ou yo pa di nou ase sou sa. Doktè ou ka verifye sa avè ou.",
   },
-};
+});
 
-const QUESTIONS: Record<Language, string[]> = {
+const QUESTIONS: Record<Language, string[]> = withEnglishFallback({
   en: [
     "Could this trial be an option for me, given my diagnosis and treatment history?",
     "Do my latest test results meet this trial's requirements?",
@@ -56,9 +57,9 @@ const QUESTIONS: Record<Language, string[]> = {
     "Èske dènye rezilta tès mwen yo koresponn ak kondisyon etid sa a?",
     "Kijan patisipe nan etid sa a ta mache ak swen mwen ap resevwa kounye a ak vwayaj yo?",
   ],
-};
+});
 
-const SUMMARY: Record<Language, Record<FitLevel, string>> = {
+const SUMMARY: Record<Language, Record<FitLevel, string>> = withEnglishFallback({
   en: {
     strong: "Several criteria line up with your answers; this is a possible match to discuss with your care team.",
     possible: "Nothing in your answers clearly rules this out; it may be worth discussing with your care team.",
@@ -83,7 +84,7 @@ const SUMMARY: Record<Language, Record<FitLevel, string>> = {
     unlikely: "Omwen yon kritè ka pa koresponn ak repons ou yo; mande ekip swen ou anvan ou elimine li.",
     unclear: "Pa gen ase enfòmasyon; ekip swen ou ka revize kritè yo avè ou.",
   },
-};
+});
 
 const MAX_CRITERIA = 5;
 const MAX_QUOTE = 1500;

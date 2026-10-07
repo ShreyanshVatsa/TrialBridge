@@ -14,8 +14,10 @@
   }
   try {
     var lang = localStorage.getItem("tb-lang");
-    if (lang === "es" || lang === "pt" || lang === "ht") {
+    // Any BCP 47 tag from the locale registry (validated again by the app): "es", "zh-Hans", "ar"...
+    if (lang && lang !== "en" && /^[a-z]{2,3}(-[A-Za-z]{4})?$/.test(lang)) {
       root.lang = lang;
+      root.dir = /^(ar|fa|ur|he)$/.test(lang) ? "rtl" : "ltr";
       root.setAttribute("data-lang-pending", lang);
       setTimeout(function () {
         root.removeAttribute("data-lang-pending");

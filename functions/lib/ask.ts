@@ -1,5 +1,6 @@
 import { AskRequestSchema, type AskResponse } from "@/lib/types/ask";
 import { scrubPersonalInfo } from "@/lib/privacy/scrub";
+import { isAiExperimental } from "@/lib/i18n/ai-language";
 import { ASK_PROMPT_VERSION, ASK_SYSTEM_PROMPT, buildAskUserPrompt } from "@/prompts/ask-v1";
 import { apiError, devCorsHeaders, isSameOrigin, json, readJsonBody } from "./http";
 import { checkRateLimit, hashIp } from "./ratelimit";
@@ -47,7 +48,7 @@ export async function handleAsk(request: Request, deps: AskDeps): Promise<Respon
 
   const scrub = scrubPersonalInfo(parsed.data.question);
   const question = scrub.text;
-  const base: Pick<AskResponse, "piiRemoved" | "experimental" | "cached"> = { piiRemoved: scrub.removed > 0, experimental: language === "ht", cached: false };
+  const base: Pick<AskResponse, "piiRemoved" | "experimental" | "cached"> = { piiRemoved: scrub.removed > 0, experimental: isAiExperimental(language), cached: false };
   const reply = (r: Omit<AskResponse, keyof typeof base> & Partial<typeof base>) => json({ ...base, ...r } satisfies AskResponse, 200, requestId, cors);
 
   // Safety first, deterministically, before any AI call or data lookup.

@@ -76,7 +76,7 @@ export function AboutPage() {
       )}
       <Link href="/methodology/" className={buttonVariants({ variant: "outline" })}>
         {m.methodologyLink}
-        <ArrowRight aria-hidden />
+        <ArrowRight className="rtl:-scale-x-100" aria-hidden />
       </Link>
     </ProsePage>
   );

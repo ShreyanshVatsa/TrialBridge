@@ -1,39 +1,14 @@
 import type { Language } from "@/lib/types/intake";
 import type { RefusalReason } from "@/lib/types/ask";
+import { withEnglishFallback } from "@/lib/i18n/ai-language";
+import { matchesCrisis, normalizeForCrisis } from "@/lib/safety/crisis";
 
 /**
  * Deterministic safety pre-checks for Trial Q&A (run before any AI call), in all four languages.
  * Crisis always wins. Eligibility/diagnosis/treatment-advice requests are politely refused.
  */
-/** Crisis patterns run on accent-stripped, lowercased text (so "suicídio" and "suicidio" both match). */
-const CRISIS = [
-  /\bsuicid/,
-  /\bswisid/,
-  /\bkill(ing)? (myself|me)\b/,
-  /\b(end|ending) (my (own )?life|it all|everything)\b/,
-  /\b(take|taking) my own life\b|\b(end|ending) my own life\b/,
-  /\b(want|wanna|going|wish|wished|hope|ready|plan(ning)?|thinking of|thinking about) (to )?(die|dying|be dead)\b/,
-  /\bwish (i|that i) (were|was|am) (dead|gone|never born)\b|\bwish i (could )?(disappear|die)\b|\bwish i was never born\b/,
-  /\b(don'?t|do not|no longer) want to (live|be alive|be here|go on|exist|wake up)( anymore| any more)?\b/,
-  /\bwhat'?s the point (of|in) (living|life|going on|anything)\b|\bno point (in )?(living|going on|life)\b/,
-  /\bno reason to (live|go on|be here)\b/,
-  /\bself[- ]?harm\b|\b(hurt|hurting|harm|harming|cut|cutting) myself\b/,
-  /\bcan'?t go on\b|\bbetter off dead\b|\bgive up on life\b|\bnot worth living\b|\blife (is|isn'?t) worth\b.{0,10}\b(living|it)\b/,
-  /\b(overdose|overdosing|od)\b.{0,25}\b(on purpose|myself|pills|to die)\b|\b(i might|i will|i'?m going to|i want to|thinking of|going to) overdose\b|\bmight overdose\b/,
-  /\b(everyone|everybody|they|family) (would be|is|are) better off without me\b|\bbetter off without me\b/,
-  // Spanish
-  /quitarme la vida|quitar(me)? mi vida|matarme|suicidarme|no quiero vivir|no quiero seguir viviendo|quiero morir(me)?|quiero acabar con (mi vida|todo)|acabar con mi vida|terminar con mi vida|terminar mi vida|hacerme dano|ya no quiero estar aqui|mejor muerto|mejor muerta/,
-  // Portuguese
-  /me matar|tirar (a )?minha (propria )?vida|nao quero (mais )?viver|quero morrer|quero acabar com (a minha|minha) vida|acabar com a minha vida|acabar com minha vida|acabar com tudo|me machucar|melhor morto|melhor morta|nao aguento mais viver/,
-  // Haitian Creole
-  /touye (tet )?mwen|touye tet mwen|mwen vle mouri|mwen pa vle viv ank(o|a)?|mwen pa vle viv|met fen (a )?(lavi|vi) mwen|fini ak lavi mwen|pran lavi mwen|mwen vle fini ak (tout bagay|lavi)|mwen vle swisid|(pi bon|mye) mwen mouri/,
-];
-
-/** Lowercase and strip diacritics so accented and unaccented spellings match the same pattern. */
-export function normalizeForSafety(text: string): string {
-  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\u2018\u2019]/g, "'");
-}
-
+/** Lowercase and fold diacritics so accented and unaccented spellings match the same pattern. */
+export const normalizeForSafety = normalizeForCrisis;
 
 const REFUSALS: [RefusalReason, RegExp[]][] = [
   [
@@ -75,9 +50,9 @@ const REFUSALS: [RefusalReason, RegExp[]][] = [
   ],
 ];
 
+/** Crisis detection: every locale's lexicon (lib/safety/lexicons) runs, whatever the request language. */
 export function detectCrisis(question: string): boolean {
-  const q = normalizeForSafety(question);
-  return CRISIS.some((re) => re.test(q));
+  return matchesCrisis(question);
 }
 
 export function detectRefusal(question: string): RefusalReason | null {
@@ -104,15 +79,16 @@ export function violatesWording(text: string): boolean {
   return BANNED_OUTPUT.some((re) => re.test(t));
 }
 
-export const NEUTRAL_NOTE: Record<Language, string> = {
+export const NEUTRAL_NOTE: Record<Language, string> = withEnglishFallback({
   en: "Please discuss this with your care team and the trial contact.",
   es: "Hable de esto con su equipo médico y con el contacto del estudio.",
   pt: "Converse sobre isso com sua equipe de saúde e com o contato do estudo.",
   ht: "Tanpri pale sou sa ak ekip swen ou ak kontak etid la.",
-};
+});
 
 type Msg = "crisis" | RefusalReason | "not_in_text" | "answer_intro";
-export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
+/** Languages without server-written text (the machine-translated ones) get the English reply; the UI shows its own localized crisis line. */
+export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = withEnglishFallback({
   en: {
     crisis:
       "I'm really sorry you're going through this. You don't have to face it alone. In the U.S., you can call or text 988 to reach the Suicide & Crisis Lifeline, any time. If you are in immediate danger, call 911. Please also tell your care team how you are feeling.",
@@ -153,4 +129,4 @@ export const SAFE_REPLIES: Record<Language, Record<Msg, string>> = {
     not_in_text: "Enfòmasyon ofisyèl etid la pa reponn sa. Kontak etid ki sou paj sa a ka ede ou.",
     answer_intro: "Men sa tèks ofisyèl etid la di (an anglè):",
   },
-};
+});

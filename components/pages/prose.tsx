@@ -48,7 +48,7 @@ export function ProsePage({
               <p key={p}>{p}</p>
             ))}
             {s.items.length > 0 && (
-              <ul className="list-disc space-y-2 pl-5 marker:text-primary">
+              <ul className="list-disc space-y-2 ps-5 marker:text-primary">
                 {s.items.map((i) => (
                   <li key={i}>{i}</li>
                 ))}

@@ -9,7 +9,7 @@ export function AssistantBubble({ children, label }: { children: ReactNode; labe
   return (
     <div className="animate-fade-up flex items-end gap-2.5">
       <LogoMark className="mb-0.5 size-7" />
-      <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-bubble px-4 py-3 text-foreground">
+      <div className="max-w-[85%] rounded-2xl rounded-es-md bg-bubble px-4 py-3 text-foreground">
         <span className="sr-only">{label}: </span>
         {children}
       </div>
@@ -41,7 +41,7 @@ export function UserBubble({
           <Pencil className="size-4" aria-hidden />
         </button>
       )}
-      <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-primary-foreground">
+      <div className="max-w-[80%] rounded-2xl rounded-ee-md bg-primary px-4 py-3 text-primary-foreground">
         <span className="sr-only">{label}: </span>
         {children}
       </div>

@@ -68,10 +68,10 @@ function CitationView({ c }: { c: Citation }) {
       : m.ask.citation[c.section];
   return (
     <figure>
-      <blockquote lang="en" className="border-l-2 border-primary/50 pl-3 text-sm text-foreground/90 italic">
+      <blockquote lang="en" className="border-s-2 border-primary/50 ps-3 text-sm text-foreground/90 italic">
         “{c.quote}”
       </blockquote>
-      <figcaption className="mt-0.5 pl-3 text-sm text-muted-foreground">{label}</figcaption>
+      <figcaption className="mt-0.5 ps-3 text-sm text-muted-foreground">{label}</figcaption>
     </figure>
   );
 }
@@ -208,11 +208,11 @@ export function AskPanel({ nctId }: { nctId: string }) {
         <ol className="mt-6 space-y-5" aria-live="polite">
           {turns.map((t) => (
             <li key={t.id} className="space-y-3">
-              <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-primary-foreground">
+              <div className="ms-auto max-w-[85%] rounded-2xl rounded-ee-md bg-primary px-4 py-3 text-primary-foreground">
                 <span className="sr-only">{m.ask.you}: </span>
                 {t.question}
               </div>
-              <div className="max-w-[95%] rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3">
+              <div className="max-w-[95%] rounded-2xl rounded-es-md border border-border bg-card px-4 py-3">
                 <span className="sr-only">{m.ask.answerLabel}: </span>
                 {t.response ? <ResponseView r={t.response} /> : <TypingDots label={m.ask.thinking} className="text-primary" />}
               </div>
