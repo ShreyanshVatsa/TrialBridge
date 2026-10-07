@@ -10,11 +10,13 @@ import { BarrierBadge, Badge } from "@/components/results/badges";
 import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
-import { TypingDots } from "@/components/site/spinner";
+import { Skeleton } from "@/components/site/skeleton";
 import { AskPanel } from "./ask-panel";
 import { buttonVariants } from "@/components/ui/button";
-import { loadTrial, sortSitesByDistance } from "@/lib/data/loader";
-import { NctIdSchema, type Criterion, type Site, type TrialCard } from "@/lib/types";
+import { sortSitesByDistance } from "@/lib/match/filters";
+import type { Criterion, Site, TrialCard } from "@/lib/types";
+
+const NCT_ID = /^NCT\d{8}$/;
 
 type State =
   | { kind: "loading" }
@@ -218,7 +220,7 @@ export function TrialDetail() {
   const m = useMessages();
   const params = useSearchParams();
   const rawId = (params.get("id") ?? "").trim().toUpperCase();
-  const validId = NctIdSchema.safeParse(rawId).success;
+  const validId = NCT_ID.test(rawId);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -230,7 +232,8 @@ export function TrialDetail() {
   useEffect(() => {
     if (!validId) return;
     let cancelled = false;
-    loadTrial(rawId)
+    import("@/lib/data/loader")
+      .then(({ loadTrial }) => loadTrial(rawId))
       .then((res) => {
         if (cancelled) return;
         setState(res ? { kind: "ok", card: res.card, sites: res.sites } : { kind: "not_found" });
@@ -248,13 +251,9 @@ export function TrialDetail() {
   const current: State = validId ? state : { kind: "invalid" };
 
   return (
-    <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-      {current.kind === "loading" && (
-        <div role="status" className="flex items-center justify-center gap-3 py-24 text-lg text-muted-foreground">
-          <TypingDots label="" className="text-primary" />
-          {m.trial.loading}
-        </div>
-      )}
+    // min-h keeps the footer below the fold while loading, so content arriving doesn't shift it.
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      {current.kind === "loading" && <TrialSkeleton label={m.trial.loading} />}
       {current.kind === "invalid" && <ErrorView title={m.trial.notFoundTitle} body={m.trial.invalidId} />}
       {current.kind === "not_found" && <ErrorView title={m.trial.notFoundTitle} body={m.trial.notFoundBody} />}
       {current.kind === "error" && (
@@ -265,11 +264,30 @@ export function TrialDetail() {
   );
 }
 
+function TrialSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" className="space-y-6">
+      <span className="sr-only">{label}</span>
+      <Skeleton className="h-7 w-40 rounded-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-3/4" />
+      <Skeleton className="h-5 w-2/3" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+      </div>
+      <Skeleton className="h-16 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full rounded-xl" />
+    </div>
+  );
+}
+
 export function TrialLoading() {
   const m = useMessages();
   return (
-    <main id="main" className="flex flex-1 items-center justify-center py-24 text-lg text-muted-foreground">
-      <p role="status">{m.trial.loading}</p>
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <TrialSkeleton label={m.trial.loading} />
     </main>
   );
 }

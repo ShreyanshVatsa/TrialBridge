@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
-import { loadMeta } from "@/lib/data/loader";
+import { Skeleton } from "@/components/site/skeleton";
 import type { Meta } from "@/lib/types";
 
 type State = { kind: "loading" } | { kind: "error" } | { kind: "ok"; meta: Meta };
@@ -16,7 +16,9 @@ export function LandingStat() {
 
   useEffect(() => {
     let cancelled = false;
-    loadMeta()
+    // Loaded after first paint so the data layer (and zod) stay out of the landing page's critical path.
+    import("@/lib/data/loader")
+      .then(({ loadMeta }) => loadMeta())
       .then((meta) => !cancelled && setState({ kind: "ok", meta }))
       .catch(() => !cancelled && setState({ kind: "error" }));
     return () => {
@@ -25,10 +27,20 @@ export function LandingStat() {
   }, []);
 
   if (state.kind === "loading") {
+    // Same footprint as the loaded numbers, so nothing shifts when they arrive.
     return (
-      <p role="status" className="text-muted-foreground">
-        {m.landing.statLoading}
-      </p>
+      <div role="status">
+        <span className="sr-only">{m.landing.statLoading}</span>
+        <div className="grid gap-8 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i}>
+              <Skeleton className="h-14 w-36 sm:h-[3.75rem]" />
+              <Skeleton className="mt-3 h-6 w-64 max-w-full" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="mt-6 h-5 w-80 max-w-full" />
+      </div>
     );
   }
   if (state.kind === "error") return <p className="text-muted-foreground">{m.landing.statError}</p>;

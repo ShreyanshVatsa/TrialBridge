@@ -6,9 +6,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-heading: "Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif;
-  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -100,6 +100,11 @@
   --bubble: oklch(0.25 0.02 220);
 }
 
+/* Hidden until the saved non-English language has rendered (see /theme-init.js and LanguageReady). */
+html[data-lang-pending] body {
+  visibility: hidden;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -169,6 +174,18 @@
 }
 
 @media print {
+  @page {
+    margin: 14mm;
+  }
+  html,
+  body {
+    font-size: 11pt;
+  }
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #444;
+  }
   .no-print {
     display: none !important;
   }

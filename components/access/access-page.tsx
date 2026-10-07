@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
-import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import dynamic from "next/dynamic";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
 import { ErrorView } from "@/components/site/error-view";
-import { TypingDots } from "@/components/site/spinner";
+import { Skeleton } from "@/components/site/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   getBarrierBreakdown,
@@ -20,9 +20,14 @@ import {
   type AccessData,
   type BarrierMetric,
 } from "@/lib/access/access";
-import { loadMeta } from "@/lib/data/loader";
 import { cn } from "@/lib/utils";
 import { STATE_NAMES, UsTileMap } from "./us-tile-map";
+
+// Recharts is loaded lazily so it doesn't weigh down the first paint; same-height skeleton avoids layout shift.
+const BarrierChart = dynamic(() => import("./barrier-chart").then((x) => x.BarrierChart), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-64 animate-pulse rounded-xl bg-muted" />,
+});
 
 type State = { kind: "loading" } | { kind: "error" } | { kind: "ok"; data: AccessData; seed: boolean };
 const METRICS: BarrierMetric[] = ["any", "english_required", "upper_age_limit", "disability_exclusion"];
@@ -80,7 +85,7 @@ export function AccessPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([loadAccess(), loadMeta().catch(() => null)])
+    Promise.all([loadAccess(), import("@/lib/data/loader").then(({ loadMeta }) => loadMeta()).catch(() => null)])
       .then(([data, meta]) => !cancelled && setState({ kind: "ok", data, seed: meta?.source === "seed" }))
       .catch(() => !cancelled && setState({ kind: "error" }));
     return () => {
@@ -112,7 +117,7 @@ export function AccessPage() {
   const pc = (count: number, total: number) => format(m.access.pctCount, { rate: pct(count, total), count: n(count) });
 
   return (
-    <main id="main" className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 py-12 sm:px-6 sm:py-16">
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-6xl flex-1 space-y-8 px-4 py-12 sm:px-6 sm:py-16">
       <header className="max-w-3xl">
         <h1 className="text-4xl font-semibold sm:text-5xl">{m.access.title}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{m.access.intro}</p>
@@ -125,10 +130,16 @@ export function AccessPage() {
       </header>
 
       {state.kind === "loading" && (
-        <p role="status" className="flex items-center gap-3 py-16 text-lg text-muted-foreground">
-          <TypingDots label="" className="text-primary" />
-          {m.access.loading}
-        </p>
+        <div role="status" className="space-y-6">
+          <span className="sr-only">{m.access.loading}</span>
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full rounded-2xl" />
+        </div>
       )}
       {state.kind === "error" && <ErrorView body={m.access.error} onRetry={retry} showHome={false} />}
 
@@ -206,46 +217,10 @@ export function AccessPage() {
                     </li>
                   ))}
                 </ul>
-                <div aria-hidden className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      layout="vertical"
-                      accessibilityLayer={false}
-                      data={view.breakdown.map((b) => ({ ...b, label: m.access.metrics[b.type] }))}
-                      margin={{ top: 4, right: 72, bottom: 4, left: 4 }}
-                      barCategoryGap={10}
-                    >
-                      <XAxis type="number" domain={[0, 100]} hide />
-                      <YAxis
-                        type="category"
-                        dataKey="label"
-                        width={130}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: "var(--foreground)", fontSize: 14 }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "var(--muted)" }}
-                        formatter={(value, _name, item) => [
-                          format(m.access.chartValue, { rate: Number(value), count: n((item.payload as { count: number }).count) }),
-                          "",
-                        ]}
-                        separator=""
-                        contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)" }}
-                        labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
-                      />
-                      <Bar dataKey="rate" fill="var(--primary)" radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={false}>
-                        <LabelList
-                          dataKey="rate"
-                          position="right"
-                          fill="var(--foreground)"
-                          fontSize={13}
-                          formatter={(v) => `${String(v)}%`}
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <BarrierChart
+                  data={view.breakdown.map((b) => ({ ...b, label: m.access.metrics[b.type] }))}
+                  valueLabel={(rate, count) => format(m.access.chartValue, { rate, count: n(count) })}
+                />
               </figure>
               <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                 {view.breakdown.map((b) => (

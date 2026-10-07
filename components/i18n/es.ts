@@ -244,7 +244,7 @@ export const es: Messages = {
   },
   results: {
     title: "Posibles coincidencias para hablar con su equipo de atención",
-    count: "{shown} de {total} estudios que pasaron los filtros de ubicación y edad",
+    count: "{shown} de {total} estudios que pasaron los filtros de ubicación y edad.",
     searched: "Se buscó en {count} estudios que reclutan.",
     editAnswers: "Editar respuestas",
     newSearch: "Nueva búsqueda",
@@ -442,6 +442,7 @@ export const es: Messages = {
       cta: "Colabore con nosotros",
       ctaNote: "Abre su aplicación de correo. No recopilamos información mediante formularios.",
       mailSubject: "Consulta de colaboración con TrialBridge",
+      ctaSoon: "Contacto de colaboración próximamente",
     },
     methodology: {
       title: "Cómo funciona",
@@ -533,6 +534,7 @@ export const es: Messages = {
         },
       ],
       methodologyLink: "Leer cómo funciona",
+      founderTitle: "Por qué existe TrialBridge",
     },
     privacyPolicy: {
       title: "Política de privacidad",
@@ -583,6 +585,12 @@ export const es: Messages = {
         { title: "Cambios", body: ["Podemos actualizar estos términos. Seguir usando el servicio significa que acepta los términos actualizados."], items: [] },
       ],
     },
+  },
+  pwa: {
+    updateAvailable: "Hay una nueva versión de TrialBridge lista.",
+    reload: "Recargar",
+    offlineTitle: "No tiene conexión",
+    offlineBody: "TrialBridge necesita conexión para buscar estudios y cargar sus detalles. Sus respuestas nunca se guardan, así que no se perdió nada. Conéctese e intente de nuevo.",
   },
   errors: {
     title: "Algo salió mal",

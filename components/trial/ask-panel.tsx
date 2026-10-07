@@ -190,7 +190,7 @@ export function AskPanel({ nctId }: { nctId: string }) {
   const limitReached = remaining <= 0;
 
   return (
-    <section id="ask" aria-labelledby="ask-title" className="scroll-mt-24 border-t border-border pt-8">
+    <section id="ask" aria-labelledby="ask-title" className="no-print scroll-mt-24 border-t border-border pt-8">
       <h2 id="ask-title" className="flex items-center gap-2 text-2xl font-semibold">
         <MessageCircleQuestion className="size-6 text-primary" aria-hidden />
         {m.ask.title}
