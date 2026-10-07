@@ -96,6 +96,13 @@ describe("rule facts", () => {
     expect(v("inclusion", "No prior chemotherapy for metastatic disease", "prior_chemotherapy")).toBe("excluded");
     expect(v("inclusion", "Must have received prior chemotherapy", "prior_chemotherapy")).toBe("required");
     expect(v("inclusion", "HER2-negative breast cancer", "biomarker:HER2")).toBe("excluded");
+    expect(v("inclusion", "Has metastatic TNBC", "biomarker:HER2")).toBe("excluded");
+    expect(v("inclusion", "Locally advanced HR+/HER2- breast cancer", "biomarker:HER2")).toBe("excluded");
+    expect(v("inclusion", "Locally advanced HR+/HER2- breast cancer", "biomarker:HR")).toBe("required");
+    expect(v("inclusion", "HR- and HER2+ disease", "biomarker:HR")).toBe("excluded");
+    expect(v("inclusion", "Documented EGFR mutation (exon 19 deletion)", "biomarker:EGFR")).toBe("required");
+    expect(v("exclusion", "Known EGFR mutation or ALK rearrangement", "biomarker:ALK")).toBe("excluded");
+    expect(v("inclusion", "Triple-negative breast cancer", "biomarker:HR")).toBe("excluded");
     expect(v("exclusion", "Known brain metastases", "metastatic")).toBeUndefined();
     expect(v("inclusion", "Non-metastatic disease", "metastatic")).toBe("excluded");
     expect(v("inclusion", "Newly diagnosed, previously untreated AML", "newly_diagnosed")).toBe("required");

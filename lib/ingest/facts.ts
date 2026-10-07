@@ -13,6 +13,7 @@ import {
   PREVIOUSLY_TREATED,
   PRIOR_CONTEXT,
   THERAPY_PATTERNS,
+  TRIPLE_NEGATIVE,
   WASHOUT,
 } from "@/config/criteria";
 import type { Criterion, CriterionSection, Fact, FactKey, FactValue } from "@/lib/types/trial";
@@ -56,13 +57,37 @@ export function factsForCriterion(section: CriterionSection, text: string): Cand
     if (!incl || NEGATION.test(text)) out.push({ key: "concurrent_trial", value: "excluded" });
   }
 
+  // Triple-negative breast cancer required => HER2-positive and HR-positive patients are excluded.
+  if (incl && TRIPLE_NEGATIVE.test(text)) {
+    out.push({ key: "biomarker:HER2", value: "excluded" }, { key: "biomarker:HR", value: "excluded" });
+  }
+
   // Biomarkers: direction from positive/negative wording near the marker.
   for (const b of BIOMARKERS) {
     const m = b.pattern.exec(text);
     if (!m) continue;
-    const window = text.slice(Math.max(0, m.index - 40), m.index + m[0].length + 40);
-    const pos = POSITIVE_WORDS.test(window);
-    const neg = NEGATIVE_WORDS.test(window);
+    // The marker's own suffix ("HER2-", "HER2+", "HER2-negative", "EGFR mutation") is decisive;
+    // otherwise look at nearby words. This keeps "HR+/HER2-" from reading as HER2-positive.
+    const suffix = text.slice(m.index + m[0].length, m.index + m[0].length + 16);
+    let pos: boolean;
+    let neg: boolean;
+    if (m[0].endsWith("+")) {
+      pos = true;
+      neg = false;
+    } else if (m[0].endsWith("-")) {
+      pos = false;
+      neg = true;
+    } else if (/^\s*(\+|-?\s*positive|-?\s*pos\b|amplif|overexpress|mutat|mutant|fusion|rearrang|-?\s*high\b)/i.test(suffix)) {
+      pos = true;
+      neg = false;
+    } else if (/^\s*([-−](?![a-z0-9])|-?\s*negative|-?\s*neg\b|wild|-?\s*low\b|0\b)/i.test(suffix)) {
+      pos = false;
+      neg = true;
+    } else {
+      const window = text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30);
+      pos = POSITIVE_WORDS.test(window);
+      neg = NEGATIVE_WORDS.test(window);
+    }
     let value: FactValue = "mentioned";
     if (pos !== neg) {
       // inclusion+positive => required; inclusion+negative => positive patients excluded;
@@ -70,6 +95,7 @@ export function factsForCriterion(section: CriterionSection, text: string): Cand
       if (incl) value = pos ? "required" : "excluded";
       else value = pos ? "excluded" : "required";
     }
+    if (out.some((o) => o.key === `biomarker:${b.id}`)) continue; // TNBC rule already set it
     out.push({ key: `biomarker:${b.id}`, value });
   }
   return out;
