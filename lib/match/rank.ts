@@ -8,7 +8,7 @@ import type { PrecheckNote } from "@/lib/types/match";
 import { compileState, hardFilters } from "@/lib/questionnaire/rules";
 import { nearestSite, passesAge, passesDistance, passesGroup, passesSex } from "./filters";
 import { reciprocalRankFusion } from "./rrf";
-import { evaluateAnswers, precheck } from "./precheck";
+import { answerEvaluator, precheck } from "./precheck";
 import { finalScore, normalizeRrf, phaseBonus, precheckPenalty } from "./score";
 
 /** How many results are kept for AI analysis (the UI shows 10, then "show more"). */
@@ -30,22 +30,31 @@ export interface MatchContext {
 }
 
 /**
- * Per-trial pre-check for either intake: the v2 questionnaire (catalog-driven `evaluateAnswers`, plus the
- * phase preference) when a questionnaire state and catalog are present, else the v1 fixed-flow `precheck`.
+ * Pre-check for either intake, prepared once per search: the v2 questionnaire (catalog-driven, answers compiled a
+ * single time, plus the phase preference) when a questionnaire state and catalog are present, else the v1
+ * fixed-flow `precheck`. Also returns the definite-sex hard filter (null = no filter), read from the same
+ * compiled answers.
  */
-export function trialPrecheck(answers: RankAnswers, card: Pick<TrialCard, "facts" | "phases">, ctx: MatchContext = {}): { notes: PrecheckNote[]; phase: number } {
+export function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { precheck: (card: Pick<TrialCard, "facts" | "phases">) => { notes: PrecheckNote[]; phase: number }; sex: "FEMALE" | "MALE" | null } {
   const state = answers.questionnaire;
   if (state && ctx.catalog) {
+    const compiled = compileState(state, ctx.catalog);
+    const evaluate = answerEvaluator(compiled, ctx.policy);
     const pref = state.answers["phase_pref"];
-    return { notes: evaluateAnswers(state, ctx.catalog, card.facts, ctx.policy), phase: phaseBonus(typeof pref === "string" ? pref : null, card.phases) };
+    const prefId = typeof pref === "string" ? pref : null;
+    return { precheck: (card) => ({ notes: evaluate(card.facts), phase: phaseBonus(prefId, card.phases) }), sex: hardFilters(compiled).sex ?? null };
   }
-  return { notes: precheck(answers, card.facts), phase: 0 };
+  return { precheck: (card) => ({ notes: precheck(answers, card.facts), phase: 0 }), sex: null };
+}
+
+/** Per-trial pre-check for either intake (see `prepareMatching`; use that when checking many trials). */
+export function trialPrecheck(answers: RankAnswers, card: Pick<TrialCard, "facts" | "phases">, ctx: MatchContext = {}): { notes: PrecheckNote[]; phase: number } {
+  return prepareMatching(answers, ctx).precheck(card);
 }
 
 /** The definite-sex hard filter from the questionnaire (null = no filter). */
 export function sexFilter(answers: RankAnswers, ctx: MatchContext = {}): "FEMALE" | "MALE" | null {
-  if (!answers.questionnaire || !ctx.catalog) return null;
-  return hardFilters(compileState(answers.questionnaire, ctx.catalog)).sex ?? null;
+  return prepareMatching(answers, ctx).sex;
 }
 
 export interface RankInput extends MatchContext {
@@ -67,7 +76,8 @@ export interface RankInput extends MatchContext {
 export function rankTrials(input: RankInput): SearchOutcome {
   const { answers, origin } = input;
   const maxMiles = origin ? answers.travelMiles : null;
-  const sex = sexFilter(answers, input);
+  const matching = prepareMatching(answers, input);
+  const sex = matching.sex;
 
   // 1. Hard filters.
   const candidates = new Map<string, RankEntry & { nearest: ReturnType<typeof nearestSite> }>();
@@ -100,7 +110,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
   // 4. Pre-check (v1 rules or the v2 catalog) + final score.
   const ranked: RankedTrial[] = fused.map((f) => {
     const c = candidates.get(f.id) as RankEntry & { nearest: ReturnType<typeof nearestSite> };
-    const { notes, phase } = trialPrecheck(answers, c.card, input);
+    const { notes, phase } = matching.precheck(c.card);
     const retrieval = normalizeRrf(f.score, rankings.length);
     return {
       card: c.card,

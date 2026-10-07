@@ -35,9 +35,23 @@ export function sortSitesByDistance(sites: Site[], origin: LatLon | null): Neare
   return withMiles.sort((a, b) => (a.miles ?? Infinity) - (b.miles ?? Infinity));
 }
 
-/** Nearest site, or the first site when distance is unknown; null when there are no sites. */
+/**
+ * Nearest site, or the first site when distance is unknown; null when there are no sites. A single pass that keeps
+ * the first site with the smallest distance (the same pick as sorting every site by distance, without the sort
+ * and without building a result for each site: trials can list hundreds of sites).
+ */
 export function nearestSite(sites: Site[], origin: LatLon | null): NearestSite | null {
-  return sortSitesByDistance(sites, origin)[0] ?? null;
+  let best: NearestSite | null = null;
+  let bestMiles = Infinity; // distance used for comparing; sites without coordinates compare as Infinity
+  for (const site of sites) {
+    const miles = origin && site.lat !== undefined && site.lon !== undefined ? haversineMiles(origin, { lat: site.lat, lon: site.lon }) : null;
+    const d = miles ?? Infinity;
+    if (best === null || d < bestMiles) {
+      best = { site, miles };
+      bestMiles = d;
+    }
+  }
+  return best;
 }
 
 /**

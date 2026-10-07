@@ -3,7 +3,7 @@ import type { IntakeAnswers, Treatment } from "@/lib/types/intake";
 import type { Fact } from "@/lib/types/trial";
 import type { PrecheckNote } from "@/lib/types/match";
 import type { FactPolicyMap, QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
-import { applyPolicy, compileState, factRelation } from "@/lib/questionnaire/rules";
+import { applyPolicy, compileState, factRelation, type CompiledAnswer } from "@/lib/questionnaire/rules";
 
 /** A pre-check note for one trial fact (carries direction and source for FACT_WEIGHT / RELIABILITY). */
 function toNote(f: Fact, kind: PrecheckNote["kind"]): PrecheckNote {
@@ -93,12 +93,23 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
  * (penalize=false) switches off key families that are below the precision gate.
  */
 export function evaluateAnswers(state: QuestionnaireState, catalog: readonly QuestionDef[], facts: readonly Fact[], policy?: FactPolicyMap): PrecheckNote[] {
-  const compiled = compileState(state, catalog);
-  const notes: PrecheckNote[] = [];
-  if (compiled.every((c) => c.rules.size === 0)) return notes;
-  for (const f of facts) {
-    const rel = applyPolicy(factRelation(compiled, f), f.key, policy);
-    if (rel !== "neutral") notes.push(toNote(f, rel));
-  }
-  return notes;
+  return answerEvaluator(compileState(state, catalog), policy)(facts);
+}
+
+/**
+ * Same as `evaluateAnswers`, but the answers are compiled once and reused for many trials. Ranking checks hundreds
+ * of trials against the SAME answers, and compiling them per trial (walking the catalog, prerequisites and
+ * option effects each time) was most of the pre-check's cost.
+ */
+export function answerEvaluator(compiled: readonly CompiledAnswer[], policy?: FactPolicyMap): (facts: readonly Fact[]) => PrecheckNote[] {
+  const empty = compiled.every((c) => c.rules.size === 0);
+  return (facts) => {
+    const notes: PrecheckNote[] = [];
+    if (empty) return notes;
+    for (const f of facts) {
+      const rel = applyPolicy(factRelation(compiled, f), f.key, policy);
+      if (rel !== "neutral") notes.push(toNote(f, rel));
+    }
+    return notes;
+  };
 }
