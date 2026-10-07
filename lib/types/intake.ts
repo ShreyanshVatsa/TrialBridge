@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AI_LANGUAGE_TAGS } from "../../config/locales";
 import { BiomarkerIdSchema, CancerGroupIdSchema } from "./trial";
 import { QuestionnaireStateSchema } from "./questionnaire";
 
@@ -7,8 +8,14 @@ import { QuestionnaireStateSchema } from "./questionnaire";
  * Use `minimizeProfile()` (lib/types/minimize.ts) to derive what may be sent to AI.
  */
 
+/** The four languages the intake chat's own language question lists (kept for the old chat UI). */
 export const LANGUAGES = ["en", "es", "pt", "ht"] as const;
-export const LanguageSchema = z.enum(LANGUAGES);
+/**
+ * AI response language at the API boundary: an allowlist of BCP 47 tags generated from the locale registry
+ * (config/locales.ts, aiSupported). Prompts get a language NAME from a server-side map keyed by this tag.
+ */
+export const AiLanguageSchema = z.enum(AI_LANGUAGE_TAGS);
+export const LanguageSchema = AiLanguageSchema;
 export type Language = z.infer<typeof LanguageSchema>;
 
 export const TREATMENTS = ["chemotherapy", "radiation", "surgery", "immunotherapy", "targeted_therapy", "none", "not_sure"] as const;

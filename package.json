@@ -28,7 +28,10 @@
     "preview": "npm run db:migrate:local && npm run db:seed:local && wrangler dev",
     "ingest:llm": "tsx scripts/ingest/llm.ts",
     "eval": "tsx scripts/eval/run.ts",
-    "eval:labels": "tsx scripts/eval/make-labels.ts"
+    "eval:labels": "tsx scripts/eval/make-labels.ts",
+    "i18n:translate": "tsx scripts/i18n/translate.ts",
+    "i18n:manifest": "tsx scripts/i18n/translate.ts --manifest",
+    "fonts:fetch": "tsx scripts/fetch-fonts.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

@@ -64,7 +64,7 @@ export function SiteHeader() {
             </summary>
             <nav
               aria-label={m.nav.menu}
-              className="absolute right-0 mt-2 flex w-60 flex-col rounded-2xl border border-border bg-popover p-2 shadow-lg"
+              className="absolute end-0 mt-2 flex w-60 flex-col rounded-2xl border border-border bg-popover p-2 shadow-lg"
             >
               <Link href="/find/" className="rounded-lg px-3 py-2.5 font-medium text-primary">
                 {m.nav.find}

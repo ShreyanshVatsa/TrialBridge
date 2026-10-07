@@ -29,7 +29,7 @@ export function LandingPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "min-h-14 px-7 text-lg")}>
               {m.cta}
-              <ArrowRight aria-hidden />
+              <ArrowRight className="rtl:-scale-x-100" aria-hidden />
             </Link>
             <Link href="/privacy/" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "min-h-14 text-lg")}>
               {m.ctaSecondary}
@@ -96,7 +96,7 @@ export function LandingPage() {
             <p className="mt-3 max-w-[65ch] text-muted-foreground">{m.sitesBody}</p>
             <Link href="/for-sites/" className="mt-4 inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
               {m.sitesLink}
-              <ArrowRight className="size-4" aria-hidden />
+              <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />
             </Link>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function LandingPage() {
         <p className="mx-auto mt-3 max-w-prose text-muted-foreground">{m.finalBody}</p>
         <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "mt-8 min-h-14 px-7 text-lg")}>
           {m.cta}
-          <ArrowRight aria-hidden />
+          <ArrowRight className="rtl:-scale-x-100" aria-hidden />
         </Link>
       </section>
     </main>

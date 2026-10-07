@@ -9,6 +9,7 @@ import { DocumentMeta } from "@/components/site/document-meta";
 import { ServiceWorkerRegister } from "@/components/site/sw-register";
 import { SkipLink } from "@/components/site/skip-link";
 import { LanguageReady } from "@/components/i18n";
+import { LanguageSuggest, TranslationNote } from "@/components/i18n/translation-note";
 
 export const metadata: Metadata = {
   title: { default: en.meta.title, template: "%s · TrialBridge" },
@@ -41,6 +42,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SkipLink />
         <SessionProvider>
           <SiteHeader />
+          <LanguageSuggest />
+          <TranslationNote />
           {children}
           <SiteFooter />
           <ServiceWorkerRegister />

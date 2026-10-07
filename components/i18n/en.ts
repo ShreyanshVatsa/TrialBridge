@@ -615,3 +615,21 @@ type Widen<T> = T extends string
       : T;
 
 export type Messages = Widen<typeof en>;
+  i18n: {
+    pickerLabel: "Language",
+    searchLabel: "Search languages",
+    searchPlaceholder: "Search by name",
+    noResults: "No language found",
+    statusReviewed: "Reviewed",
+    statusMachine: "Machine-translated",
+    noteMachine: "Machine-translated, not reviewed by native speakers. Some wording may be wrong. Official trial text stays in English.",
+    notePartial: "Partially translated. Some text is in English.",
+    dismiss: "Dismiss",
+    suggest: "This site is also available in another language you use.",
+    switchTo: "Switch to {language}",
+    loadFailed: "Couldn't load that language. Check your connection and try again.",
+    crisisLine: "If you are in crisis, call or text 988 (Suicide & Crisis Lifeline). In an emergency, call 911.",
+    crisisEnglish: "In English: If you are in crisis, call or text 988 (Suicide & Crisis Lifeline). In an emergency, call 911.",
+    crisisUrgent: "For urgent help, use the numbers above.",
+    crisisLabel: "Crisis and emergency help",
+  },

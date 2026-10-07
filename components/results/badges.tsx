@@ -71,11 +71,11 @@ export function Quote({ text, criterionRef, className }: { text: string; criteri
   const m = useMessages();
   return (
     <figure className={cn("mt-1.5", className)}>
-      <blockquote lang="en" className="border-l-2 border-primary/50 pl-3 text-foreground/90 italic">
+      <blockquote lang="en" className="border-s-2 border-primary/50 ps-3 text-foreground/90 italic">
         “{text}”
       </blockquote>
       {criterionRef && (
-        <figcaption className="mt-1 pl-3 text-sm text-muted-foreground">
+        <figcaption className="mt-1 ps-3 text-sm text-muted-foreground">
           {format(m.card.criterionRef[criterionRef.section], { n: criterionRef.n })}
         </figcaption>
       )}

@@ -79,7 +79,7 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
       <header className="space-y-4">
         {session && (
           <Link href="/find/" className="no-print inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline">
-            <ArrowLeft className="size-4" aria-hidden />
+            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
             {m.trial.backToResults}
           </Link>
         )}
