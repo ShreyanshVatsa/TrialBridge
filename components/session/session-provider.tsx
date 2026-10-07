@@ -1,11 +1,13 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { emptyState, type QuestionnaireState } from "@/components/questionnaire/contract";
 import type { IntakeAnswers, RankedTrial, SearchOutcome } from "@/lib/types";
 
 /**
- * In-memory session state shared across client-side navigation (find -> trial detail -> back).
- * Nothing here is persisted: no localStorage, no cookies, no server. A refresh clears it.
+ * Session state shared across client-side navigation (find -> trial detail -> back).
+ * Search results live in memory only. Questionnaire answers are also mirrored to sessionStorage
+ * (tab-scoped, cleared when the tab closes) by the questionnaire flow; never localStorage, cookies or a server.
  */
 export type AnalysisState =
   | { status: "idle" }
@@ -23,8 +25,8 @@ export interface SearchSession {
 }
 
 interface SessionValue {
-  draft: Partial<IntakeAnswers>;
-  setDraft: (next: Partial<IntakeAnswers>) => void;
+  questionnaire: QuestionnaireState;
+  setQuestionnaire: (next: QuestionnaireState) => void;
   session: SearchSession | null;
   setSession: (next: SearchSession | null | ((prev: SearchSession | null) => SearchSession | null)) => void;
   reset: () => void;
@@ -33,21 +35,21 @@ interface SessionValue {
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [draft, setDraft] = useState<Partial<IntakeAnswers>>({});
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireState>(emptyState);
   const [session, setSession] = useState<SearchSession | null>(null);
 
   const value = useMemo<SessionValue>(
     () => ({
-      draft,
-      setDraft,
+      questionnaire,
+      setQuestionnaire,
       session,
       setSession,
       reset: () => {
-        setDraft({});
+        setQuestionnaire(emptyState());
         setSession(null);
       },
     }),
-    [draft, session],
+    [questionnaire, session],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

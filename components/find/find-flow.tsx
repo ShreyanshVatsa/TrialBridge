@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { IntakeChat } from "@/components/chat/intake-chat";
 import { loadErrorCode } from "@/components/format";
 import { useMessages } from "@/components/i18n";
+import { emptyState, type QuestionnaireState } from "@/components/questionnaire/contract";
+import { QuestionnaireFlow } from "@/components/questionnaire/questionnaire-flow";
 import { ResultsView, SearchProgressView } from "@/components/results/results-view";
 import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
 import { lookupZip } from "@/lib/data/loader";
-import type { IntakeAnswers, RankedTrial, SearchProgress } from "@/lib/types";
+import type { IntakeAnswers, Language, RankedTrial, SearchProgress } from "@/lib/types";
 
 type Status =
   | { kind: "idle" }
@@ -37,13 +38,15 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 
 /**
  * Orchestrates intake -> on-device search -> AI explanations.
- * Intake answers stay in memory (SessionProvider). Only `requestAnalysis` talks to the backend,
- * and it sends the minimized profile (no ZIP, no exact age) plus trial IDs.
+ * Questionnaire answers stay in the browser (memory + this tab's sessionStorage). Only `requestAnalysis` talks to
+ * the backend, and it sends the minimized profile (no ZIP, no exact age, no health history) plus trial IDs.
  */
 export function FindFlow() {
   const m = useMessages();
-  const { draft, setDraft, session, setSession } = useSession();
+  const { questionnaire, setQuestionnaire, session, setSession } = useSession();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // "Fill in what you found out" from the results page reopens exactly those questions.
+  const [fillRequest, setFillRequest] = useState<string[] | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +54,7 @@ export function FindFlow() {
 
   // Warm-up: as soon as a cancer type is picked, download that type's shard(s) and the on-device model in
   // the background (static files only), so the search itself is fast. Skipped when the browser asks to save data.
-  const cancerType = draft.cancerType;
+  const cancerType = questionnaire.answers.cancer_type as IntakeAnswers["cancerType"] | undefined;
   useEffect(() => {
     if (!cancerType || warmedUp.has(cancerType)) return;
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
@@ -89,6 +92,11 @@ export function FindFlow() {
     }
   }
 
+  async function searchFromQuestionnaire(state: QuestionnaireState, language: Language) {
+    const { toIntakeAnswers } = await import("@/components/questionnaire/engine");
+    await runSearch(toIntakeAnswers(state, language));
+  }
+
   async function runSearch(answers: IntakeAnswers) {
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -98,9 +106,13 @@ export function FindFlow() {
     window.scrollTo({ top: 0 });
     try {
       // Code-split: the matching engine (search index, embeddings worker) loads only when searching.
-      const { searchTrials } = await import("@/lib/match/search");
+      const [{ searchTrials }, { matchOptions }] = await Promise.all([import("@/lib/match/search"), import("@/components/questionnaire/engine")]);
       const [outcome, origin] = await Promise.all([
-        searchTrials(answers, { signal: ac.signal, onProgress: (progress) => setStatus({ kind: "searching", progress }) }),
+        searchTrials(answers, {
+          ...(answers.questionnaire ? matchOptions(answers.cancerType) : {}),
+          signal: ac.signal,
+          onProgress: (progress) => setStatus({ kind: "searching", progress }),
+        }),
         lookupZip(answers.zip).catch(() => null),
       ]);
       if (ac.signal.aborted) return;
@@ -140,16 +152,24 @@ export function FindFlow() {
       <ResultsView
         session={session}
         onEdit={() => {
-          setDraft(session.answers);
+          if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
+          setSession(null);
+        }}
+        onFill={(ids) => {
+          if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
+          setFillRequest(ids);
           setSession(null);
         }}
         onNewSearch={() => {
-          setDraft({});
+          void import("@/components/questionnaire/engine").then((e) => e.clearSession());
+          setQuestionnaire(emptyState());
           setSession(null);
         }}
         onWiden={() => {
-          const widened = { ...session.answers, travelMiles: null };
-          setDraft(widened);
+          const q = session.answers.questionnaire;
+          const widenedQ = q ? { ...q, answers: { ...q.answers, travel: "anywhere" }, updatedAt: Date.now() } : undefined;
+          if (widenedQ) setQuestionnaire(widenedQ);
+          const widened = { ...session.answers, travelMiles: null, ...(widenedQ ? { questionnaire: widenedQ } : {}) };
           void runSearch(widened);
         }}
       />
@@ -158,7 +178,13 @@ export function FindFlow() {
     body = (
       <>
         <h1 className="mb-6 text-3xl font-semibold sm:text-4xl">{m.chat.title}</h1>
-        <IntakeChat draft={draft} setDraft={setDraft} onSearch={(a) => void runSearch(a)} />
+        <QuestionnaireFlow
+          state={questionnaire}
+          setState={setQuestionnaire}
+          fillRequest={fillRequest}
+          onFillHandled={() => setFillRequest(null)}
+          onSearch={(s, lang) => void searchFromQuestionnaire(s, lang)}
+        />
         <Disclaimer className="mt-8" />
       </>
     );
