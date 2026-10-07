@@ -1,0 +1,98 @@
+{
+ "date": "2026-10-07",
+ "profiles": 30,
+ "cancerTypes": 12,
+ "states": 21,
+ "keyword": {
+  "recall10": 0.8421296296296296,
+  "ndcg10": 0.7868236693201216
+ },
+ "variants": [
+  {
+   "name": "MiniLM q8 + int8 (production)",
+   "embRecall": 0.8422222222222223,
+   "embNdcg": 0.7836740575236859,
+   "hybRecall": 0.8405555555555556,
+   "hybNdcg": 0.786152599750103,
+   "sysRecall": 0.8701851851851852,
+   "sysNdcg": 0.8191987617477001,
+   "excludedAt10": 0.2605555555555556,
+   "violations": 0,
+   "results": 377
+  },
+  {
+   "name": "MiniLM q8 + float32",
+   "embRecall": 0.8455555555555556,
+   "embNdcg": 0.7912925205886523,
+   "hybRecall": 0.8438888888888889,
+   "hybNdcg": 0.7942540401828012,
+   "sysRecall": 0.8701851851851852,
+   "sysNdcg": 0.8256077091332709,
+   "excludedAt10": 0.2605555555555556,
+   "violations": 0,
+   "results": 377
+  },
+  {
+   "name": "MiniLM fp32 + int8",
+   "embRecall": 0.8463888888888889,
+   "embNdcg": 0.7868887779536426,
+   "hybRecall": 0.843888888888889,
+   "hybNdcg": 0.7871814591421529,
+   "sysRecall": 0.8701851851851852,
+   "sysNdcg": 0.8192036479102767,
+   "excludedAt10": 0.2605555555555556,
+   "violations": 0,
+   "results": 377
+  },
+  {
+   "name": "bge-small q8 + int8",
+   "embRecall": 0.8480555555555557,
+   "embNdcg": 0.7854831534607387,
+   "hybRecall": 0.8613888888888889,
+   "hybNdcg": 0.7900109682768818,
+   "sysRecall": 0.8710185185185184,
+   "sysNdcg": 0.8146895531720423,
+   "excludedAt10": 0.2755555555555556,
+   "violations": 0,
+   "results": 377
+  },
+  {
+   "name": "bge-small q8 + float32",
+   "embRecall": 0.8491666666666666,
+   "embNdcg": 0.7841507779032463,
+   "hybRecall": 0.8525000000000001,
+   "hybNdcg": 0.7864436875170033,
+   "sysRecall": 0.8743518518518518,
+   "sysNdcg": 0.8177889169103896,
+   "excludedAt10": 0.2705555555555556,
+   "violations": 0,
+   "results": 377
+  },
+  {
+   "name": "bge-small fp32 + int8",
+   "embRecall": 0.8458333333333333,
+   "embNdcg": 0.784878841512335,
+   "hybRecall": 0.8483333333333334,
+   "hybNdcg": 0.7855038722107981,
+   "sysRecall": 0.8701851851851852,
+   "sysNdcg": 0.8191065855898985,
+   "excludedAt10": 0.27055555555555555,
+   "violations": 0,
+   "results": 377
+  }
+ ],
+ "hardFilterViolationRate": 0,
+ "facts": {
+  "sample": 50,
+  "correct": 33,
+  "precision": 0.66
+ },
+ "mockAi": {
+  "calls": 30,
+  "jsonValidRate": 1,
+  "quotePassRate": 0.9984350547730829,
+  "quotes": 1278,
+  "agreement": 0.6224188790560472,
+  "labeled": 339
+ }
+}
