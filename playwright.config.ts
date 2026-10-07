@@ -1,0 +1,29 @@
+import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * End-to-end tests run against the real static export + Worker API via `wrangler dev`
+ * (local D1, mock AI provider, Turnstile test keys). Build first: `npm run build`.
+ */
+const PORT = 8788;
+export default defineConfig({
+  testDir: "tests/e2e",
+  timeout: 120_000,
+  expect: { timeout: 30_000 },
+  fullyParallel: false,
+  workers: 1,
+  retries: process.env.CI ? 1 : 0,
+  reporter: [["line"]],
+  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
+  projects: [
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, grep: /@mobile/ },
+  ],
+  webServer: {
+    // Serves a snapshot of ./out (taken by `npm run test:e2e`) so a concurrent `next build` can't disturb the run.
+    command: `npx wrangler dev --port ${PORT} --assets .wrangler/e2e-out`,
+    url: `http://localhost:${PORT}/api/health`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+    stdout: "ignore",
+  },
+});
