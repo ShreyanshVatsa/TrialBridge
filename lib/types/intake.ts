@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BiomarkerIdSchema, CancerGroupIdSchema } from "./trial";
+import { QuestionnaireStateSchema } from "./questionnaire";
 
 /**
  * Intake answers. These live ONLY in browser memory and are never sent to the backend as-is.
@@ -46,5 +47,7 @@ export const IntakeAnswersSchema = z.strictObject({
   biomarkers: z.partialRecord(BiomarkerIdSchema, BiomarkerStatusSchema),
   pregnant: PregnancySchema,
   inAnotherTrial: YesNoSchema,
+  /** v2 adaptive questionnaire state (browser-only). When present, matching uses the catalog-driven pre-check. */
+  questionnaire: QuestionnaireStateSchema.optional(),
 });
 export type IntakeAnswers = z.infer<typeof IntakeAnswersSchema>;

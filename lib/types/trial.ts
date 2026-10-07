@@ -45,13 +45,50 @@ export const BASE_FACT_KEYS = [
   "previously_treated",
   "pregnancy",
   "concurrent_trial",
+  // v2 (QUESTIONNAIRE_SPEC §1.4, contract C2). Thresholds live in Fact.param.
+  "ecog_max", // param: highest ECOG allowed (number)
+  "brain_mets", // param "active_only": only active/untreated brain metastases are excluded
+  "measurable_disease",
+  "min_prior_lines", // param: minimum number of prior lines (number)
+  "max_prior_lines", // param: maximum number of prior lines (number)
+  "recurrent",
+  "locally_advanced",
+  "adjuvant_setting",
+  "castration_resistant",
+  "platinum_resistant",
+  "platinum_sensitive",
+  "mibc",
+  "resectable",
+  "rai_refractory",
+  "other_malignancy", // param: carve-out years (number), e.g. 2 = "unless treated more than 2 years ago"
+  "hiv", // param "uncontrolled_only": only uncontrolled HIV is excluded
+  "hepatitis_b",
+  "hepatitis_c",
+  "organ_transplant",
+  "allo_sct",
+  "autoimmune",
+  "kidney_disease",
+  "liver_disease",
+  "heart_disease",
 ] as const;
-export const FactKeySchema = z.union([z.enum(BASE_FACT_KEYS), z.templateLiteral(["biomarker:", BiomarkerIdSchema])]);
+export type BaseFactKey = (typeof BASE_FACT_KEYS)[number];
+
+/** Closed-vocabulary id used in template fact keys (histology:<id>, prior_drug:<id>); the id lists live in config. */
+export const FactIdSegmentSchema = z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/);
+export const FactKeySchema = z.union([
+  z.enum(BASE_FACT_KEYS),
+  z.templateLiteral(["biomarker:", BiomarkerIdSchema]),
+  z.templateLiteral(["histology:", FactIdSegmentSchema]),
+  z.templateLiteral(["prior_drug:", FactIdSegmentSchema]),
+]);
 export type FactKey = z.infer<typeof FactKeySchema>;
 
 /** required = must be present to join; excluded = presence rules you out; mentioned = referenced, direction unclear. */
 export const FactValueSchema = z.enum(["required", "excluded", "mentioned"]);
 export type FactValue = z.infer<typeof FactValueSchema>;
+
+export const FactParamSchema = z.union([z.number(), z.string()]);
+export type FactParam = z.infer<typeof FactParamSchema>;
 
 export const FactSchema = z.object({
   key: FactKeySchema,
@@ -64,8 +101,11 @@ export const FactSchema = z.object({
   confidence: z.number().min(0).max(1).optional(),
   /** True when rule and LLM layers disagree on this key. */
   needsReview: z.boolean().optional(),
+  /** Threshold or carve-out for parameterized keys (ecog_max 1, min_prior_lines 2, brain_mets "active_only"). */
+  param: FactParamSchema.optional(),
 });
 export type Fact = z.infer<typeof FactSchema>;
+
 
 export const ContactSchema = z.object({
   name: z.string().optional(),
@@ -166,8 +206,10 @@ export const LiteCardSchema = z.object({
   groups: z.array(CancerGroupIdSchema).min(1),
   minAge: z.number().nullable(),
   maxAge: z.number().nullable(),
-  /** Facts as [key, value] (quotes omitted; full cards are loaded for the final top results). */
-  f: z.array(z.tuple([FactKeySchema, FactValueSchema])),
+  /** Facts as [key, value, param?] (quotes omitted; full cards are loaded for the final top results). */
+  f: z.array(z.union([z.tuple([FactKeySchema, FactValueSchema]), z.tuple([FactKeySchema, FactValueSchema, FactParamSchema])])),
+  /** Structured sex restriction; absent = ALL (v2, used by the definite-sex hard filter). */
+  s: z.enum(["FEMALE", "MALE"]).optional(),
   /** Barrier types present. */
   b: z.array(BarrierTypeSchema),
 });
