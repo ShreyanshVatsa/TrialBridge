@@ -7,6 +7,7 @@ import type { KvStore } from "./store";
 import type { ServerTrial, TrialStore } from "./trials";
 import { ANALYSIS_TTL_SECONDS, analysisCacheKey } from "./cache";
 import { checkRateLimit, hashIp } from "./ratelimit";
+import { sha256Hex, stableStringify } from "./crypto";
 import { tryConsumeBudget } from "./budget";
 import { verifyQuotes } from "./quotes";
 import { parseModelOutput } from "./ai/output";
@@ -92,7 +93,9 @@ export async function handleAnalyze(request: Request, deps: AnalyzeDeps): Promis
     return json(empty, 200, requestId, cors);
   }
 
-  const cacheKey = await analysisCacheKey(profile, ids, dataVersion, PROMPT_VERSION);
+  // Include a hash of the trials' own text so cached analyses refresh whenever trial data changes.
+  const contentHash = (await sha256Hex(stableStringify(trials))).slice(0, 16);
+  const cacheKey = await analysisCacheKey(profile, ids, `${dataVersion}:${contentHash}`, PROMPT_VERSION);
   const hit = await deps.store.get(cacheKey);
   if (hit) {
     const cached = JSON.parse(hit) as { provider: string; results: TrialAnalysis[] };

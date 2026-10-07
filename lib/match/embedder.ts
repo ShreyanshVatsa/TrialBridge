@@ -7,7 +7,10 @@ let worker: Worker | null = null;
 let nextId = 1;
 
 function getWorker(): Worker {
-  worker ??= new Worker(new URL("./embed.worker.ts", import.meta.url), { type: "module" });
+  if (!worker) {
+    // Exact `new Worker(new URL(...), ...)` form so the bundler compiles the worker as its own entry.
+    worker = new Worker(new URL("./embed.worker.ts", import.meta.url), { type: "module" });
+  }
   return worker;
 }
 

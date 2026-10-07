@@ -19,7 +19,7 @@ export const PRIOR_CONTEXT = /\b(prior|previous(ly)?|preceding|received|receivin
 /** Negations inside an inclusion criterion ("no prior chemotherapy") flip it to excluded. */
 export const NEGATION = /\b(no|not|never|without|must not|cannot|none)\b/i;
 /** "Prior X is allowed" does not make X required or excluded -> mentioned. */
-export const ALLOWED = /\b(allowed|permitted|acceptable|may have (had|received)|is not required|are eligible)\b/i;
+export const ALLOWED = /\b(allowed|permitted|acceptable|may have (had|received)|is not required|are eligible|recovered from|toxicit(y|ies)|adverse events?|side effects?)\b/i;
 /** Washout windows ("within 4 weeks") are timing rules, not "never treated" rules -> mentioned. */
 export const WASHOUT = /\bwithin\s+(\d+|one|two|three|four|six)\b|\bwash-?out\b|\b\d+\s*(days?|weeks?|months?|half-lives)\s+(prior|before|of)\b|\blast dose\b/i;
 

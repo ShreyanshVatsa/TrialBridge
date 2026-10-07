@@ -116,7 +116,7 @@ export const ShardInfoSchema = z.object({
   id: z.string(),
   group: CancerGroupIdSchema,
   count: z.number().int(),
-  /** File names relative to /data/shards/<id>/ */
+  /** File names relative to `${manifest.shardBase}/<id>/` */
   files: z.object({ cards: z.string(), sites: z.string(), index: z.string(), embeddings: z.string() }),
   bytes: z.number().int(),
 });
@@ -125,6 +125,8 @@ export type ShardInfo = z.infer<typeof ShardInfoSchema>;
 /** /data/manifest.json: how groups map to shard parts, plus embedding format. */
 export const ManifestSchema = z.object({
   dataVersion: z.string(),
+  /** Versioned base path for shard files (e.g. /data/shards/<dataVersion>), so they can be cached immutably. */
+  shardBase: z.string().startsWith("/data/"),
   embedding: z.object({ model: z.string(), dims: z.number().int(), quantization: z.literal("int8"), scale: z.number() }),
   groups: z.partialRecord(CancerGroupIdSchema, z.array(z.string())),
   shards: z.array(ShardInfoSchema),

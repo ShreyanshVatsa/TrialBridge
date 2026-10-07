@@ -135,7 +135,7 @@ async function main(): Promise<void> {
   const lookup: Record<string, string> = {};
 
   const writeShard = async (id: string, group: CancerGroupId, list: TrialCard[]) => {
-    const dir = path.join(TMP, "shards", id);
+    const dir = path.join(TMP, "shards", dataVersion, id);
     const index = new MiniSearch<SearchDoc>(MINISEARCH_OPTIONS);
     index.addAll(list.map(toSearchDoc));
     const emb = new Int8Array(list.length * EMBEDDING_DIMS);
@@ -182,6 +182,7 @@ async function main(): Promise<void> {
   // 6. Manifest, meta, lookup.
   const manifest: Manifest = {
     dataVersion,
+    shardBase: `/data/shards/${dataVersion}`,
     embedding: { model: EMBEDDING_MODEL, dims: EMBEDDING_DIMS, quantization: "int8", scale: INT8_SCALE },
     groups,
     shards,
@@ -211,7 +212,7 @@ async function main(): Promise<void> {
   // 7. Validate output, then atomically swap directories.
   for (const s of shards) {
     for (const f of Object.values(s.files)) {
-      const st = await stat(path.join(TMP, "shards", s.id, f)).catch(() => null);
+      const st = await stat(path.join(TMP, "shards", dataVersion, s.id, f)).catch(() => null);
       if (!st || st.size === 0) fail(`missing shard file ${s.id}/${f}`);
     }
   }
@@ -237,7 +238,7 @@ async function main(): Promise<void> {
   // 9. Report.
   console.log(`\nData version ${dataVersion}: ${cards.length} trials, ${meta.statesCovered} states, ${shards.length} shards`);
   for (const s of shards) {
-    const dir = path.join(OUT, "shards", s.id);
+    const dir = path.join(OUT, "shards", dataVersion, s.id);
     let gz = 0;
     for (const f of await readdir(dir)) gz += gzipSync(await readFile(path.join(dir, f))).byteLength;
     console.log(`  ${s.id.padEnd(18)} ${String(s.count).padStart(5)} trials  ${(s.bytes / 1024).toFixed(0).padStart(6)} KB raw  ${(gz / 1024).toFixed(0).padStart(5)} KB gzip`);

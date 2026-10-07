@@ -53,7 +53,7 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   const [shards, origin] = await Promise.all([
     Promise.all(
       infos.map((info, i) =>
-        loadShard(info, {
+        loadShard(info, manifest.shardBase, {
           ...(opts.signal ? { signal: opts.signal } : {}),
           onProgress: (f) => {
             shardFractions[i] = f;

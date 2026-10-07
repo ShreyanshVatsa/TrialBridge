@@ -15,6 +15,8 @@ export type EmbedResponse =
 env.allowRemoteModels = false;
 env.allowLocalModels = true;
 env.localModelPath = "/models/";
+env.useWasmCache = false; // avoids blob: script URLs, so CSP can stay script-src 'self'
+env.useBrowserCache = true; // Cache Storage for model files (not AI responses or user data)
 const onnx = env.backends.onnx;
 if (onnx.wasm) {
   // Plain SIMD build (not asyncify/jsep): smaller, under Cloudflare's 25 MiB per-asset limit.
