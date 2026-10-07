@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Mail, MapPin, Phone } from "lucide-react";
+import { ExternalLink, Mail, MapPin, MessageCircleQuestion, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 import { format, useMessages } from "@/components/i18n";
 import { formatMiles, formatPhases, officialUrl, trialHref } from "@/components/format";
@@ -158,7 +158,11 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
       </div>
 
       <div className="no-print mt-5 flex flex-wrap gap-3 border-t border-border pt-4">
-        <Link href={trialHref(card.id)} className={buttonVariants({ variant: "default" })}>
+        <Link href={`${trialHref(card.id)}#ask`} className={buttonVariants({ variant: "default" })}>
+          <MessageCircleQuestion aria-hidden />
+          {m.ask.button}
+        </Link>
+        <Link href={trialHref(card.id)} className={buttonVariants({ variant: "outline" })}>
           {m.card.details}
         </Link>
         <a href={officialUrl(card.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline" })}>
