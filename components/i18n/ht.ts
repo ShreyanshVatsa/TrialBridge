@@ -499,6 +499,13 @@ export const ht: Messages = {
       ],
       evalTitle: "Evalyasyon",
       evalBody: "Nou mezire kalite rechèch la ak presizyon IA a ak pwofil pasyan sentetik nou make alamen. Nou pibliye rezilta yo ansanm ak kòd sous pwojè a.",
+      evalProvisional: "Sentetik e pwovizwa: {profiles} pwofil pasyan sentetik (se pa moun reyèl) nan {types} kalite kansè, ak etikèt pwofesyonèl sante poko revize. Mezire {date}.",
+      evalViolations: "Erè nan filtè obligatwa yo (move kalite kansè, laj oswa distans)",
+      evalRecall: "Etid ki enpòtan nou jwenn nan 10 premye yo (recall@10)",
+      evalNdcg: "Kalite klasman 10 premye yo (nDCG@10)",
+      evalFacts: "Presizyon enfòmasyon kalifikasyon ki baze sou règ ({correct} sou {sample} nou tcheke)",
+      evalQuotes: "Sitasyon IA ki koresponn mo pou mo ak tèks ofisyèl la ({quotes} nou tcheke)",
+      evalReport: "Rapò konplè: eval/RESULTS.md nan kòd sous pwojè a.",
     },
     about: {
       title: "Sou TrialBridge",

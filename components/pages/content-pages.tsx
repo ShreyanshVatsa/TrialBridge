@@ -6,6 +6,7 @@ import { format, useLanguage, useMessages, localeFor } from "@/components/i18n";
 import { formatDate } from "@/components/format";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { EvalSummary } from "./eval-summary";
 import { ProsePage } from "./prose";
 
 /** Partner contact address; set NEXT_PUBLIC_PARTNER_EMAIL at build time. */
@@ -29,14 +30,14 @@ export function ForSitesPage() {
   );
 }
 
-export function MethodologyPage({ evalSummary }: { evalSummary?: React.ReactNode }) {
+export function MethodologyPage() {
   const m = useMessages().pages.methodology;
   return (
     <ProsePage title={m.title} intro={m.intro} sections={m.sections}>
       <section className="border-t border-border pt-8">
         <h2 className="text-2xl font-semibold">{m.evalTitle}</h2>
         <p className="mt-3 max-w-[70ch]">{m.evalBody}</p>
-        {evalSummary}
+        <EvalSummary />
       </section>
     </ProsePage>
   );
