@@ -244,7 +244,7 @@ export const pt: Messages = {
   },
   results: {
     title: "Possíveis correspondências para conversar com sua equipe de cuidados",
-    count: "{shown} de {total} estudos que passaram pelos filtros de localização e idade",
+    count: "{shown} de {total} estudos que passaram pelos filtros de localização e idade.",
     searched: "Foram pesquisados {count} estudos com recrutamento.",
     editAnswers: "Editar respostas",
     newSearch: "Nova busca",
@@ -442,6 +442,7 @@ export const pt: Messages = {
       cta: "Seja nosso parceiro",
       ctaNote: "Abre seu aplicativo de e-mail. Não coletamos informações por formulários.",
       mailSubject: "Consulta sobre parceria com o TrialBridge",
+      ctaSoon: "Contato de parceria em breve",
     },
     methodology: {
       title: "Como funciona",
@@ -533,6 +534,7 @@ export const pt: Messages = {
         },
       ],
       methodologyLink: "Ler como funciona",
+      founderTitle: "Por que o TrialBridge existe",
     },
     privacyPolicy: {
       title: "Política de privacidade",
@@ -583,6 +585,12 @@ export const pt: Messages = {
         { title: "Alterações", body: ["Podemos atualizar estes termos. Continuar usando o serviço significa que você aceita os termos atualizados."], items: [] },
       ],
     },
+  },
+  pwa: {
+    updateAvailable: "Uma nova versão do TrialBridge está pronta.",
+    reload: "Recarregar",
+    offlineTitle: "Você está sem conexão",
+    offlineBody: "O TrialBridge precisa de conexão para buscar estudos e carregar os detalhes. Suas respostas nunca são armazenadas, então nada foi perdido. Conecte-se e tente novamente.",
   },
   errors: {
     title: "Algo deu errado",

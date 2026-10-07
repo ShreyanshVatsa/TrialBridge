@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { ArrowRight, Building2, HandHeart, Lock, Scale } from "lucide-react";
 import { useMessages } from "@/components/i18n";
-import { LandingDemo } from "@/components/landing/demo";
+import dynamic from "next/dynamic";
 import { LandingStat } from "@/components/landing/stat";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const promiseIcons = [HandHeart, Lock, Scale];
+
+// The animated demo is decorative: load it after first paint, in a same-size frame (no layout shift).
+const LandingDemo = dynamic(() => import("@/components/landing/demo").then((x) => x.LandingDemo), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-[31rem] rounded-3xl border border-border bg-card sm:h-[32rem]" />,
+});
 
 export function LandingPage() {
   const m = useMessages().landing;
@@ -21,11 +27,11 @@ export function LandingPage() {
           <h1 className="mt-4 text-[2.6rem] leading-[1.05] font-semibold text-balance sm:text-6xl lg:text-[4.25rem]">{m.headline}</h1>
           <p className="mt-6 max-w-[60ch] text-lg text-muted-foreground sm:text-xl">{m.sub}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "h-14 px-7 text-lg")}>
+            <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "min-h-14 px-7 text-lg")}>
               {m.cta}
               <ArrowRight aria-hidden />
             </Link>
-            <Link href="/privacy/" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "h-14 text-lg")}>
+            <Link href="/privacy/" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "min-h-14 text-lg")}>
               {m.ctaSecondary}
             </Link>
           </div>
@@ -100,7 +106,7 @@ export function LandingPage() {
       <section className="mx-auto max-w-6xl px-4 pb-20 text-center sm:px-6">
         <h2 className="text-3xl font-semibold sm:text-4xl">{m.finalTitle}</h2>
         <p className="mx-auto mt-3 max-w-prose text-muted-foreground">{m.finalBody}</p>
-        <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "mt-8 h-14 px-7 text-lg")}>
+        <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "mt-8 min-h-14 px-7 text-lg")}>
           {m.cta}
           <ArrowRight aria-hidden />
         </Link>

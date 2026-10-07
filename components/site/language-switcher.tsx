@@ -2,8 +2,8 @@
 
 import { Globe } from "lucide-react";
 import { useId } from "react";
-import { setLanguage, useLanguage, useMessages } from "@/components/i18n";
-import { LANGUAGES, type Language } from "@/lib/types/intake";
+import { setLanguage, UI_LANGUAGES, useLanguage, useMessages } from "@/components/i18n";
+import type { Language } from "@/lib/types/intake";
 
 /** Short native names; full names live in messages.options.language. */
 const NATIVE: Record<Language, string> = { en: "English", es: "Español", pt: "Português", ht: "Kreyòl" };
@@ -24,7 +24,7 @@ export function LanguageSwitcher() {
         onChange={(e) => setLanguage(e.target.value as Language)}
         className="h-11 appearance-none rounded-lg bg-transparent pr-2 pl-8 text-sm text-foreground hover:bg-muted sm:text-base"
       >
-        {LANGUAGES.map((l) => (
+        {UI_LANGUAGES.map((l) => (
           <option key={l} value={l} lang={l}>
             {NATIVE[l]}
           </option>

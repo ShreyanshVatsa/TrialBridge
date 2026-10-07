@@ -244,7 +244,7 @@ export const ht: Messages = {
   },
   results: {
     title: "Posib koresponn pou w pale ak ekip swen ou",
-    count: "{shown} sou {total} etid ki pase filtè kote ak laj yo",
+    count: "{shown} sou {total} etid ki pase filtè kote ak laj yo.",
     searched: "Nou chèche nan {count} etid k ap rekrite.",
     editAnswers: "Chanje repons yo",
     newSearch: "Nouvo rechèch",
@@ -442,6 +442,7 @@ export const ht: Messages = {
       cta: "Vin patnè nou",
       ctaNote: "Sa ap louvri aplikasyon imèl ou. Nou pa ranmase enfòmasyon nan fòmilè.",
       mailSubject: "Demann patenarya ak TrialBridge",
+      ctaSoon: "Kontak patenarya ap vini byento",
     },
     methodology: {
       title: "Kijan sa mache",
@@ -533,6 +534,7 @@ export const ht: Messages = {
         },
       ],
       methodologyLink: "Li kijan sa mache",
+      founderTitle: "Poukisa TrialBridge egziste",
     },
     privacyPolicy: {
       title: "Politik konfidansyalite",
@@ -583,6 +585,12 @@ export const ht: Messages = {
         { title: "Chanjman", body: ["Nou ka mete kondisyon sa yo ajou. Si w kontinye sèvi ak sèvis la, sa vle di w aksepte nouvo kondisyon yo."], items: [] },
       ],
     },
+  },
+  pwa: {
+    updateAvailable: "Gen yon nouvo vèsyon TrialBridge ki pare.",
+    reload: "Rechaje",
+    offlineTitle: "Ou pa konekte",
+    offlineBody: "TrialBridge bezwen koneksyon pou chèche etid ak chaje detay yo. Nou pa janm kenbe repons ou yo, kidonk ou pa pèdi anyen. Rekonekte epi eseye ankò.",
   },
   errors: {
     title: "Gen yon bagay ki pa mache",

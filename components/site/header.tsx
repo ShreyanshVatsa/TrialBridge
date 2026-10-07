@@ -52,7 +52,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
           <ThemeToggle />
-          <Link href="/find/" className={cn(buttonVariants({ size: "sm" }), "hidden h-10 px-4 text-base sm:inline-flex")}>
+          <Link href="/find/" className={cn(buttonVariants({ size: "sm" }), "hidden min-h-10 px-4 text-base whitespace-nowrap sm:inline-flex")}>
             {m.nav.find}
           </Link>
           <details ref={menuRef} className="relative lg:hidden">

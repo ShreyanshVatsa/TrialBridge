@@ -246,7 +246,7 @@ export const en = {
   },
   results: {
     title: "Possible matches to discuss with your care team",
-    count: "{shown} of {total} trials that passed location and age filters",
+    count: "{shown} of {total} trials that passed location and age filters.",
     searched: "Searched {count} recruiting trials.",
     editAnswers: "Edit answers",
     newSearch: "New search",
@@ -444,6 +444,7 @@ export const en = {
       cta: "Partner with us",
       ctaNote: "Opens your email app. We don't collect information through forms.",
       mailSubject: "TrialBridge partnership inquiry",
+      ctaSoon: "Partnership contact coming soon",
     },
     methodology: {
       title: "How it works",
@@ -535,6 +536,7 @@ export const en = {
         },
       ],
       methodologyLink: "Read how it works",
+      founderTitle: "Why TrialBridge exists",
     },
     privacyPolicy: {
       title: "Privacy policy",
@@ -585,6 +587,12 @@ export const en = {
         { title: "Changes", body: ["We may update these terms. Continued use means you accept the updated terms."], items: [] },
       ],
     },
+  },
+  pwa: {
+    updateAvailable: "A new version of TrialBridge is ready.",
+    reload: "Reload",
+    offlineTitle: "You're offline",
+    offlineBody: "TrialBridge needs a connection to search trials and load trial details. Your answers are never stored, so nothing was lost. Reconnect and try again.",
   },
   errors: {
     title: "Something went wrong",

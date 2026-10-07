@@ -8,10 +8,7 @@ import { ResultsView, SearchProgressView } from "@/components/results/results-vi
 import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
-import { requestAnalysis } from "@/lib/api/analyze";
-import { getTurnstileToken } from "@/lib/api/turnstile";
 import { lookupZip } from "@/lib/data/loader";
-import { applyAnalysis, searchTrials } from "@/lib/match/search";
 import type { IntakeAnswers, RankedTrial, SearchProgress } from "@/lib/types";
 
 type Status =
@@ -20,6 +17,7 @@ type Status =
   | { kind: "error"; code: ReturnType<typeof loadErrorCode>; answers: IntakeAnswers };
 
 const TURNSTILE_TIMEOUT_MS = 30_000;
+let warmedUp = false;
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -51,11 +49,29 @@ export function FindFlow() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Warm-up: once the user starts the intake, load the matching engine and the on-device model in the
+  // background so the search itself is fast. Skipped when the browser asks to save data.
+  const started = draft.cancerType !== undefined;
+  useEffect(() => {
+    if (!started || warmedUp) return;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    if (saveData) return;
+    warmedUp = true;
+    void import("@/lib/match/embedder").then(({ embedProfile }) => embedProfile("warm up", { timeoutMs: 120_000 }));
+    void import("@/lib/match/search");
+  }, [started]);
+
   async function runAnalysis(answers: IntakeAnswers, results: RankedTrial[], searchedAt: number) {
     const isCurrent = (prev: typeof session) => prev !== null && prev.searchedAt === searchedAt;
     try {
       const container = turnstileRef.current;
       if (!container) throw new Error("no turnstile container");
+      // Code-split: the AI client and Turnstile loader download only after a search.
+      const [{ getTurnstileToken }, { requestAnalysis }, { applyAnalysis }] = await Promise.all([
+        import("@/lib/api/turnstile"),
+        import("@/lib/api/analyze"),
+        import("@/lib/match/search"),
+      ]);
       const token = await withTimeout(getTurnstileToken(container), TURNSTILE_TIMEOUT_MS);
       const response = await requestAnalysis(
         answers,
@@ -82,6 +98,8 @@ export function FindFlow() {
     setStatus({ kind: "searching", progress: { stage: "loading_shards" } });
     window.scrollTo({ top: 0 });
     try {
+      // Code-split: the matching engine (search index, embeddings worker) loads only when searching.
+      const { searchTrials } = await import("@/lib/match/search");
       const [outcome, origin] = await Promise.all([
         searchTrials(answers, { signal: ac.signal, onProgress: (progress) => setStatus({ kind: "searching", progress }) }),
         lookupZip(answers.zip).catch(() => null),

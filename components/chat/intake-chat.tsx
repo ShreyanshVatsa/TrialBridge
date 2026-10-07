@@ -18,6 +18,8 @@ import {
   type IntakeAnswers,
   type Treatment,
 } from "@/lib/types";
+import { LogoMark } from "@/components/site/logo";
+import { TypingDots } from "@/components/site/spinner";
 import { AssistantBubble, Chips, UserBubble, inputClass } from "./primitives";
 
 type Draft = Partial<IntakeAnswers>;
@@ -114,6 +116,28 @@ function FocusOnMount({ children, enabled }: { children: ReactNode; enabled: boo
   );
 }
 
+/** Shows a brief "typing" bubble before a new question appears (skipped for reduced motion / first load). */
+function TypingReveal({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+  const m = useMessages();
+  const [shown, setShown] = useState(
+    () => !enabled || (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+  );
+  useEffect(() => {
+    if (shown) return;
+    const t = setTimeout(() => setShown(true), 450);
+    return () => clearTimeout(t);
+  }, [shown]);
+  if (shown) return <>{children}</>;
+  return (
+    <div className="flex items-end gap-2.5">
+      <LogoMark className="mb-0.5 size-7" />
+      <div className="rounded-2xl rounded-bl-md bg-bubble px-4 py-3.5 text-muted-foreground">
+        <TypingDots label={m.chat.typing} />
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Individual question widgets ---------- */
 
 function CancerTypeInput({ onAnswer }: { onAnswer: (v: CancerGroupId) => void }) {
@@ -141,6 +165,14 @@ function CancerTypeInput({ onAnswer }: { onAnswer: (v: CancerGroupId) => void })
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter picks the top match, so keyboard users can type and confirm.
+          const first = filtered[0];
+          if (e.key === "Enter" && query.trim() && first) {
+            e.preventDefault();
+            onAnswer(first.id);
+          }
+        }}
         placeholder={m.chat.cancerSearch}
         aria-describedby={hintId}
         autoComplete="off"
@@ -390,19 +422,19 @@ function Summary({
         {m.chat.summaryTitle}
       </h2>
       <p className="mt-1 text-muted-foreground">{m.chat.summaryIntro}</p>
-      <dl className="mt-4 divide-y divide-border">
+      <ul className="mt-4 divide-y divide-border">
         {rows.map((r) => (
-          <div key={r.step} className="flex items-start justify-between gap-3 py-3">
+          <li key={r.step} className="flex items-start justify-between gap-3 py-3">
             <div className="min-w-0">
-              <dt className="text-sm text-muted-foreground">{r.label}</dt>
-              <dd className="font-medium break-words">{r.value}</dd>
+              <p className="text-sm text-muted-foreground">{r.label}</p>
+              <p className="font-medium break-words">{r.value}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => onEdit(r.step)} aria-label={`${m.common.edit}: ${r.label}`}>
               {m.common.edit}
             </Button>
-          </div>
+          </li>
         ))}
-      </dl>
+      </ul>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button size="lg" disabled={!parsed.success} onClick={() => parsed.success && onSearch(parsed.data)}>
           <Search aria-hidden />
@@ -517,8 +549,10 @@ export function IntakeChat({
     if (step === active) {
       transcript.push(
         <div key={step} className="space-y-3">
-          <AssistantBubble label={m.chat.assistant}>{q}</AssistantBubble>
-          <FocusOnMount enabled={interacted}>{renderInput(step)}</FocusOnMount>
+          <TypingReveal enabled={interacted}>
+            <AssistantBubble label={m.chat.assistant}>{q}</AssistantBubble>
+            <FocusOnMount enabled={interacted}>{renderInput(step)}</FocusOnMount>
+          </TypingReveal>
         </div>,
       );
       if (!isAnswered(step, draft)) break;

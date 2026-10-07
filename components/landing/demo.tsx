@@ -20,8 +20,8 @@ function Reveal({ show, children, className }: { show: boolean; children: ReactN
   return (
     <div
       className={cn(
-        "transition-all duration-500 ease-out motion-reduce:transition-none",
-        show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
+        "origin-bottom transition-transform duration-500 ease-out motion-reduce:transition-none",
+        show ? "visible translate-y-0 scale-100" : "invisible translate-y-2 scale-95",
         className,
       )}
     >
@@ -72,7 +72,7 @@ export function LandingDemo() {
           <Reveal show={step >= 3} className="ml-auto rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground">
             {m.landing.demoA2}
           </Reveal>
-          <Reveal show={searching} className={cn("flex items-center gap-2 text-sm text-muted-foreground", !searching && "h-0")}>
+          <Reveal show={searching} className="flex h-5 items-center gap-2 text-sm text-muted-foreground">
             <TypingDots label="" className="text-primary" />
             {m.landing.demoSearching}
           </Reveal>
