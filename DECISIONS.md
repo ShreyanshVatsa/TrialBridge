@@ -12,3 +12,18 @@
 - Storage: D1 for backend trial-criteria copy, analysis cache, rate limits, and provider budgets. Reason: KV free tier allows only 1k writes/day; D1 free allows 100k row writes/day, 5M reads/day, 5 GB.
 - Generated data (public/data, public/models, data/build) is gitignored; `npm run setup` / prebuild regenerates from committed data/seed. Reason: keep repo small; seed is committed for offline builds.
 - Team split: Agent A (data, lib/match, functions, security) / Agent B (app/, components/ UI). Contract documented in API.md.
+- Seed: 305 real ClinicalTrials.gov API v2 records (12 cancer-type queries x 32, recruiting, interventional, U.S. site), 302 pass validation. Reason: real data only; small enough to commit (3.2 MB).
+- ZIP centroids: U.S. Census 2025 Gazetteer ZCTA internal points (public domain), committed as data/geo/zcta.csv; unknown ZIP falls back to its 3-digit-prefix average. Reason: free, official, offline.
+- Embeddings: Xenova/all-MiniLM-L6-v2 q8 (P1 eval will compare bge-small), L2-normalized, stored int8 (x127). Reason: 23 MB model, 384 dims, 4x smaller than float32.
+- Model + ONNX Runtime self-hosted (public/models, public/ort); browser uses the plain SIMD wasm (14 MB), not asyncify/jsep (>25 MiB Cloudflare per-asset limit); postbuild deletes the bundler's unused asyncify copy.
+- CSP without 'unsafe-inline' scripts: postbuild externalizes Next's inline scripts to /_inline/<hash>.js. 'wasm-unsafe-eval' kept (required by ONNX Runtime WebAssembly). style-src allows 'unsafe-inline' (React style attributes).
+- Shards live under /data/shards/<dataVersion>/ (content-hash version) so they are cached immutably; manifest/meta/lookup cache 5 min.
+- Shard split threshold 700 trials per part. Reason: ~15 KB raw/trial => ~10 MB raw / ~2.3 MB gzip per part.
+- Barrier rule: English requirement not flagged when another language or an interpreter is offered. Disability exclusion includes psychiatric/mental illness when no medical reason (e.g. "would limit compliance") is stated.
+- Rule facts: one fact per key (directional beats "mentioned"); washout windows, "allowed", toxicity-recovery wording => "mentioned" (never penalizes). Biomarker direction decided by the marker's own suffix (HER2-, HR+) before nearby words; TNBC => HER2/HR excluded.
+- Score weights (lib/match/score.ts): retrieval 1.0 (normalized RRF), conflict -0.15 each (max 3), support +0.03 (max 3), AI fit strong +0.3 / possible +0.15 / unclear 0 / unlikely -0.3.
+- Analysis cache key adds a hash of the loaded trial text (plus DATA_VERSION + prompt version). Reason: cache refreshes whenever trial data changes even if the version var is not bumped.
+- Rate limit: fixed hourly window in D1 keyed by sha256(salt|UTC day|IP)[:32]; missing RATE_LIMIT_SALT => fixed dev salt (dev) or random per-isolate salt (prod).
+- Turnstile: fails closed in production without TURNSTILE_SECRET_KEY; dev/tests use Cloudflare's always-pass test keys.
+- When real providers are enabled but all fail, the API degrades (retrieval + rules) instead of falling back to mock output. Mock is used only when no provider is enabled.
+- Prompts stored as versioned TS modules (prompts/analyze-v1.ts) so both Wrangler (esbuild) and Vitest import them without loaders.

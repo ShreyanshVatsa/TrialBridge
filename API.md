@@ -12,6 +12,7 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 - `loadTrial(nctId: string): Promise<{ card: TrialCard; sites: Site[] } | null>`: trial detail page (`/trial/?id=NCT01234567`). null = unknown ID.
 - `lookupZip(zip: string): Promise<{ lat: number; lon: number } | null>`: ZIP centroid (loads one 3-digit-prefix file on demand).
 - `sortSitesByDistance(sites: Site[], origin: { lat: number; lon: number } | null): Array<{ site: Site; miles: number | null }>`: nearest first.
+- Internal: `loadManifest()`, `loadShard(info, shardBase, opts)` (used by search; UI should not need them).
 - All loaders throw `DataLoadError` (`code: "network" | "not_found" | "invalid" | "timeout"`) after retries.
 
 ## Matching (`lib/match/search.ts`)
@@ -29,3 +30,6 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 - `FitLevel`: strong | possible | unlikely | unclear. `Assessment`: likely_met | likely_not_met | needs_doctor. Never say "eligible"/"qualify"; say "possible match to discuss with your care team".
 - `Barrier.type`: english_required | upper_age_limit | disability_exclusion; `Barrier.quote` is the exact triggering sentence. `RankedTrial.languageWarning` => show the language warning badge.
 - Criteria quotes: `card.inclusion` / `card.exclusion` are numbered `{ n, text }`; AI quotes reference `{ section, number }`.
+
+## Local full-stack run
+`npm run build && npm run preview` serves the static export and `/api/*` together via `wrangler dev` (local D1 seeded from data/build/criteria.sql). `next dev` alone has no API: `requestAnalysis` then returns a degraded response.
