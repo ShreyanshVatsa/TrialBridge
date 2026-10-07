@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BiomarkerIdSchema, CancerGroupIdSchema, CriterionSectionSchema } from "./trial";
-import { BiomarkerStatusSchema, LanguageSchema, PregnancySchema, SpreadSchema, TreatmentSchema, YesNoSchema } from "./intake";
+import { BiomarkerStatusSchema, LanguageSchema, PregnancySchema, SpreadSchema, TREATMENTS } from "./intake";
+import { DRUG_CLASS_IDS, GROUP_STATUS_IDS, SUBTYPE_IDS } from "@/config/questionnaire/ids";
 
 /**
  * Data-minimization boundary. This strict schema is the ONLY shape of patient data that may
@@ -11,15 +12,44 @@ export const AGE_BRACKETS = ["18-29", "30-39", "40-49", "50-59", "60-69", "70-79
 export const AgeBracketSchema = z.enum(AGE_BRACKETS);
 export type AgeBracket = z.infer<typeof AgeBracketSchema>;
 
+/** Treatments that may go to AI: the v1 list plus the v2 classes (hormone therapy, stem cell transplant). */
+export const AI_TREATMENTS = [...TREATMENTS, "hormone_therapy", "stem_cell_transplant"] as const;
+export const AiTreatmentSchema = z.enum(AI_TREATMENTS);
+export const YesNoUnknownSchema = z.enum(["yes", "no", "not_sure"]);
+
+/** v2 coarse disease-describing categories (QUESTIONNAIRE_SPEC §4.2). Every enum includes "not_sure". */
+export const STAGE_CATEGORIES = ["early", "locally_advanced", "metastatic", "no_evidence_after_surgery", "not_sure"] as const;
+export const DISEASE_STATUSES = ["new", "recurrent_or_progressing", "on_treatment", "not_sure"] as const;
+export const PRIOR_LINES = ["0", "1", "2", "3+", "not_sure"] as const;
+export const ACTIVITY_BANDS = ["0-1", "2", "3-4", "not_sure"] as const;
+export const BRAIN_METS = ["none", "treated_stable", "active", "not_sure"] as const;
+export const AI_DRUG_CLASS_IDS = DRUG_CLASS_IDS;
+
+/**
+ * Personal health history (HIV, hepatitis, transplant, autoimmune, organ problems, other cancers), sex,
+ * measurable disease, phase preference, exact age, ZIP, travel and the deferred / find-out lists are NOT
+ * here and therefore can never be sent: they stay in the browser for the local pre-check only (§4.3).
+ */
 export const MinimizedProfileSchema = z.strictObject({
+  /** Absent = v1 payload (still accepted). */
+  v: z.literal(2).optional(),
   cancerType: CancerGroupIdSchema,
   ageBracket: AgeBracketSchema,
   spread: SpreadSchema,
-  treatments: z.array(TreatmentSchema).min(1).max(7),
+  treatments: z.array(AiTreatmentSchema).min(1).max(9),
   biomarkers: z.partialRecord(BiomarkerIdSchema, BiomarkerStatusSchema),
   pregnant: PregnancySchema,
-  concurrentTrial: YesNoSchema,
+  concurrentTrial: YesNoUnknownSchema,
   language: LanguageSchema,
+  // v2 coarse fields, all optional (omitted when unknown, which also keeps cache hit rates up).
+  subtype: z.enum(SUBTYPE_IDS).optional(),
+  stageCategory: z.enum(STAGE_CATEGORIES).optional(),
+  diseaseStatus: z.enum(DISEASE_STATUSES).optional(),
+  priorLines: z.enum(PRIOR_LINES).optional(),
+  activityBand: z.enum(ACTIVITY_BANDS).optional(),
+  brainMets: z.enum(BRAIN_METS).optional(),
+  groupStatus: z.enum(GROUP_STATUS_IDS).optional(),
+  priorDrugClasses: z.array(z.enum(DRUG_CLASS_IDS)).min(1).max(12).optional(),
 });
 export type MinimizedProfile = z.infer<typeof MinimizedProfileSchema>;
 
