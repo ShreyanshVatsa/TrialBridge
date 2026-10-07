@@ -186,7 +186,7 @@ describe("engine: stop rules", () => {
     const catalog = [...TEST_CATALOG, hard("h1"), hard("h2"), hard("h3")];
     const base = essentials();
     // Same answers, different order: only the streak at the end of the history differs.
-    const answers = { ...base.answers, h1: "unknown", h2: "__skip", phase_pref: "no_preference" };
+    const answers = { ...base.answers, h1: "unknown", h2: "__skip", phase_pref: "no_pref" };
     const streak = { ...base, answers, history: [...base.history, "phase_pref", "h1", "h2"] };
     const oneOnly = { ...base, answers, history: [...base.history, "h1", "phase_pref", "h2"] };
     const u3 = (s: QuestionnaireState) => rankQuestions(s, POOL, catalog).find((r) => (r.question.id as string) === "h3")!.utility;

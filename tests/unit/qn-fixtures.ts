@@ -194,8 +194,8 @@ export const TEST_CATALOG: readonly QuestionDef[] = [
     id: "phase_pref",
     tier: "deep",
     type: "single",
-    options: ["phase1_ok", "later_phase", "no_preference", ...NR].map(opt),
-    effects: [eff("phase1_ok"), eff("later_phase"), eff("no_preference"), ...nrEffects()],
+    options: ["open_phase1", "later_phase", "no_pref", ...NR].map(opt),
+    effects: [eff("open_phase1"), eff("later_phase"), eff("no_pref"), ...nrEffects()],
   }),
   q({ id: "measurable", tier: "deep", type: "single", enabled: false, options: ["yes", "no", ...NR].map(opt), effects: [eff("yes"), eff("no"), ...nrEffects()] }),
 ];

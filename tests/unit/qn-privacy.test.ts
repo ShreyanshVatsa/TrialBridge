@@ -24,7 +24,7 @@ const SENSITIVE = {
   organ_problems: ["kidney", "heart"],
   other_cancer: "recent",
   measurable: "yes",
-  phase_pref: "phase1_ok",
+  phase_pref: "open_phase1",
 };
 const COARSE = {
   subtype: "nsclc_adeno",
@@ -69,7 +69,7 @@ describe("minimized profile v2 (§4)", () => {
 
   it("never contains any browser-only key or value (enumerated §4.3 list)", () => {
     const json = JSON.stringify({ profile: minimizeProfile(full()), nctIds: ["NCT01234567"], turnstileToken: "t" });
-    const values = ["hepatitis_b", "organ_transplant", "kidney", "heart", "recent", "phase1_ok", "controlled", "female", "10001"];
+    const values = ["hepatitis_b", "organ_transplant", "kidney", "heart", "recent", "open_phase1", "controlled", "female", "10001"];
     expect(findPrivacyLeaks(json, { zip: "10001", age: 60, values })).toEqual([]);
     for (const k of Object.keys(SENSITIVE)) expect(json).not.toContain(`"${k}"`);
   });
@@ -81,6 +81,12 @@ describe("minimized profile v2 (§4)", () => {
     for (const k of ["subtype", "stageCategory", "priorLines", "activityBand", "priorDrugClasses"]) expect(p).not.toHaveProperty(k);
     expect(minimizeProfile(toIntakeAnswers(essentials("lung", { treatments: ["none"] }))).priorLines).toBe("0");
     expect(minimizeProfile(toIntakeAnswers(essentials("lung", { treatments: ["chemotherapy", "made_up"] }))).treatments).toEqual(["not_sure"]);
+  });
+
+  it("maps the catalog's own option ids (WP1 common.ts) to the AI enums", () => {
+    const p = minimizeProfile(toIntakeAnswers(essentials("lung", { spread: "distant", disease_status: "recurrent", lines: "3plus", treatments: ["chemotherapy"] })));
+    expect(p).toMatchObject({ spread: "yes", stageCategory: "metastatic", diseaseStatus: "recurrent_or_progressing", priorLines: "3+" });
+    expect(minimizeProfile(toIntakeAnswers(essentials("lung", { spread: "removed" })))).toMatchObject({ spread: "no", stageCategory: "no_evidence_after_surgery" });
   });
 
   it("v1 payloads (no v, no v2 fields) still parse; extra and sensitive fields are rejected", () => {

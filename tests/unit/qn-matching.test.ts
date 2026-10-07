@@ -39,8 +39,8 @@ describe("score weights (v2)", () => {
     const sup = n({ key: "biomarker:EGFR", kind: "support", value: "required" });
     expect(precheckBonus([sup, { ...sup, key: "biomarker:ALK" }])).toBeCloseTo(0.06 + BIOMARKER_MATCH_BONUS, 12);
     expect(precheckBonus([{ ...sup, value: "excluded" }])).toBeCloseTo(0.03, 12);
-    expect(phaseBonus("phase1_ok", ["PHASE1"])).toBe(PHASE_PREF_BONUS);
-    expect(phaseBonus("phase1_ok", ["PHASE2"])).toBe(0);
+    expect(phaseBonus("open_phase1", ["PHASE1"])).toBe(PHASE_PREF_BONUS);
+    expect(phaseBonus("open_phase1", ["PHASE2"])).toBe(0);
     expect(phaseBonus("later_phase", ["EARLY_PHASE1"])).toBe(-PHASE_PREF_BONUS);
     expect(phaseBonus("later_phase", ["PHASE2", "PHASE3"])).toBe(PHASE_PREF_BONUS);
     expect(phaseBonus("later_phase", ["PHASE2"])).toBe(0);
@@ -95,7 +95,7 @@ describe("matching integration (rankTrials with a questionnaire)", () => {
   });
 
   it("uses catalog notes (ECOG) and the phase preference", () => {
-    const out = run(essentials("lung", { daily_activity: "3-4", phase_pref: "phase1_ok" }));
+    const out = run(essentials("lung", { daily_activity: "3-4", phase_pref: "open_phase1" }));
     const t3 = out.results.find((r) => r.card.id === "NCT00000003")!;
     expect(t3.precheck.map((n) => `${n.key}:${n.kind}`)).toEqual(["ecog_max:conflict"]);
     const t4 = out.results.find((r) => r.card.id === "NCT00000004")!;

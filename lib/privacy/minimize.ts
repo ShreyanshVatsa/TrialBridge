@@ -25,6 +25,14 @@ export function ageToBracket(age: number): AgeBracket {
   return "90+";
 }
 
+/** Catalog option ids that differ from the AI enum values (config/questionnaire/common.ts). Others map 1:1. */
+const OPTION_TO_AI: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  spread: { not_spread: "early", nearby: "locally_advanced", distant: "metastatic", removed: "no_evidence_after_surgery" },
+  disease_status: { recurrent: "recurrent_or_progressing" },
+  lines: { "3plus": "3+" },
+};
+const toAi = (q: string, v: AnswerValue | undefined): AnswerValue | undefined => (typeof v === "string" ? (OPTION_TO_AI[q]?.[v] ?? v) : v);
+
 /**
  * A definite answer that is a member of the closed list, else undefined. "not_sure", unknown, skip,
  * prefer not and deferred answers are all omitted: an omitted field and "not sure" mean the same to the
@@ -42,20 +50,20 @@ function oneOf<T extends string>(v: AnswerValue | undefined, allowed: readonly T
 function v2Fields(state: QuestionnaireState): Partial<MinimizedProfile> {
   const a = state.answers;
   const out: Partial<MinimizedProfile> = { v: 2 };
-  const subtype = oneOf(a["subtype"], SUBTYPE_IDS);
+  const subtype = oneOf(toAi("subtype", a["subtype"]), SUBTYPE_IDS);
   if (subtype) out.subtype = subtype;
-  const stage = oneOf(a["spread"], STAGE_CATEGORIES);
+  const stage = oneOf(toAi("spread", a["spread"]), STAGE_CATEGORIES);
   if (stage) out.stageCategory = stage;
-  const status = oneOf(a["disease_status"], DISEASE_STATUSES);
+  const status = oneOf(toAi("disease_status", a["disease_status"]), DISEASE_STATUSES);
   if (status) out.diseaseStatus = status;
   const treatments = a["treatments"];
-  const lines = Array.isArray(treatments) && treatments.length === 1 && treatments[0] === "none" ? "0" : oneOf(a["lines"], PRIOR_LINES);
+  const lines = Array.isArray(treatments) && treatments.length === 1 && treatments[0] === "none" ? "0" : oneOf(toAi("lines", a["lines"]), PRIOR_LINES);
   if (lines) out.priorLines = lines;
-  const activity = oneOf(a["daily_activity"], ACTIVITY_BANDS);
+  const activity = oneOf(toAi("daily_activity", a["daily_activity"]), ACTIVITY_BANDS);
   if (activity) out.activityBand = activity;
-  const brain = oneOf(a["brain_mets"], BRAIN_METS);
+  const brain = oneOf(toAi("brain_mets", a["brain_mets"]), BRAIN_METS);
   if (brain) out.brainMets = brain;
-  const groupStatus = oneOf(a["group_status"], GROUP_STATUS_IDS);
+  const groupStatus = oneOf(toAi("group_status", a["group_status"]), GROUP_STATUS_IDS);
   if (groupStatus) out.groupStatus = groupStatus;
   const drugs = a["prior_drugs"];
   if (Array.isArray(drugs)) {
