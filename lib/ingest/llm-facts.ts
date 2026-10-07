@@ -23,13 +23,13 @@ export function buildLlmUserPrompt(inclusion: readonly Criterion[], exclusion: r
 }
 
 const LlmFactSchema = z.object({ key: FactKeySchema, value: FactValueSchema, quote: z.string().min(1), confidence: z.coerce.number().min(0).max(1) });
-const LlmOutputSchema = z.object({ facts: z.array(LlmFactSchema).max(40), invalid: z.number().int() });
+type LlmOutput = { facts: z.infer<typeof LlmFactSchema>[]; invalid: number };
 
 /**
  * Strip Qwen-style <think> blocks and parse the first JSON object. Each fact is validated with zod
  * individually; invalid facts (e.g. unknown keys) are dropped and counted. Throws if no JSON object.
  */
-export function parseLlmOutput(raw: string): z.infer<typeof LlmOutputSchema> {
+export function parseLlmOutput(raw: string): LlmOutput {
   const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "");
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -44,7 +44,7 @@ export function parseLlmOutput(raw: string): z.infer<typeof LlmOutputSchema> {
  * criterion; the quote is replaced by the full criterion text it came from (like the rule layer).
  * One fact per key (highest confidence).
  */
-export function verifyLlmFacts(out: z.infer<typeof LlmOutputSchema>, inclusion: readonly Criterion[], exclusion: readonly Criterion[]): { facts: Fact[]; discarded: number } {
+export function verifyLlmFacts(out: LlmOutput, inclusion: readonly Criterion[], exclusion: readonly Criterion[]): { facts: Fact[]; discarded: number } {
   const lists: [CriterionSection, readonly Criterion[]][] = [["inclusion", inclusion], ["exclusion", exclusion]];
   const best = new Map<string, Fact>();
   let discarded = 0;

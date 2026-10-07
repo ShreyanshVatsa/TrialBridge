@@ -14,7 +14,7 @@ import { gzipSync } from "node:zlib";
 import path from "node:path";
 import MiniSearch from "minisearch";
 import { RawStudySchema } from "../../lib/ingest/raw";
-import { buildRecord, embeddingText } from "../../lib/ingest/record";
+import { buildRecord, embeddingText, OUT_OF_SCOPE } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
 import { ManifestSchema, MetaSchema, trialBucketKey, type Fact, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
@@ -22,6 +22,7 @@ import { aggregateAccess } from "../../lib/access/aggregate";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "../../config/cancer-groups";
 import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
 import { embedTexts } from "./embed";
+import { ingestAbortReason } from "../../lib/ingest/safety";
 import { LLM_CACHE_FILE, type LlmCacheEntry } from "./llm";
 import { llmCacheKey, mergeFacts } from "../../lib/ingest/llm-facts";
 import { fetchAllResumable, NATIONAL_CONDITION_QUERY, SCOPE_PARAMS } from "./ctgov";
@@ -31,8 +32,6 @@ const TMP = "public/.data-tmp";
 const BUILD = "data/build";
 /** Split a group into parts above this many trials to keep each shard a few MB. */
 const MAX_PER_SHARD = 700;
-const MAX_INVALID_FRACTION = 0.05;
-const MAX_DROP_FRACTION = 0.4;
 const ALL_SHARD = "_all";
 
 const args = new Map(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=") as [string, string]));
@@ -94,6 +93,7 @@ async function main(): Promise<void> {
   const cards: TrialCard[] = [];
   const sitesById = new Map<string, Site[]>();
   const failures: string[] = [];
+  let outOfScope = 0;
   const seen = new Set<string>();
   for (const r of raw) {
     const parsed = RawStudySchema.safeParse(r);
@@ -103,7 +103,9 @@ async function main(): Promise<void> {
     }
     const built = buildRecord(parsed.data, (z) => zips.get(z));
     if (!built.ok) {
-      failures.push(`${built.id}: ${built.reason}`);
+      // Out-of-scope (no recruiting U.S. site) is a normal skip, not a validation failure.
+      if (built.reason === OUT_OF_SCOPE) outOfScope++;
+      else failures.push(`${built.id}: ${built.reason}`);
       continue;
     }
     if (seen.has(built.card.id)) continue;
@@ -112,13 +114,11 @@ async function main(): Promise<void> {
     sitesById.set(built.card.id, built.sites);
   }
   const invalidFraction = failures.length / Math.max(1, raw.length);
-  console.log(`Built ${cards.length} trials; skipped ${failures.length} (${(invalidFraction * 100).toFixed(1)}%)`);
+  console.log(`Built ${cards.length} trials; ${outOfScope} out of scope (no recruiting U.S. site); ${failures.length} failed validation (${(invalidFraction * 100).toFixed(1)}%)`);
   for (const f of failures.slice(0, 10)) console.log(`  skipped ${f}`);
-  if (invalidFraction > MAX_INVALID_FRACTION) fail(`${(invalidFraction * 100).toFixed(1)}% of records failed validation (limit 5%)`);
   const prev = await previousMeta();
-  if (prev && prev.source === source && cards.length < prev.totalTrials * (1 - MAX_DROP_FRACTION)) {
-    fail(`trial count dropped from ${prev.totalTrials} to ${cards.length} (more than 40%)`);
-  }
+  const abort = ingestAbortReason({ rawCount: raw.length, invalidCount: failures.length, builtCount: cards.length, previousCount: prev && prev.source === source ? prev.totalTrials : null });
+  if (abort) fail(abort);
   cards.sort((a, b) => a.id.localeCompare(b.id));
 
   // Optional local-LLM layer: merge cached LLM facts (from `npm run ingest:llm`) for unchanged trials.
