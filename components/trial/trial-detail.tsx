@@ -13,6 +13,7 @@ import { ErrorView } from "@/components/site/error-view";
 import { Skeleton } from "@/components/site/skeleton";
 import { AskPanel } from "./ask-panel";
 import { buttonVariants } from "@/components/ui/button";
+import { loadTrial } from "@/lib/data/loader";
 import { sortSitesByDistance } from "@/lib/match/filters";
 import type { Criterion, Site, TrialCard } from "@/lib/types";
 
@@ -232,8 +233,7 @@ export function TrialDetail() {
   useEffect(() => {
     if (!validId) return;
     let cancelled = false;
-    import("@/lib/data/loader")
-      .then(({ loadTrial }) => loadTrial(rawId))
+    loadTrial(rawId)
       .then((res) => {
         if (cancelled) return;
         setState(res ? { kind: "ok", card: res.card, sites: res.sites } : { kind: "not_found" });

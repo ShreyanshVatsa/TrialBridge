@@ -116,7 +116,7 @@ function FocusOnMount({ children, enabled }: { children: ReactNode; enabled: boo
   );
 }
 
-/** Shows a brief "typing" bubble before a new question appears (skipped for reduced motion / first load). */
+/** Shows a brief "typing" bubble before a new question's text appears; the answer controls render at once (skipped for reduced motion / first load). */
 function TypingReveal({ enabled, children }: { enabled: boolean; children: ReactNode }) {
   const m = useMessages();
   const [shown, setShown] = useState(
@@ -124,7 +124,7 @@ function TypingReveal({ enabled, children }: { enabled: boolean; children: React
   );
   useEffect(() => {
     if (shown) return;
-    const t = setTimeout(() => setShown(true), 450);
+    const t = setTimeout(() => setShown(true), 350);
     return () => clearTimeout(t);
   }, [shown]);
   if (shown) return <>{children}</>;
@@ -551,8 +551,8 @@ export function IntakeChat({
         <div key={step} className="space-y-3">
           <TypingReveal enabled={interacted}>
             <AssistantBubble label={m.chat.assistant}>{q}</AssistantBubble>
-            <FocusOnMount enabled={interacted}>{renderInput(step)}</FocusOnMount>
           </TypingReveal>
+          <FocusOnMount enabled={interacted}>{renderInput(step)}</FocusOnMount>
         </div>,
       );
       if (!isAnswered(step, draft)) break;

@@ -17,7 +17,7 @@ type Status =
   | { kind: "error"; code: ReturnType<typeof loadErrorCode>; answers: IntakeAnswers };
 
 const TURNSTILE_TIMEOUT_MS = 30_000;
-let warmedUp = false;
+const warmedUp = new Set<string>();
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -49,17 +49,16 @@ export function FindFlow() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Warm-up: once the user starts the intake, load the matching engine and the on-device model in the
-  // background so the search itself is fast. Skipped when the browser asks to save data.
-  const started = draft.cancerType !== undefined;
+  // Warm-up: as soon as a cancer type is picked, download that type's shard(s) and the on-device model in
+  // the background (static files only), so the search itself is fast. Skipped when the browser asks to save data.
+  const cancerType = draft.cancerType;
   useEffect(() => {
-    if (!started || warmedUp) return;
+    if (!cancerType || warmedUp.has(cancerType)) return;
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
     if (saveData) return;
-    warmedUp = true;
-    void import("@/lib/match/embedder").then(({ embedProfile }) => embedProfile("warm up", { timeoutMs: 120_000 }));
-    void import("@/lib/match/search");
-  }, [started]);
+    warmedUp.add(cancerType);
+    void import("@/lib/match/search").then(({ prefetchSearch }) => prefetchSearch(cancerType));
+  }, [cancerType]);
 
   async function runAnalysis(answers: IntakeAnswers, results: RankedTrial[], searchedAt: number) {
     const isCurrent = (prev: typeof session) => prev !== null && prev.searchedAt === searchedAt;
