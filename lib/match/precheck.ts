@@ -15,7 +15,8 @@ const TREATMENT_FACTS: Record<string, Exclude<Treatment, "none" | "not_sure">> =
 /**
  * Rule-based eligibility pre-check: compare intake answers with a trial's stored facts.
  * Only definite answers can create conflicts or support; "not sure", "don't know", and
- * "prefer not to say" never penalize. "mentioned" facts are ignored (direction unknown).
+ * "prefer not to say" never penalize. "mentioned" facts (direction unknown) and facts where the
+ * rule and LLM layers disagree (needsReview) are ignored.
  */
 export function precheck(answers: Pick<IntakeAnswers, "spread" | "treatments" | "biomarkers" | "pregnant" | "inAnotherTrial">, facts: readonly Fact[]): PrecheckNote[] {
   const notes: PrecheckNote[] = [];
@@ -26,7 +27,7 @@ export function precheck(answers: Pick<IntakeAnswers, "spread" | "treatments" | 
   const add = (f: Fact, kind: PrecheckNote["kind"]) => notes.push({ key: f.key, kind, quote: f.quote, ref: f.ref });
 
   for (const f of facts) {
-    if (f.value === "mentioned") continue;
+    if (f.value === "mentioned" || f.needsReview) continue; // uncertain facts never penalize
     const treatment = TREATMENT_FACTS[f.key];
     if (treatment) {
       if (!treatmentsKnown) continue;
