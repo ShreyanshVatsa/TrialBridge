@@ -73,6 +73,29 @@ describe("data loader", () => {
     expect(await loadTrial("NCT00000777")).toBeNull();
     expect([...(await loadTrials(["NCT00000001", "NCT00000002"])).keys()]).toEqual(["NCT00000001", "NCT00000002"]);
   });
+  it("adopts the head-start bucket fetch from theme-init.js, and ignores it when stale or invalid", async () => {
+    const bucket = { NCT00000001: { card: cards[0], sites: [boston] } };
+    const fetched: string[] = [];
+    const counting = (async (u: string) => {
+      fetched.push(u);
+      return server(u);
+    }) as unknown as typeof fetch;
+    setFetchForTests(counting);
+    vi.stubGlobal("window", { __tbEarlyBucket: Promise.resolve({ url: `${V}/trials/001.json`, data: bucket }) });
+    expect((await loadTrial("NCT00000001"))?.card.id).toBe("NCT00000001");
+    expect(fetched.some((u) => u.endsWith("/trials/001.json"))).toBe(false); // used the early response
+    // Different URL (e.g. data version changed) or schema-invalid payload: normal fetch instead.
+    setFetchForTests(counting);
+    vi.stubGlobal("window", { __tbEarlyBucket: Promise.resolve({ url: "/other/001.json", data: bucket }) });
+    expect((await loadTrial("NCT00000001"))?.card.id).toBe("NCT00000001");
+    setFetchForTests(counting);
+    vi.stubGlobal("window", { __tbEarlyBucket: Promise.resolve({ url: `${V}/trials/001.json`, data: { junk: 1 } }) });
+    expect((await loadTrial("NCT00000001"))?.card.id).toBe("NCT00000001");
+    setFetchForTests(counting);
+    vi.stubGlobal("window", { __tbEarlyBucket: Promise.reject(new Error("offline")) });
+    expect((await loadTrial("NCT00000001"))?.card.id).toBe("NCT00000001");
+    vi.unstubAllGlobals();
+  });
   it("ZIP lookup: exact, prefix fallback, unknown prefix, invalid", async () => {
     expect(await lookupZip("02115")).toEqual({ lat: 42.34, lon: -71.1 });
     const approx = await lookupZip("02199");

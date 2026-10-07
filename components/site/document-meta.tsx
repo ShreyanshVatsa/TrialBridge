@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useMessages, type Messages } from "@/components/i18n";
 
 /** Page title for a route in the active language (static export metadata is English only). */
-export function pageTitle(pathname: string, m: Messages): string {
+function pageTitle(pathname: string, m: Messages): string {
   const path = pathname.replace(/\/+$/, "") || "/";
   const names: Record<string, string> = {
     "/find": m.chat.title,

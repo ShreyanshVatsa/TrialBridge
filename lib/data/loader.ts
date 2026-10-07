@@ -171,25 +171,36 @@ export interface LoadedShard {
   embeddings: Int8Array;
 }
 
+/** The four files every shard (full or lite) consists of, fetched in parallel and validated. */
+async function fetchShardFiles<C, S>(
+  info: ShardInfo,
+  shardBase: string,
+  schemas: { cards: z.ZodType<C[]>; sites: z.ZodType<S> },
+  opts: FetchOptions,
+  emit: (fraction: number) => void,
+) {
+  const base = `${shardBase}/${info.id}/`;
+  const fractions = [0, 0, 0, 0];
+  const report = (i: number) => (f: number) => {
+    fractions[i] = f;
+    emit(fractions.reduce((a, b) => a + b, 0) / fractions.length);
+  };
+  const [cards, sites, indexBytes, embBytes] = await Promise.all([
+    fetchJson(base + info.files.cards, schemas.cards, { ...opts, onProgress: report(0) }),
+    fetchJson(base + info.files.sites, schemas.sites, { ...opts, onProgress: report(1) }),
+    fetchBytes(base + info.files.index, { ...opts, onProgress: report(2) }),
+    fetchBytes(base + info.files.embeddings, { ...opts, onProgress: report(3) }),
+  ]);
+  const embeddings = new Int8Array(embBytes.buffer, embBytes.byteOffset, embBytes.byteLength);
+  if (cards.length > 0 && embeddings.length % cards.length !== 0) throw new DataLoadError("invalid", `Embedding size mismatch in shard ${info.id}`);
+  return { info, cards, sites, indexJson: new TextDecoder().decode(indexBytes), embeddings };
+}
+
+const FullShardSchemas = { cards: z.array(TrialCardSchema), sites: ShardSitesSchema };
+const LiteShardSchemas = { cards: z.array(LiteCardSchema), sites: LiteSitesSchema };
+
 export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedShard> {
-  return memoProgress(`shard:${shardBase}/${info.id}`, opts.onProgress, async (emit) => {
-    const base = `${shardBase}/${info.id}/`;
-    // Progress is weighted by the shard's recorded size; cards dominate.
-    const fractions = [0, 0, 0, 0];
-    const report = (i: number) => (f: number) => {
-      fractions[i] = f;
-      emit(fractions.reduce((a, b) => a + b, 0) / fractions.length);
-    };
-    const [cards, sites, indexBytes, embBytes] = await Promise.all([
-      fetchJson(base + info.files.cards, z.array(TrialCardSchema), { ...opts, onProgress: report(0) }),
-      fetchJson(base + info.files.sites, ShardSitesSchema, { ...opts, onProgress: report(1) }),
-      fetchBytes(base + info.files.index, { ...opts, onProgress: report(2) }),
-      fetchBytes(base + info.files.embeddings, { ...opts, onProgress: report(3) }),
-    ]);
-    const embeddings = new Int8Array(embBytes.buffer, embBytes.byteOffset, embBytes.byteLength);
-    if (embeddings.length % cards.length !== 0 && cards.length > 0) throw new DataLoadError("invalid", `Embedding size mismatch in shard ${info.id}`);
-    return { info, cards, sites, indexJson: new TextDecoder().decode(indexBytes), embeddings };
-  });
+  return memoProgress(`shard:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, FullShardSchemas, opts, emit));
 }
 
 /** The cross-group lite index used for "Other / not sure". */
@@ -203,27 +214,35 @@ export interface LoadedLiteShard {
 }
 
 export function loadLiteShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedLiteShard> {
-  return memoProgress(`lite:${shardBase}/${info.id}`, opts.onProgress, async (emit) => {
-    const base = `${shardBase}/${info.id}/`;
-    const fractions = [0, 0, 0, 0];
-    const report = (i: number) => (f: number) => {
-      fractions[i] = f;
-      emit(fractions.reduce((a, b) => a + b, 0) / fractions.length);
-    };
-    const [cards, sites, indexBytes, embBytes] = await Promise.all([
-      fetchJson(base + info.files.cards, z.array(LiteCardSchema), { ...opts, onProgress: report(0) }),
-      fetchJson(base + info.files.sites, LiteSitesSchema, { ...opts, onProgress: report(1) }),
-      fetchBytes(base + info.files.index, { ...opts, onProgress: report(2) }),
-      fetchBytes(base + info.files.embeddings, { ...opts, onProgress: report(3) }),
-    ]);
-    const embeddings = new Int8Array(embBytes.buffer, embBytes.byteOffset, embBytes.byteLength);
-    if (cards.length > 0 && embeddings.length % cards.length !== 0) throw new DataLoadError("invalid", `Embedding size mismatch in shard ${info.id}`);
-    return { info, cards, sites, indexJson: new TextDecoder().decode(indexBytes), embeddings };
-  });
+  return memoProgress(`lite:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, LiteShardSchemas, opts, emit));
+}
+
+/** Response started by /theme-init.js on trial pages (see there); adopted once if the URL matches. */
+declare global {
+  interface Window {
+    __tbEarlyBucket?: Promise<{ url: string; data: unknown }>;
+  }
+}
+
+async function adoptEarlyBucket(url: string): Promise<TrialBucket | null> {
+  const early = typeof window === "undefined" ? undefined : window.__tbEarlyBucket;
+  if (!early) return null;
+  window.__tbEarlyBucket = undefined;
+  try {
+    const hit = await early;
+    if (hit.url !== url) return null;
+    const parsed = TrialBucketSchema.safeParse(hit.data);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null; // fall back to a normal fetch (with retries and typed errors)
+  }
 }
 
 function loadBucket(trialBase: string, key: string, opts: FetchOptions = {}) {
-  return memo(`bucket:${trialBase}/${key}`, () => fetchJson(`${trialBase}/${key}.json`, TrialBucketSchema, opts));
+  return memo(`bucket:${trialBase}/${key}`, async () => {
+    const url = `${trialBase}/${key}.json`;
+    return (await adoptEarlyBucket(url)) ?? fetchJson(url, TrialBucketSchema, opts);
+  });
 }
 
 /** Load several trials (card + sites) by NCT ID from per-trial buckets. Unknown IDs are omitted. */
