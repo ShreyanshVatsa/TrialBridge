@@ -22,6 +22,7 @@ Current checkpoint: 2 (end of P0). Agent A (data/matching/backend) done; Agent B
 
 ## Known issues
 - `_all` shard scales poorly nationally (see Next). Coverage below 90% target (loader/search/embedder/api clients untested; P2).
+- `npm audit --audit-level=high` fails on dev tooling only (braces 3.0.3 advisory with no patched release, via shadcn/eslint-config-next; sharp via miniflare). P2: overrides/upgrades.
 - Rule-layer facts are heuristic; some criteria still misread (LLM layer + eval in P1).
 
 ## Accounts to create (user does these; none block the build, mock provider is used until ready)
