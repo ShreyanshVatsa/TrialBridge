@@ -19,8 +19,10 @@ export const TAU = 0.15;
 export const LAMBDA = 1.2;
 /** Likelihood of an answer for a trial it supports: e^+MU. LAMBDA : MU mirrors CONFLICT_PENALTY : SUPPORT_BONUS damped. */
 export const MU = 0.4;
-/** Likelihood used when a hypothetical answer would hard-filter the trial (definite sex). Not exactly 0 to keep logs finite. */
-export const HARD_EXCLUDED_LIKELIHOOD = 1e-9;
+/** Likelihood used when a hypothetical answer would hard-filter the trial (definite sex): twice a conflict's
+ *  strength. For "which trials end up on top" a removed trial and a penalized one differ little; a near-zero
+ *  likelihood made the sex question look ~2x more useful than it is in simulation (QUESTIONNAIRE_SPEC §7.2). */
+export const HARD_EXCLUDED_LIKELIHOOD = Math.exp(-2 * LAMBDA);
 
 /** Tier multipliers on utility. Deep-dive questions are optional in quick mode, so they are demoted. */
 export const TIER_FACTOR = {
@@ -36,9 +38,15 @@ export interface StopRule {
   /** Stop when this few trials have no likely conflict (null = never in this mode). */
   smallSet: number | null;
 }
+/**
+ * Spec §2.3 proposed 0.05 / 0.01 bits. With real-world fact density (~4 directional facts per trial) one
+ * answer moves only a few hundredths of a bit over the top 60, so 0.05 stopped quick mode after ~2 questions
+ * (simulated nDCG@10 0.61 vs 0.85 for the full fixed flow). 0.01 gives a median of ~6 questions and 0.78;
+ * thorough keeps the same 5x ratio. Calibrated in tests/unit/qn-simulate.test.ts.
+ */
 export const STOP_RULES: Record<"quick" | "thorough", StopRule> = {
-  quick: { minUtility: 0.05, maxQuestions: 7, smallSet: 12 },
-  thorough: { minUtility: 0.01, maxQuestions: 20, smallSet: null },
+  quick: { minUtility: 0.01, maxQuestions: 7, smallSet: 12 },
+  thorough: { minUtility: 0.002, maxQuestions: 20, smallSet: null },
 };
 
 /** The sex question is shown only when at least this share of current candidates is sex-restricted. */

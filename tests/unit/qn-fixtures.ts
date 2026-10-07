@@ -249,13 +249,27 @@ const FACT_POOL: Array<() => CompactFact> = [
 ];
 
 /** A synthetic candidate pool: random priors, facts and sex restrictions (seeded). */
-export function makePool(seed: number, n = 120, group: CancerGroupId = "lung"): CandidatePool {
+/**
+ * Group-skewed fact mix (like §0.2: what gates trials differs by group). Index into FACT_POOL -> weight.
+ * Here: ECOG, brain metastases, biomarker and HIV/concurrent-trial rules are common; histology,
+ * spread and treatment rules are rare, so a fixed catalog order wastes its first questions.
+ */
+export const SKEWED_WEIGHTS: readonly number[] = [0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 3, 2, 1, 0.3, 0.3, 4, 3, 1, 1, 3, 2, 1, 2, 2, 1];
+
+export function makePool(seed: number, n = 120, group: CancerGroupId = "lung", weights?: readonly number[]): CandidatePool {
   const r = rng(seed);
   const trials: PoolTrial[] = [];
+  const total = weights?.reduce((a, b) => a + b, 0) ?? 0;
+  const draw = (): CompactFact => {
+    if (!weights) return pick(r, FACT_POOL)();
+    let x = r() * total;
+    for (let i = 0; i < FACT_POOL.length; i++) if ((x -= weights[i] ?? 0) <= 0) return (FACT_POOL[i] as () => CompactFact)();
+    return (FACT_POOL[FACT_POOL.length - 1] as () => CompactFact)();
+  };
   for (let i = 0; i < n; i++) {
     const facts: CompactFact[] = [];
     const nf = Math.floor(r() * 5);
-    for (let j = 0; j < nf; j++) facts.push(pick(r, FACT_POOL)());
+    for (let j = 0; j < nf; j++) facts.push(draw());
     const sx = r();
     trials.push({ id: `NCT${String(10000000 + i)}`, prior: r(), facts, sex: sx < 0.1 ? "FEMALE" : sx < 0.15 ? "MALE" : "ALL" });
   }

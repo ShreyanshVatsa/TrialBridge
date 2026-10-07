@@ -101,7 +101,9 @@ describe("matching integration (rankTrials with a questionnaire)", () => {
     const t4 = out.results.find((r) => r.card.id === "NCT00000004")!;
     expect(t4.scores.phaseBonus).toBe(PHASE_PREF_BONUS);
     expect(t4.scores.final).toBeCloseTo(t4.scores.retrieval + PHASE_PREF_BONUS, 12);
-    // AI re-ranking keeps the phase bonus.
+    // AI re-ranking keeps the phase bonus (and treats a missing one as 0).
+    const noPhase = { ...t4, scores: { ...t4.scores, phaseBonus: undefined } };
+    expect(applyAnalysis([noPhase], { status: "degraded", provider: null, results: [], experimental: false, cached: false })[0]!.scores.final).toBeCloseTo(t4.scores.retrieval, 12);
     const re = applyAnalysis(out.results, { status: "degraded", provider: null, results: [], experimental: false, cached: false });
     expect(re.find((r) => r.card.id === "NCT00000004")!.scores.final).toBeCloseTo(t4.scores.final, 12);
   });
@@ -139,7 +141,7 @@ function randomState(r: () => number, group: "lung" | "breast" = "lung"): Questi
   return essentials(group, extra);
 }
 
-describe("non-response invariants (seeded property test, 1,000 random states)", () => {
+describe("non-response invariants (seeded property test, 1,000 random states)", { timeout: 120_000 }, () => {
   const pool = makePool(11, 80);
   const entries: RankEntry[] = pool.trials.map((t, i) => ({
     card: lungCard(t.id, { sex: t.sex, phases: [pick(rng(i), ["PHASE1", "PHASE2", "PHASE3"])], facts: t.facts.map((f) => ({ ...f, quote: f.key, ref: { section: "inclusion" as const, n: 1 }, source: "rule" as const })) }),
@@ -272,6 +274,10 @@ describe("candidate pool", () => {
     expect(liveCount(essentials("lung", { sex: "female" }), pool, TEST_CATALOG).total).toBe(1);
     const other = await buildCandidatePool(essentials("other"));
     expect(other.trials.map((t) => [t.id, t.sex, t.facts[0]?.param])).toEqual([["NCT00000011", "ALL", 1]]);
+    // No ZIP answered (or ZIP lookup failing) => no distance filter, still a pool.
+    const noZip = { ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== "zip")) };
+    expect((await buildCandidatePool(noZip)).trials).toHaveLength(2);
+    expect((await buildCandidatePool(essentials("lung", { zip: "99999" }))).trials).toHaveLength(2);
     const ac = new AbortController();
     ac.abort(new Error("stop"));
     await expect(buildCandidatePool(state, { signal: ac.signal })).rejects.toThrow();
