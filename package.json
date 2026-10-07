@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test --reporter=line",
+    "test:e2e": "rm -rf .wrangler/e2e-out && mkdir -p .wrangler && cp -R out .wrangler/e2e-out && npm run db:migrate:local && npm run db:seed:local && playwright test",
     "build:web": "next build && tsx scripts/postbuild.ts",
     "db:migrate:local": "wrangler d1 migrations apply trialbridge --local",
     "preview": "npm run db:migrate:local && npm run db:seed:local && wrangler dev",
