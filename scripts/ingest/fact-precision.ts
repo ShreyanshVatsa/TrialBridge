@@ -5,6 +5,11 @@
  *   npx tsx scripts/ingest/fact-precision.ts --stats
  *   npx tsx scripts/ingest/fact-precision.ts --sample [--family=performance] [--n=50] [--round=2]
  *   npx tsx scripts/ingest/fact-precision.ts --measure        (writes config/questionnaire/precision.generated.ts)
+ *   npx tsx scripts/ingest/fact-precision.ts --dump --family=lines [--n=80] [--seed=1]   (development partition only; for reading/tuning)
+ *
+ * Development / held-out split (round 3): trials are partitioned by a hash of their NCT id; rules are tuned only by
+ * reading the "dev" partition (--dump never shows "held"), and the round-3 held-out sample is drawn once, with a fixed
+ * seed, from the "held" partition minus every trial that appeared in an earlier labeling round.
  *
  * Labels live in eval/facts-labels-v2.json (provisional: hand-judged by the build agent, not clinician-reviewed).
  * A family passes the gate at >= 85% precision on >= 30 labeled items (all items when fewer exist).
@@ -38,6 +43,13 @@ function loadCards(): TrialCard[] {
     }
   }
   return cards.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Deterministic dev/held partition of trials by NCT id (FNV-1a hash parity). */
+export function partitionOf(id: string): "dev" | "held" {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 0x01000193) >>> 0;
+  return (h >>> 7) % 2 === 0 ? "dev" : "held";
 }
 
 const refOf = (f: Fact) => `${f.ref.section === "inclusion" ? "I" : "E"}${f.ref.n}`;
@@ -90,12 +102,15 @@ function sample(cards: TrialCard[]): void {
       continue;
     }
     const pool: LabelItem[] = [];
+    const heldOut = round >= 3;
+    const usedTrials = new Set(Object.values(labels.families).flatMap((fl) => fl.items.filter((i) => (i.round ?? 1) < round).map((i) => i.id)));
     for (const c of cards) for (const f of c.facts) {
+      if (heldOut && (partitionOf(c.id) !== "held" || usedTrials.has(c.id))) continue;
       if (familyOf(f.key) !== fam || f.value === "mentioned" || f.source !== "rule") continue;
       pool.push({ id: c.id, key: f.key, value: f.value, ...(f.param !== undefined ? { param: f.param } : {}), ref: refOf(f), quote: f.quote.replace(/\s+/g, " ").slice(0, 600), correct: null, round });
     }
     // Deterministic LCG sample (seed differs per family and round).
-    let seed = 20261007 + round * 7919 + [...fam].reduce((s, ch) => s + ch.charCodeAt(0), 0);
+    let seed = Number(args.get("seed") ?? 20261007) + round * 7919 + [...fam].reduce((s, ch) => s + ch.charCodeAt(0), 0);
     const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
     const picked = new Set<number>();
     const prior = new Set((labels.families[fam]?.items ?? []).map((i) => `${i.id}|${i.key}|${i.ref}`));
@@ -108,10 +123,50 @@ function sample(cards: TrialCard[]): void {
     }
     const items = [...picked].sort((a, b) => a - b).map((i) => pool[i] as LabelItem);
     const kept = (labels.families[fam]?.items ?? []).filter((i) => (i.round ?? 1) !== round);
-    labels.families[fam] = { items: [...kept, ...items.map((it, k) => ({ n: kept.length + k + 1, ...it }))] };
+    labels.families[fam] = {
+      items: [...kept, ...items.map((it, k) => ({ n: kept.length + k + 1, ...it }))],
+      ...(heldOut ? { measureRound: round, poolSize: pool.length } : labels.families[fam]?.measureRound !== undefined ? { measureRound: labels.families[fam]?.measureRound } : {}),
+    };
     console.log(`${fam}: sampled ${items.length} of ${pool.length} directional facts (round ${round})`);
   }
+  if (round >= 3) {
+    labels.protocol = `Round ${round} = held-out sample: facts from trials whose NCT-id hash falls in the "held" half (partitionOf in scripts/ingest/fact-precision.ts) and that appear in no earlier labeling round; rules were tuned by reading the "dev" half only (--dump never shows held trials). Sampling: deterministic LCG, seed = ${args.get("seed") ?? 20261007} + round*7919 + sum of the family name char codes; n = ${n} directional rule facts per family (all of them when the held pool is smaller; poolSize records it). Labels are provisional: written by the build agent from the quoted clause alone, not clinician-reviewed.`;
+  }
   writeFileSync(LABELS, `${JSON.stringify(labels, null, 1)}\n`);
+}
+
+function dump(cards: TrialCard[]): void {
+  const fam = args.get("family") as FactFamily;
+  const n = Number(args.get("n") ?? 80);
+  let seed = Number(args.get("seed") ?? 1) * 7919 + [...fam].reduce((x, ch) => x + ch.charCodeAt(0), 0);
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+  const want = args.get("value");
+  const pool: string[] = [];
+  for (const c of cards) {
+    if (partitionOf(c.id) !== "dev") continue;
+    for (const f of c.facts) {
+      if (familyOf(f.key) !== fam || f.source !== "rule") continue;
+      if (want ? f.value !== want : f.value === "mentioned") continue;
+      if (args.get("key") && !f.key.includes(args.get("key") as string)) continue;
+      pool.push(`${c.id} ${f.key} ${f.value}${f.param !== undefined ? `(${f.param})` : ""} ${refOf(f)} [${c.conditions.slice(0, 2).join("; ")}] :: ${f.quote.replace(/\s+/g, " ").slice(0, 420)}`);
+    }
+  }
+  console.log(`# ${pool.length} dev facts`);
+  const seen = new Set<number>();
+  while (seen.size < Math.min(n, pool.length)) seen.add(Math.floor(rand() * pool.length));
+  for (const i of [...seen].sort((a, b) => a - b)) console.log(pool[i]);
+}
+
+/** Print earlier labeled-incorrect items (dev partition only) with what the current rules produce. */
+function wrong(cards: TrialCard[]): void {
+  const fam = args.get("family") as string;
+  const byId = new Map(cards.map((c) => [c.id, c]));
+  for (const it of loadLabels().families[fam]?.items ?? []) {
+    if (it.correct !== false || partitionOf(it.id) !== "dev") continue;
+    const f = byId.get(it.id)?.facts.find((x) => x.key === it.key && refOf(x) === it.ref);
+    const now = f ? `${f.value}${f.param !== undefined ? `(${f.param})` : ""}` : "none";
+    console.log(`${it.id} ${it.key} was ${it.value}${it.param !== undefined ? `(${it.param})` : ""} now ${now} :: ${it.quote.slice(0, 230)} || ${it.why ?? ""}`);
+  }
 }
 
 function measure(cards: TrialCard[]): void {
@@ -135,5 +190,7 @@ function measure(cards: TrialCard[]): void {
 const cards = loadCards();
 if (args.has("stats")) stats(cards);
 else if (args.has("sample")) sample(cards);
+else if (args.has("dump")) dump(cards);
+else if (args.has("wrong")) wrong(cards);
 else if (args.has("measure")) measure(cards);
 else console.log("Use --stats, --sample or --measure");

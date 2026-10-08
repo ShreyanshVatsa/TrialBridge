@@ -27,6 +27,8 @@ export interface LabelItem {
 
 export interface LabelFile {
   note: string;
+  /** How the held-out round was drawn (seed, partition, exclusions); see scripts/ingest/fact-precision.ts. */
+  protocol?: string;
   source: string;
   /** Rounds that count toward the reported precision per family (default: the latest round labeled). */
   families: Record<string, { items: LabelItem[]; measureRound?: number; poolSize?: number }>;
