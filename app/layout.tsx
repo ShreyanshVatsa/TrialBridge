@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { fraunces, inter } from "./fonts";
+import { anybody, atkinson } from "./fonts";
 import { en } from "@/components/i18n/en";
 import { SessionProvider } from "@/components/session/session-provider";
 import { SiteFooter } from "@/components/site/footer";
@@ -22,15 +22,15 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf8f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#13181f" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f4fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#150e26" },
   ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: /theme-init.js may add the "dark" class before React hydrates.
-    <html lang="en" dir="ltr" suppressHydrationWarning className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="en" dir="ltr" suppressHydrationWarning className={`${atkinson.variable} ${anybody.variable}`}>
       <head>
         {/* Blocking on purpose: sets theme + language before first paint (tiny, same-origin, CSP-safe). */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
