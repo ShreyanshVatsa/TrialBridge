@@ -180,7 +180,13 @@ async function main(): Promise<void> {
   const nE2 = ecog2.filter(Boolean).length;
   const sim = runSimulation();
   const national = loadNational();
-  const simNat = national ? runSimulation({ national }) : null;
+  // The national shards can be mid-swap while an ingest runs; a missing file then only skips this optional section.
+  let simNat: ReturnType<typeof runSimulation> | null = null;
+  try {
+    simNat = national ? runSimulation({ national }) : null;
+  } catch (err) {
+    console.warn(`national simulation skipped: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   // Rule-fact precision on the hand-labeled sample.
   const factLabels = JSON.parse(readFileSync("eval/facts-labels.json", "utf8")) as { items: { correct: boolean; key: string }[] };
