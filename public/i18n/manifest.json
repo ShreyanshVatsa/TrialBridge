@@ -5,110 +5,110 @@
   "en": {
    "status": "reviewed",
    "coverage": 1,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "es": {
    "status": "partial",
-   "coverage": 0.5192,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.4934,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "pt": {
    "status": "partial",
-   "coverage": 0.5192,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.4934,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "ht": {
    "status": "partial",
-   "coverage": 0.5226,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.4964,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "zh-Hans": {
    "status": "partial",
-   "coverage": 0.6299,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5982,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "zh-Hant": {
    "status": "partial",
-   "coverage": 0.6299,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5982,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "vi": {
    "status": "partial",
-   "coverage": 0.6266,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5951,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "ko": {
    "status": "partial",
-   "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5971,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "tl": {
    "status": "partial",
-   "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5843,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "ar": {
    "status": "partial",
-   "coverage": 0.6226,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.5922,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "ru": {
    "status": "partial",
-   "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "coverage": 0.6034,
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "fr": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "hi": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "pl": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "bn": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "gu": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "ur": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   },
   "fa": {
    "status": "partial",
    "coverage": 0,
-   "sourceHash": "kmpuuk",
-   "updated": "2026-10-07"
+   "sourceHash": "plqtrd",
+   "updated": "2026-10-08"
   }
  }
 }
