@@ -23,8 +23,10 @@ import { BASKET_SHARD_ID, CANCER_GROUP_IDS, basketAppliesTo, isBasketOnly, type 
 import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
 import { embedTexts } from "./embed";
 import { ingestAbortReason } from "../../lib/ingest/safety";
-import { LLM_CACHE_FILE, type LlmCacheEntry } from "./llm";
+import { LLM_CACHE_FILE, readV2Cache, toTrialText, type LlmCacheEntry } from "./llm";
 import { llmCacheKey, mergeFacts } from "../../lib/ingest/llm-facts";
+import { applyLlmLayer, DEFAULT_VERIFY, familyCacheKey, LLM_FAMILY_IDS, LLM_LAYER_FAMILIES, type FamilyCacheEntry, type LlmFamily } from "../../lib/ingest/llm-families";
+import { FAMILY_PRECISION } from "../../config/questionnaire/precision.generated";
 import { fetchAllResumable, NATIONAL_CONDITION_QUERY, SCOPE_PARAMS } from "./ctgov";
 
 const OUT = "public/data";
@@ -136,6 +138,31 @@ async function main(): Promise<void> {
     if (merged) console.log(`Merged cached LLM facts for ${merged} trials (${llmModel})`);
   } catch {
     /* no LLM cache: rule layer only */
+  }
+  // v2 high-precision layer (`npm run ingest:llm`): verified LLM facts over the rule layer for LLM_LAYER_FAMILIES.
+  // Families switched on by the verified layer (precision.generated.ts layer "llm") keep only verified directional
+  // facts, also in trials the LLM has not processed yet.
+  {
+    const v2 = readV2Cache();
+    const gated = new Set<LlmFamily>(LLM_LAYER_FAMILIES);
+    const demote = new Set<LlmFamily>(LLM_LAYER_FAMILIES.filter((f) => {
+      const p = FAMILY_PRECISION[f] as { passes?: boolean; layer?: string } | undefined;
+      return p?.layer === "llm" && p.passes === true;
+    }));
+    let withLlm = 0;
+    for (const c of cards) {
+      const res: Partial<Record<LlmFamily, FamilyCacheEntry>> = {};
+      for (const fam of LLM_FAMILY_IDS) {
+        const e = v2.get(familyCacheKey(c.id, c.lastUpdated, fam));
+        if (e) res[fam] = e;
+      }
+      if (Object.keys(res).length) {
+        withLlm++;
+        llmModel = Object.values(res)[0]?.model ?? llmModel;
+      }
+      c.facts = applyLlmLayer(toTrialText(c), c.facts, res, gated, DEFAULT_VERIFY, demote);
+    }
+    console.log(`LLM v2 layer [${[...gated].join(", ")}]: ${withLlm} trials with verified-LLM results; demoted when missing: [${[...demote].join(", ")}]`);
   }
 
   // 2. Embeddings (cached by NCT ID + last-updated + model so unchanged trials are not re-embedded).
