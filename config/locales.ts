@@ -7,7 +7,7 @@ export type FontPackId = "noto-sc" | "noto-tc" | "noto-kr" | "noto-arabic" | "no
 export type Script = "Latn" | "Hans" | "Hant" | "Arab" | "Hebr" | "Deva" | "Beng" | "Gujr" | "Hang" | "Cyrl" | "Viet";
 
 /** Every locale tag (one place to add a language; a unit test checks it matches LOCALES). */
-export const LOCALE_TAG_LIST = ["en", "es", "pt", "ht", "zh-Hans", "zh-Hant", "vi", "ko", "tl", "ar", "ru", "fr", "hi", "pl", "bn", "gu", "ur", "fa"] as const;
+export const LOCALE_TAG_LIST = ["en", "es", "pt", "ht", "zh-Hans", "zh-Hant", "vi", "ko", "tl", "ar", "ru", "fr", "hi"] as const;
 export type LocaleTag = (typeof LOCALE_TAG_LIST)[number];
 
 export interface LocaleDef {
@@ -38,6 +38,7 @@ const L = (d: Omit<LocaleDef, "aiSupported" | "crisisLexicon" | "baseStatus" | "
   ...d,
 });
 
+// Unfinished (pl partial; bn, gu, ur, fa empty) and cut for now: re-add the entries + run `npm run i18n:translate -- <tag>`.
 export const LOCALES: readonly LocaleDef[] = [
   L({ tag: "en", nativeName: "English", englishName: "English", dir: "ltr", script: "Latn", baseStatus: "reviewed", aiExperimental: false, crisisLexicon: true, intl: "en-US" }),
   // Shipped earlier with human-style (not native-reviewed) strings; es/pt AI output is not labelled experimental.
@@ -53,11 +54,6 @@ export const LOCALES: readonly LocaleDef[] = [
   L({ tag: "ru", nativeName: "Русский", englishName: "Russian", dir: "ltr", script: "Cyrl" }),
   L({ tag: "fr", nativeName: "Français", englishName: "French", dir: "ltr", script: "Latn" }),
   L({ tag: "hi", nativeName: "हिन्दी", englishName: "Hindi", dir: "ltr", script: "Deva", fontPack: "noto-deva" }),
-  L({ tag: "pl", nativeName: "Polski", englishName: "Polish", dir: "ltr", script: "Latn" }),
-  L({ tag: "bn", nativeName: "বাংলা", englishName: "Bengali", dir: "ltr", script: "Beng", fontPack: "noto-beng" }),
-  L({ tag: "gu", nativeName: "ગુજરાતી", englishName: "Gujarati", dir: "ltr", script: "Gujr", fontPack: "noto-gujr" }),
-  L({ tag: "ur", nativeName: "اردو", englishName: "Urdu", dir: "rtl", script: "Arab", fontPack: "noto-arabic" }),
-  L({ tag: "fa", nativeName: "فارسی", englishName: "Persian (Farsi)", dir: "rtl", script: "Arab", fontPack: "noto-arabic" }),
 ];
 
 export const DEFAULT_LOCALE = "en";

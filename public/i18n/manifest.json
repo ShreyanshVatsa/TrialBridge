@@ -79,36 +79,6 @@
    "coverage": 1,
    "sourceHash": "plqtrd",
    "updated": "2026-10-08"
-  },
-  "pl": {
-   "status": "partial",
-   "coverage": 0.5247,
-   "sourceHash": "plqtrd",
-   "updated": "2026-10-08"
-  },
-  "bn": {
-   "status": "partial",
-   "coverage": 0,
-   "sourceHash": "plqtrd",
-   "updated": "2026-10-08"
-  },
-  "gu": {
-   "status": "partial",
-   "coverage": 0,
-   "sourceHash": "plqtrd",
-   "updated": "2026-10-08"
-  },
-  "ur": {
-   "status": "partial",
-   "coverage": 0,
-   "sourceHash": "plqtrd",
-   "updated": "2026-10-08"
-  },
-  "fa": {
-   "status": "partial",
-   "coverage": 0,
-   "sourceHash": "plqtrd",
-   "updated": "2026-10-08"
   }
  }
 }

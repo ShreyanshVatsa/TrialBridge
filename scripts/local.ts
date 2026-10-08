@@ -117,12 +117,25 @@ async function main() {
   // (2) models, (3) data, (4) .dev.vars
   if (plan.fetchModels) runStep("Fetching embedding model + ONNX runtime (one-time)", "npm", ["run", "models:fetch"]);
   if (plan.ingest === "seed") runStep("Building the seed dataset", "npm", ["run", "ingest:seed"]);
-  if (plan.ingest === "national") runStep("National ingest (resumable; first run downloads from ClinicalTrials.gov)", "npm", ["run", "ingest"]);
+  let usedSeed = plan.ingest === "seed";
+  if (plan.ingest === "national") {
+    say("\n> National ingest (all US cancer trials; resumable, the first run downloads from ClinicalTrials.gov and takes a few minutes)");
+    const r = spawnSync("npm", ["run", "ingest"], { stdio: "inherit" });
+    if (r.status !== 0) {
+      if (state.dataVersion === null) {
+        say("\nThe national download failed (offline?). Falling back to the small seed dataset so the app still works.");
+        runStep("Building the seed dataset", "npm", ["run", "ingest:seed"]);
+        usedSeed = true;
+      } else {
+        say("\nThe national download failed; keeping the data already on this computer. Run `npm run local` again when online.");
+      }
+    }
+  }
   if (plan.createDevVars) {
     writeFileSync(".dev.vars", DEV_VARS_TEMPLATE, { flag: "wx" });
     say("\nCreated .dev.vars with empty entries (mock AI provider). Paste API keys there yourself if you want real AI.");
   }
-  if (plan.ingest === "seed") {
+  if (usedSeed) {
     say("\nNote: this is the small seed dataset. Run `npm run ingest` (resumable, ~12 s when cached, longer the first time) for all ~5,700 national cancer trials, then `npm run local` again.");
   }
 

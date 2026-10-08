@@ -40,10 +40,10 @@ export function planLocal(s: LocalState): LocalPlan {
   } else if (s.mode === "seed") {
     ingest = "seed";
     reasons.push("seed ingest requested explicitly");
-  } else if (!haveData) {
-    // Never replace national data with seed: only reach here if meta or the SQL copy is missing.
-    ingest = isNationalVersion(s.dataVersion) ? "national" : "seed";
-    reasons.push(isNationalVersion(s.dataVersion) ? "national data incomplete (criteria.sql missing)" : "no data found, using the seed so the app works offline");
+  } else if (!haveData || !isNationalVersion(s.dataVersion)) {
+    // National (all US cancer trials) is the standard. Seed data is never auto-chosen, but local.ts falls back to it if the download fails.
+    ingest = "national";
+    reasons.push(haveData ? "seed data found; upgrading to national" : "no data found, fetching national cancer trials");
   }
 
   const createDevVars = !s.devVarsPresent;
