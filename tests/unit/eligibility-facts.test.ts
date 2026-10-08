@@ -353,3 +353,69 @@ describe("extractRuleFacts with v2 families", () => {
     expect(factsForCriterion("exclusion", "Known HIV infection", { v2: true })).toEqual([expect.objectContaining({ key: "hiv", value: "excluded" })]);
   });
 });
+
+describe("rules v4 precision guards", () => {
+  it("lines: ceilings, alternatives, subgroups and class-specific counts stay mentioned", () => {
+    expect(inc("Only 1 prior line of systemic therapy is allowed").min_prior_lines).toBeUndefined();
+    expect(inc("Only 1 prior line of systemic therapy is allowed").max_prior_lines).toBe("required(1)");
+    expect(inc("Patients may have received 1-2 prior lines of systemic therapy")).toMatchObject({ max_prior_lines: "required(2)" });
+    expect(inc("Has relapsed disease and is ineligible for ASCT and failed at least 2 lines of prior therapy.").min_prior_lines).toBe("required(2)");
+    expect(inc("Must have 2 or more prior lines, unless no standard therapy exists").min_prior_lines).toBe("mentioned");
+    expect(inc("NK cell leukemia: at least 1 prior line of therapy").min_prior_lines).toBe("mentioned");
+    expect(inc("Have received > one prior line of therapy in any setting with a PARPi-based regimen").min_prior_lines).toBe("mentioned");
+    expect(inc("Disease progression after at least 1 prior line OR refractory to initial therapy").min_prior_lines).toBe("mentioned");
+  });
+  it("prior drugs: reproductive, timing, conditional and negated-list wording", () => {
+    expect(inc("Men must use a condom for 6 months after the final dose of atezolizumab")["prior_drug:checkpoint"]).toBe("mentioned");
+    expect(inc("Prior bevacizumab is allowed; at least 6 weeks must have elapsed")["prior_drug:anti_vegf"]).toBe("mentioned");
+    expect(inc("If BRAF V600 mutation-positive, subject previously failed a BRAF inhibitor")["prior_drug:braf_mek"]).toBe("mentioned");
+    expect(inc("No previous chemotherapy, anti-HER2 therapy, immunotherapy or endocrine therapy")).toMatchObject({ "prior_drug:endocrine": "excluded", "prior_drug:anti_her2": "excluded" });
+    expect(inc("Not refractory to bortezomib")["prior_drug:proteasome_inhibitor"]).toBe("mentioned");
+    expect(exc("Exposure to a Bcl-2 inhibitor within the last 12 months")["prior_drug:venetoclax"]).toBe("mentioned");
+    expect(exc("Platinum refractory disease")["prior_drug:platinum"]).toBe("mentioned");
+    expect(exc("Prior treatment with a PARP inhibitor")["prior_drug:parp"]).toBe("excluded");
+  });
+  it("histology: own-disease gating, qualifiers and bare bullets", () => {
+    const ctx = (conditions: string[], groups: CancerGroupId[]) => ({ groups, conditions });
+    const h = (s: "inclusion" | "exclusion", t: string, c: string[], g: CancerGroupId[]) => Object.fromEntries(v2FactsForSegment(s, t, ctx(c, g)).map((f) => [f.key, f.value]));
+    expect(h("inclusion", "Histologically confirmed diagnosis of AML", ["Acute Myeloid Leukemia"], ["leukemia"])["histology:aml"]).toBe("required");
+    expect(h("inclusion", "Histologically confirmed diagnosis of AML", ["Acute Myeloid Leukemia", "Chronic Lymphocytic Leukemia"], ["leukemia"])["histology:aml"]).toBe("mentioned");
+    expect(h("exclusion", "Philadelphia chromosome-positive ALL", ["Acute Myeloid Leukemia"], ["leukemia"])["histology:all"]).toBe("excluded");
+    expect(h("exclusion", "Ph+ AML", ["Leukemia"], ["leukemia"])["histology:aml"]).toBe("mentioned");
+    expect(h("exclusion", "Grade 3B follicular lymphoma", ["Indolent lymphoma"], ["lymphoma"])["histology:follicular"]).toBe("mentioned");
+    expect(h("inclusion", "* Angioimmunoblastic T-cell lymphoma", ["Peripheral T Cell Lymphoma"], ["lymphoma"])["histology:t_cell_lymphoma"]).toBe("mentioned");
+    expect(h("exclusion", "Small cell lung cancer histology.", ["Non Small Cell Lung Cancer"], ["lung"])["histology:sclc"]).toBe("excluded");
+  });
+  it("stage, recurrent, other cancer, hepatitis, autoimmune and biomarker guards", () => {
+    expect(inc("All visible tumor must be completely resected prior to TURBT").adjuvant_setting).toBe("mentioned");
+    expect(inc("Patients must have undergone complete surgical resection (R0).").adjuvant_setting).toBe("required");
+    expect(inc("Locally advanced disease must not be amenable to curative surgery").locally_advanced).toBe("mentioned");
+    expect(inc("Relapsed/refractory disease after 1 line of therapy").recurrent).toBe("required");
+    expect(inc("Progressive disease manifest by either:").recurrent).toBeUndefined();
+    expect(inc("Refractory epilepsy requiring medication").recurrent).toBeUndefined();
+    expect(exc("Prior history of malignancy unless treated with curative intent and disease-free for at least 3 years").other_malignancy).toBe("excluded(3)");
+    expect(exc("Prior malignancy unless treated with curative intent or in remission for 3 years").other_malignancy).toBe("excluded(active_only)");
+    expect(exc("Known active Hepatitis B (e.g., HBsAg reactive) or Hepatitis C").hepatitis_b).toBe("excluded(active_only)");
+    expect(exc("Chronic or active hepatitis B infection").hepatitis_b).toBe("excluded");
+    expect(exc("Active bacterial infection (except Hepatitis B or C infections)").hepatitis_b).toBe("mentioned");
+    expect(exc("HBV DNA and HCV RNA PCR testing are required at screening for patients with a positive history").hepatitis_c).toBe("mentioned");
+    expect(exc("History of autoimmune disease requiring systemic immunosuppression within the last 90 days").autoimmune).toBe("excluded(active_only)");
+    expect(exc("Active or history of autoimmune diseases, including lupus").autoimmune).toBe("excluded");
+  });
+  it("v2 biomarkers read permissive, procedural and subgroup wording as mentioned", () => {
+    const b = (s: "inclusion" | "exclusion", t: string) => factsForCriterion(s, t, { v2: true, groups: ["breast"] }).find((f) => f.key === "biomarker:PIK3CA")?.value;
+    expect(b("inclusion", "Confirmed PIK3CA mutation")).toBe("required");
+    expect(b("inclusion", "PIK3CA mutation status confirmed by NGS")).toBe("mentioned");
+    expect(b("inclusion", "Other PIK3CA mutations may be considered but must be approved by the Sponsor")).toBe("mentioned");
+    expect(b("inclusion", "Available tumor tissue sample for detection of PIK3CA mutation")).toBe("mentioned");
+    expect(b("inclusion", "* PIK3CA mutation")).toBe("mentioned");
+  });
+  it("criterion-level alternatives header and exception-list windows", () => {
+    const f = factsForCriterion("inclusion", "Histologically confirmed disease of one of the following indications:\n* Relapsed or refractory disease after at least 2 lines of therapy", { v2: true, groups: ["lymphoma"] });
+    expect(f.find((x) => x.key === "min_prior_lines")?.value).toBe("mentioned");
+  });
+  it("partitionOf is deterministic and splits trials", async () => {
+    const mod = await import("@/lib/ingest/precision");
+    expect(mod.PRECISION_GATE).toBe(0.85);
+  });
+});
