@@ -12,7 +12,7 @@ async function expectNoSeriousViolations(page: Page, label: string) {
 }
 
 const pages: [string, string, RegExp | string][] = [
-  ["landing", "/", /Find cancer clinical trials/],
+  ["landing", "/", /Find\s+cancer\s+clinical\s+trials/],
   ["find", "/find/", /cancer/i],
   ["trial", `/trial/?id=${id}`, id],
   ["access", "/access/", "Trials analyzed"],

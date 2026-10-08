@@ -12,7 +12,7 @@ async function expectNoSeriousViolations(page: Page, label: string) {
 }
 
 const CASES: { tag: string; dir: "ltr" | "rtl"; h1: RegExp }[] = [
-  { tag: "es", dir: "ltr", h1: /Encuentre estudios clínicos/ },
+  { tag: "es", dir: "ltr", h1: /Encuentre\s+estudios\s+clínicos/ },
   { tag: "ar", dir: "rtl", h1: /[؀-ۿ]/ },
   { tag: "zh-Hans", dir: "ltr", h1: /[一-鿿]/ },
 ];
@@ -24,7 +24,7 @@ for (const c of CASES) {
     const csp: string[] = [];
     page.on("console", (m) => /Content Security Policy/i.test(m.text()) && csp.push(m.text()));
     await page.goto("/");
-    await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
+    await expect(page.locator("h1")).toHaveText(/Find\s+cancer\s+clinical\s+trials/);
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
     await chooseLanguage(page, c.tag);
     await expect(page.locator("h1")).toHaveText(c.h1);
@@ -48,7 +48,7 @@ for (const c of CASES) {
     // Back to English restores ltr.
     await chooseLanguage(page, "en");
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-    await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
+    await expect(page.locator("h1")).toHaveText(/Find\s+cancer\s+clinical\s+trials/);
   });
 
   test(`language ${c.tag}: trial Q&A shows the always-visible 988/911 line and crisis box`, async ({ page }) => {

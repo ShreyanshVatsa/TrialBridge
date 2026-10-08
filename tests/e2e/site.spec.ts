@@ -6,14 +6,14 @@ const id = sampleTrialId();
 
 test("language switching translates the UI and persists across reloads", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
+  await expect(page.locator("h1")).toHaveText(/Find\s+cancer\s+clinical\s+trials/);
   await chooseLanguage(page, "es");
-  await expect(page.locator("h1")).toHaveText(/Encuentre estudios clínicos/);
+  await expect(page.locator("h1")).toHaveText(/Encuentre\s+estudios\s+clínicos/);
   await page.reload();
-  await expect(page.locator("h1")).toHaveText(/Encuentre estudios clínicos/);
+  await expect(page.locator("h1")).toHaveText(/Encuentre\s+estudios\s+clínicos/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await chooseLanguage(page, "en");
-  await expect(page.locator("h1")).toHaveText(/Find cancer clinical trials/);
+  await expect(page.locator("h1")).toHaveText(/Find\s+cancer\s+clinical\s+trials/);
 });
 
 test("tab title and meta description follow the language on non-trial pages", async ({ page }) => {
