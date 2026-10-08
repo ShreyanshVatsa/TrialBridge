@@ -43,9 +43,11 @@ export { LLM_FAMILY_IDS, FAMILY_PROMPT_VERSION, type LlmFamily };
 
 /**
  * Families whose final facts follow the verified-LLM agreement policy at ingest (chosen on the dev split;
- * see DECISIONS.md). The others keep the rule layer unchanged.
+ * see DECISIONS.md). Autoimmune keeps its rule layer (already on at 94% held-out, LLM no better on dev, and
+ * the gold sets have no autoimmune family). Histology keeps its rule layer by the rule fixed before the gold
+ * measurement (switch only if the verified layer passes the gold gate; it measured 73% on 26 facts).
  */
-export const LLM_LAYER_FAMILIES: readonly LlmFamily[] = ["lines", "prior_drug", "stage", "recurrent", "other_malignancy", "hepatitis", "biomarker_v2", "histology", "autoimmune"];
+export const LLM_LAYER_FAMILIES: readonly LlmFamily[] = ["lines", "prior_drug", "stage", "recurrent", "other_malignancy", "hepatitis", "biomarker_v2"];
 
 /** Public trial text the layer reads. Deliberately no patient fields. */
 export interface LlmTrialText {
