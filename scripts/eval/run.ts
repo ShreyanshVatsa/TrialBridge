@@ -23,6 +23,7 @@ import type { IntakeAnswers } from "../../lib/types/intake";
 import type { TrialCard } from "../../lib/types/trial";
 import { loadAssertionCases, runAssertions } from "./assertions";
 import { runSimulation, simulationMarkdown } from "./simulate";
+import { loadNational } from "./national";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import { applyAnswer, eligibleQuestions } from "../../lib/questionnaire/engine";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
@@ -178,6 +179,8 @@ async function main(): Promise<void> {
   const v1E2 = mean(sub(prodRows, true).map((r) => r.sysNdcg)), v2E2 = mean(sub(v2Rows, true).map((r) => r.sysNdcg));
   const nE2 = ecog2.filter(Boolean).length;
   const sim = runSimulation();
+  const national = loadNational();
+  const simNat = national ? runSimulation({ national }) : null;
 
   // Rule-fact precision on the hand-labeled sample.
   const factLabels = JSON.parse(readFileSync("eval/facts-labels.json", "utf8")) as { items: { correct: boolean; key: string }[] };
@@ -229,6 +232,7 @@ async function main(): Promise<void> {
     variants: variantRows,
     v2: { profiles: profiles.length, v1PipelineNdcg: v1All.ndcg, v2PipelineNdcg: v2All.ndcg, comparable: { n: profiles.length - nE2, v1: v1Cmp, v2: v2Cmp }, ecog2: { n: nE2, v1: v1E2, v2: v2E2 }, v1First30: v1First30, v2First30, v2Excluded30: v2Excl30, v2Excluded: v2All.excluded, v1Excluded: v1All.excluded, violations: v2Violations, nonResponseChecks: nrChecks, nonResponseMismatches: nrMismatch },
     simulation: sim,
+    simulationNational: simNat,
     hardFilterViolationRate: totalViolations / Math.max(1, variantRows.reduce((s, r) => s + r.results, 0) + v2Results),
     facts: { sample: factLabels.items.length, correct: factCorrect, precision: factCorrect / factLabels.items.length },
     assertions: { total: assertions.total, passed: assertions.passed, regressions: assertions.failed.length, knownGaps: assertions.knownFailing.length },
@@ -269,7 +273,7 @@ Split by whether the profile has a definite ECOG 2 answer (${nE2} profiles do): 
 - Unknown/skip never reduces rank: answering "don't know" to every other eligible question left the top-15 order identical for **${nrChecks - nrMismatch}/${nrChecks}** profiles.
 - Caveat: the labels use only title and condition text, so they cannot reward answers about ECOG, prior drugs, lines, or brain metastases; v2's benefit there cannot show up in these numbers. v2 >= v1 therefore mostly checks that the new pre-check does not hurt and that group, subtype and biomarker answers are used.
 
-${simulationMarkdown(sim)}
+${simulationMarkdown(sim, simNat)}
 ## Eligibility facts (rule layer)
 - Precision on a ${results.facts.sample}-item hand-labeled random sample: **${pc(results.facts.precision)}** (${factCorrect}/${results.facts.sample}). Labels and reasons: \`eval/facts-labels.json\`. Typical errors: alternatives read as requirements ("recurrent OR metastatic"), planned (future) procedures read as prior treatment, and lists of eligible subtypes read as exclusions. Uncertain directions are stored as "mentioned" and never penalize; the optional local-LLM layer marks disagreements "needs review", which the pre-check also ignores.
 
@@ -302,13 +306,14 @@ See DECISIONS.md. Production uses the variant in the first row unless another va
   for (const r of variantRows) console.log(`${r.name.padEnd(32)} emb ${f3(r.embNdcg)} hyb ${f3(r.hybNdcg)} sys ${f3(r.sysNdcg)} (recall ${f3(r.sysRecall)}) excl@10 ${f3(r.excludedAt10)} viol ${r.violations}`);
   console.log(`facts precision ${pc(results.facts.precision)}; mock AI json ${pc(results.mockAi.jsonValidRate)} quotes ${pc(results.mockAi.quotePassRate)} agreement ${pc(results.mockAi.agreement)}`);
   console.log(`v2 pipeline nDCG@10 ${f3(v2All.ndcg)} (v1 ${f3(v1All.ndcg)}), p01-p30 v1 ${f3(v1First30)} v2 ${f3(v2First30)}; non-response mismatches ${nrMismatch}/${nrChecks}`);
+  if (simNat) console.log(`national simulation: adaptive ${simNat.adaptive.map(f3).join("/")} fixed ${simNat.fixed.map(f3).join("/")}; non-response drops ${simNat.nonResponse.rankDrops + simNat.nonResponse.scoreDrops}`);
   console.log(`simulation: adaptive ${sim.adaptive.map(f3).join("/")} fixed ${sim.fixed.map(f3).join("/")} at k=${sim.ks.join(",")}; non-response drops ${sim.nonResponse.rankDrops + sim.nonResponse.scoreDrops}`);
   const failures: string[] = [];
   if (totalViolations > 0) failures.push("hard-filter violations found");
   if (v1First30 < 0.8) failures.push(`v1 full-pipeline nDCG@10 ${f3(v1First30)} < 0.800`);
   if (v2Cmp < v1Cmp - 1e-9) failures.push(`v2 nDCG@10 ${f3(v2Cmp)} < v1 ${f3(v1Cmp)} (profiles without ECOG 2)`);
   if ((variantRows[0]?.excludedAt10 ?? 1) > 0.2715 || v2Excl30 > 0.2715) failures.push("excluded-label share above 0.271");
-  if (nrMismatch > 0 || sim.nonResponse.rankDrops > 0 || sim.nonResponse.scoreDrops > 0) failures.push("unknown/skip answers changed a ranking");
+  if (nrMismatch > 0 || sim.nonResponse.rankDrops > 0 || sim.nonResponse.scoreDrops > 0 || (simNat && (simNat.nonResponse.rankDrops > 0 || simNat.nonResponse.scoreDrops > 0))) failures.push("unknown/skip answers changed a ranking");
   if (failures.length) {
     console.error(`Eval gates failed: ${failures.join("; ")}`);
     process.exit(1);

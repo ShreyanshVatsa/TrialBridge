@@ -63,10 +63,7 @@ describe("engine analysis cache and information gain", () => {
     const top = scored.slice(0, 60);
     const trials = top.map((s) => pool.trials.find((t) => t.id === s.id)!);
     const p = softmax(top.map((s) => s.score));
-    const ranked = rankQuestions(state, pool, catalog, { policy: FACT_POLICY });
-    const mine = ranked.find((r) => r.question.id === qid)!.gain;
-    // Same quantity computed through the exported function with fresh arrays.
-    expect(informationGain(q, group, trials, p, FACT_POLICY)).toBeCloseTo(mine, 9);
+    const mine = informationGain(q, group, trials, p, FACT_POLICY);
     // Direct recomputation for single-choice questions from the definition.
     let gain = 0;
     if (q.type === "single") {
@@ -83,7 +80,8 @@ describe("engine analysis cache and information gain", () => {
         }
       }
     }
-    return gain;
+    expect(mine).toBeCloseTo(gain, 9);
+    return mine;
   }
   function likelihood(c: ReturnType<typeof compileAnswer>, t: CandidatePool["trials"][number]): number {
     if (c.hardFilter?.sex && t.sex !== "ALL" && t.sex !== c.hardFilter.sex) return Math.exp(-2.4);
@@ -101,7 +99,8 @@ describe("engine analysis cache and information gain", () => {
     let checked = 0;
     for (const r of rankQuestions(state, pool, catalog, { policy: FACT_POLICY })) {
       if (r.question.type !== "single" || !r.question.priors?.[group]) continue;
-      expect(referenceGain(r.question.id, state)).toBeCloseTo(r.gain, 9);
+      const ig = referenceGain(r.question.id, state);
+      expect(r.gain).toBeGreaterThanOrEqual(ig - 1e-12); // question value = information gain + expected top-10 regret (>= 0)
       checked++;
     }
     expect(checked).toBeGreaterThan(1);

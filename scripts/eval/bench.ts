@@ -10,7 +10,7 @@ import type { CancerGroupId } from "../../config/cancer-groups";
 import { buildProfileText } from "../../lib/match/query";
 import { rankTrials } from "../../lib/match/rank";
 import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "../../lib/match/minisearch-config";
-import { applyAnswer, createState, liveCount, nextQuestion, rankPool, type CandidatePool } from "../../lib/questionnaire/engine";
+import { applyAnswer, createState, estimateRemaining, liveCount, nextQuestion, rankPool, type CandidatePool } from "../../lib/questionnaire/engine";
 import { patientAnswer, samplePatient } from "../../lib/questionnaire/simulate";
 import type { IntakeAnswers } from "../../lib/types/intake";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
@@ -47,6 +47,7 @@ const nextMs: number[] = [];
 const applyMs: number[] = [];
 const rankPoolMs: number[] = [];
 const liveMs: number[] = [];
+const perAnswerMs: number[] = [];
 const r = mulberry32(42);
 for (const g of GROUPS) {
   const catalog = getCatalog("cancer", g);
@@ -57,7 +58,15 @@ for (const g of GROUPS) {
     const patient = samplePatient(r, base, catalog, g);
     let state = base;
     for (let k = 0; k < 8; k++) {
-      const [step, dt] = time(() => nextQuestion(state, pool, catalog, { policy: FACT_POLICY }));
+      // What the UI does after every answer: live counter, next question, "about N more" (a fresh state object each time).
+      const fresh: QuestionnaireState = { ...state };
+      const [, dAll] = time(() => {
+        liveCount(fresh, pool, catalog, { policy: FACT_POLICY });
+        nextQuestion(fresh, pool, catalog, { policy: FACT_POLICY });
+        estimateRemaining(fresh, pool, catalog, { policy: FACT_POLICY });
+      });
+      perAnswerMs.push(dAll);
+      const [step, dt] = time(() => nextQuestion({ ...state }, pool, catalog, { policy: FACT_POLICY }));
       nextMs.push(dt);
       if (step.kind === "done") break;
       const [, dr] = time(() => rankPool(state, pool, catalog, { policy: FACT_POLICY }));
@@ -70,7 +79,7 @@ for (const g of GROUPS) {
     }
   }
 }
-console.log(`engine  nextQuestion median ${ms(median(nextMs))} ms (n=${nextMs.length}, p90 ${ms([...nextMs].sort((a, b) => a - b)[Math.floor(nextMs.length * 0.9)] as number)}), rankPool ${ms(median(rankPoolMs))} ms, liveCount ${ms(median(liveMs))} ms, applyAnswer ${ms(median(applyMs))} ms`);
+console.log(`engine  per answer (liveCount+nextQuestion+estimateRemaining) median ${ms(median(perAnswerMs))} ms; nextQuestion median ${ms(median(nextMs))} ms (n=${nextMs.length}, p90 ${ms([...nextMs].sort((a, b) => a - b)[Math.floor(nextMs.length * 0.9)] as number)}), rankPool ${ms(median(rankPoolMs))} ms, liveCount ${ms(median(liveMs))} ms, applyAnswer ${ms(median(applyMs))} ms`);
 
 // --- Search: first search (index load + rank) and repeat search -------------------------------------------
 const labels = JSON.parse(readFileSync("eval/labels.json", "utf8")) as { profiles: Array<{ id: string; answers: IntakeAnswers; state: QuestionnaireState }> };

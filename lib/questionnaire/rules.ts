@@ -202,9 +202,16 @@ export function factRelation(compiled: readonly CompiledAnswer[], fact: CompactF
 /** Policy for a fact key: exact key, then "<family>:*", then "<family>". */
 export function policyFor(policy: FactPolicyMap | undefined, key: string) {
   if (!policy) return undefined;
+  // Looked up for every fact of every trial on every engine step, so remember the answer per policy object and key.
+  let byKey = policyCache.get(policy);
+  if (!byKey) policyCache.set(policy, (byKey = new Map()));
+  if (byKey.has(key)) return byKey.get(key);
   const family = key.includes(":") ? key.slice(0, key.indexOf(":")) : key;
-  return policy[key] ?? policy[`${family}:*`] ?? policy[family];
+  const found = policy[key] ?? policy[`${family}:*`] ?? policy[family];
+  byKey.set(key, found);
+  return found;
 }
+const policyCache = new WeakMap<FactPolicyMap, Map<string, FactPolicyMap[string] | undefined>>();
 
 /** Apply fact policy: penalize=false drops conflicts, and drops supports too unless supportOnly. */
 export function applyPolicy(rel: FactRelation, key: string, policy: FactPolicyMap | undefined): FactRelation {

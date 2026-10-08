@@ -164,8 +164,8 @@ if (process.argv[1]?.endsWith("tune-retrieval.ts") && !process.argv.includes("--
 /** Structural variants (BM25 query text, field boosts, fuzzy/prefix, per-shard score normalization) at the default weights. */
 export async function structural(): Promise<void> {
   const B = MINISEARCH_SEARCH;
-  const noNeg = (_t: string, a: IntakeAnswers) => buildProfileText(a, getCatalog("cancer", a.cancerType), { keyword: true });
-  const dedupe = (t: string, _a: IntakeAnswers) => [...new Set(t.split(/\s+/))].join(" ");
+  const noNeg = (_t: string, a: IntakeAnswers) => buildProfileText(a, getCatalog("cancer", a.cancerType));
+  const dedupe = (t: string) => [...new Set(t.split(/\s+/))].join(" ");
   const variants: Array<[string, BuildOpts]> = [
     ["baseline", {}],
     ["bm25 query w/o 'X negative.'", { queryOf: noNeg }],
@@ -189,7 +189,7 @@ if (process.argv[1]?.endsWith("tune-retrieval.ts") && process.argv.includes("--s
 
 export async function combos(): Promise<void> {
   const B = MINISEARCH_SEARCH;
-  const noNeg = (_t: string, a: IntakeAnswers) => buildProfileText(a, getCatalog("cancer", a.cancerType), { keyword: true });
+  const noNeg = (_t: string, a: IntakeAnswers) => buildProfileText(a, getCatalog("cancer", a.cancerType));
   const crit = { ...B, boost: { title: 3, conditions: 2.5, mesh: 1.5, summary: 1, criteria: 0.25 } };
   const crit5 = { ...B, boost: { title: 3, conditions: 2.5, mesh: 1.5, summary: 1, criteria: 0.5 } };
   const runs: Array<[string, BuildOpts, Partial<Params>]> = [
