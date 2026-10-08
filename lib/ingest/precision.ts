@@ -73,3 +73,10 @@ export function summarizePrecision(labels: LabelFile, current: (it: LabelItem) =
   }
   return out.sort((a, b) => a.family.localeCompare(b.family));
 }
+
+/** Deterministic dev/held partition of trials by NCT id (FNV-1a hash). Rules and LLM thresholds are tuned on "dev" only. */
+export function partitionOf(id: string): "dev" | "held" {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 0x01000193) >>> 0;
+  return (h >>> 7) % 2 === 0 ? "dev" : "held";
+}
