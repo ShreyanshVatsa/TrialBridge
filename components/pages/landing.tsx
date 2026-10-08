@@ -1,115 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Building2, HandHeart, Lock, Scale } from "lucide-react";
 import { useMessages } from "@/components/i18n";
-import dynamic from "next/dynamic";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { LensHero } from "@/components/landing/lens-hero";
+import { Magnetic } from "@/components/landing/magnetic";
 import { LandingStat } from "@/components/landing/stat";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const promiseIcons = [HandHeart, Lock, Scale];
-
-// The animated demo is decorative: load it after first paint, in a same-size frame (no layout shift).
-const LandingDemo = dynamic(() => import("@/components/landing/demo").then((x) => x.LandingDemo), {
-  ssr: false,
-  loading: () => <div aria-hidden className="h-[31rem] rounded-3xl border border-border bg-card sm:h-[32rem]" />,
-});
 
 export function LandingPage() {
   const m = useMessages().landing;
   return (
     <main id="main" className="flex-1">
-      {/* Hero */}
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pb-24">
-        <div>
-          <p className="text-sm font-semibold tracking-wide text-primary uppercase">{m.eyebrow}</p>
-          <h1 className="mt-4 text-[2.6rem] leading-[1.05] font-semibold text-balance sm:text-6xl lg:text-[4.25rem]">{m.headline}</h1>
-          <p className="mt-6 max-w-[60ch] text-lg text-muted-foreground sm:text-xl">{m.sub}</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "min-h-14 px-7 text-lg")}>
-              {m.cta}
-              <ArrowRight className="rtl:-scale-x-100" aria-hidden />
-            </Link>
-            <Link href="/privacy/" className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "min-h-14 text-lg")}>
-              {m.ctaSecondary}
-            </Link>
-          </div>
-        </div>
-        <LandingDemo />
-      </section>
+      <LensHero />
 
-      {/* Real national statistic */}
-      <section aria-label={m.statTrials} className="border-y border-border bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+      {/* Real national numbers, from the ingested dataset */}
+      <section aria-label={m.statTrials} className="bg-ink text-paper dark:bg-card dark:text-foreground">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
           <LandingStat />
         </div>
       </section>
 
-      {/* How it works */}
-      <section aria-labelledby="how-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 id="how-title" className="text-3xl font-semibold sm:text-4xl">
-          {m.howTitle}
+      <HowItWorks />
+
+      {/* Promises: the title widens on its variable width axis when you point at a row */}
+      <section aria-labelledby="promises-title" className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 sm:pb-32">
+        <h2 id="promises-title" className="font-sans text-lg font-semibold text-muted-foreground [font-stretch:100%]">
+          {m.promisesTitle}
         </h2>
-        <ol className="mt-10 grid gap-6 md:grid-cols-3">
-          {m.how.map((step, i) => (
-            <li key={step.title} className="rounded-2xl border border-border bg-card p-6">
-              <span className="flex size-10 items-center justify-center rounded-full bg-secondary font-heading text-lg font-semibold text-secondary-foreground" aria-hidden>
-                {i + 1}
-              </span>
-              <h3 className="mt-4 text-xl font-semibold">{step.title}</h3>
-              <p className="mt-2 text-muted-foreground">{step.body}</p>
+        <ul className="mt-6 border-b border-foreground/15">
+          {m.promises.map((p) => (
+            <li key={p.title} className="group grid gap-3 border-t border-foreground/15 py-8 md:grid-cols-[1.3fr_1fr] md:items-end md:gap-12 md:py-10">
+              <h3 className="text-[clamp(2.5rem,6.2vw,5.25rem)] leading-[0.9] font-extrabold tracking-[-0.02em] [font-stretch:60%] transition-[font-stretch,color] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:text-primary group-hover:[font-stretch:80%] md:whitespace-nowrap motion-reduce:transition-none">
+                {p.title}
+              </h3>
+              <p className="max-w-[40ch] text-lg text-muted-foreground">{p.body}</p>
             </li>
           ))}
-        </ol>
-      </section>
-
-      {/* Promises */}
-      <section aria-labelledby="promises-title" className="bg-secondary/50">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-          <h2 id="promises-title" className="text-3xl font-semibold sm:text-4xl">
-            {m.promisesTitle}
-          </h2>
-          <ul className="mt-10 grid gap-8 md:grid-cols-3">
-            {m.promises.map((p, i) => {
-              const Icon = promiseIcons[i] ?? Lock;
-              return (
-                <li key={p.title}>
-                  <Icon className="size-7 text-primary" aria-hidden />
-                  <h3 className="mt-3 text-xl font-semibold">{p.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{p.body}</p>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        </ul>
       </section>
 
       {/* For research sites teaser */}
-      <section aria-labelledby="sites-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-        <div className="grid gap-6 rounded-3xl border border-border bg-card p-8 sm:p-10 md:grid-cols-[auto_1fr] md:items-start">
-          <Building2 className="size-9 text-primary" aria-hidden />
+      <section aria-labelledby="sites-title" className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid gap-8 rounded-[2.5rem] bg-lavender p-8 text-ink sm:p-14 md:grid-cols-[1fr_1fr] md:items-end md:gap-16">
+          <h2 id="sites-title" className="text-[clamp(2.25rem,5vw,4rem)] font-extrabold tracking-[-0.02em] [font-stretch:64%]">
+            {m.sitesTitle}
+          </h2>
           <div>
-            <h2 id="sites-title" className="text-2xl font-semibold sm:text-3xl">
-              {m.sitesTitle}
-            </h2>
-            <p className="mt-3 max-w-[65ch] text-muted-foreground">{m.sitesBody}</p>
-            <Link href="/for-sites/" className="mt-4 inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
+            <p className="max-w-[52ch] text-lg">{m.sitesBody}</p>
+            <Link
+              href="/for-sites/"
+              className="mt-6 inline-flex min-h-12 items-center rounded-full bg-ink px-6 font-medium text-paper transition-transform hover:-translate-y-0.5 focus-visible:outline-ink"
+            >
               {m.sitesLink}
-              <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />
             </Link>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-20 text-center sm:px-6">
-        <h2 className="text-3xl font-semibold sm:text-4xl">{m.finalTitle}</h2>
-        <p className="mx-auto mt-3 max-w-prose text-muted-foreground">{m.finalBody}</p>
-        <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "mt-8 min-h-14 px-7 text-lg")}>
-          {m.cta}
-          <ArrowRight className="rtl:-scale-x-100" aria-hidden />
-        </Link>
+      <section className="mx-auto max-w-7xl px-4 py-28 text-center sm:px-6 sm:py-40">
+        <h2 className="text-[clamp(3.25rem,10vw,9rem)] leading-[0.88] font-extrabold tracking-[-0.03em] [font-stretch:58%]">{m.finalTitle}</h2>
+        <p className="mx-auto mt-6 max-w-[48ch] text-lg text-muted-foreground">{m.finalBody}</p>
+        <Magnetic className="mt-10">
+          <Link href="/find/" className={cn(buttonVariants({ size: "lg" }), "min-h-16 px-10 text-xl")}>
+            {m.cta}
+          </Link>
+        </Magnetic>
       </section>
     </main>
   );
