@@ -1,20 +1,18 @@
 "use client";
 
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMessages } from "@/components/i18n";
 import { LogoMark } from "@/components/site/logo";
 import { TypingDots } from "@/components/site/spinner";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "./motion";
 
 const STEPS = 7; // q1, a1, q2, a2, searching, card, hold
 const STEP_MS = 1300;
 
-function subscribeReducedMotion(cb: () => void) {
-  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
+/** Scroll-driven stage -> last step to show: 0 = the chat, 1 = searching, 2 = the result card. */
+const STAGE_END = [3, 4, 5] as const;
 
 function Reveal({ show, children, className }: { show: boolean; children: ReactNode; className?: string }) {
   return (
@@ -30,28 +28,38 @@ function Reveal({ show, children, className }: { show: boolean; children: ReactN
   );
 }
 
-/** Animated product preview built in code. Illustrative content only; not a real trial. */
-export function LandingDemo() {
+/**
+ * Animated product preview built in code. Illustrative content only; not a real trial.
+ * Without `stage` it loops on a timer. With `stage` (driven by scroll position) it plays forward to that
+ * stage one message at a time, and rewinds straight to it when the reader scrolls back up.
+ */
+export function LandingDemo({ stage }: { stage?: 0 | 1 | 2 }) {
   const m = useMessages();
-  const reduced = useSyncExternalStore(
-    subscribeReducedMotion,
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    () => false,
-  );
+  const reduced = useReducedMotion();
   const [tick, setTick] = useState(0);
+  const end = stage === undefined ? undefined : STAGE_END[stage];
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || end !== undefined) return;
     const id = setInterval(() => setTick((t) => (t + 1) % (STEPS + 1)), STEP_MS);
     return () => clearInterval(id);
-  }, [reduced]);
+  }, [reduced, end]);
 
-  const step = reduced ? STEPS : tick;
+  useEffect(() => {
+    if (reduced || end === undefined) return;
+    const id = setInterval(() => setTick((t) => (t < end ? t + 1 : end)), 520);
+    return () => clearInterval(id);
+  }, [reduced, end]);
+
+  const step = reduced ? (end ?? STEPS) : end !== undefined ? Math.min(tick, end) : tick;
   const searching = step === 4;
 
   return (
-    <div role="img" aria-label={m.landing.demoLabel} className="relative">
-      <div aria-hidden className="relative rounded-3xl border border-border bg-card p-4 shadow-[0_1px_0_0_var(--border),0_24px_48px_-24px_oklch(0.3_0.05_220/0.25)] sm:p-5">
+    <div role="img" aria-label={m.landing.demoLabel} className="relative mx-auto w-full max-w-[23.5rem]">
+      {/* A phone, drawn in CSS: metal band, black glass bezel, island, and a faint glare across the screen. */}
+      <div aria-hidden className="tb-device relative rounded-[3.25rem] p-[0.7rem]">
+        <div className="relative overflow-hidden rounded-[2.6rem] bg-card px-4 pt-12 pb-6 ring-1 ring-black/60">
+        <span className="absolute inset-x-0 top-3 mx-auto h-7 w-[6.5rem] rounded-full bg-black" />
         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <LogoMark className="size-6" />
@@ -87,7 +95,7 @@ export function LandingDemo() {
                 {m.landing.demoBarrier}
               </span>
             </div>
-            <p className="mt-2 font-heading text-lg leading-snug font-semibold">{m.landing.demoCardTitle}</p>
+            <p className="mt-2 font-heading text-xl leading-tight font-bold [font-stretch:82%]">{m.landing.demoCardTitle}</p>
             <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="size-3.5" />
               {m.landing.demoCardMeta}
@@ -95,6 +103,8 @@ export function LandingDemo() {
             <p className="mt-3 text-sm font-semibold text-success-foreground">{m.landing.demoWhy}</p>
             <p className="mt-1 border-s-2 border-primary/50 ps-2.5 text-sm italic">{m.landing.demoQuote}</p>
           </Reveal>
+        </div>
+        <span className="pointer-events-none absolute inset-0 rounded-[2.6rem] bg-[linear-gradient(115deg,oklch(1_0_0/0.09),transparent_30%,transparent_70%,oklch(1_0_0/0.03))]" />
         </div>
       </div>
     </div>
