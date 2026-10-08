@@ -46,8 +46,8 @@ describe("simulated patients: adaptive vs fixed (§7.2, test catalog + group-ske
   it("adaptive top 10 has fewer true conflicts than fixed for k = 2..5", () => {
     for (let j = 1; j < 5; j++) expect(res.adaptiveConf[j]!, `k=${KS[j]}`).toBeLessThan(res.fixedConf[j]!);
   });
-  it("quick mode: median <= 7 questions and better than the fixed flow of the same length", () => {
-    expect(median).toBeLessThanOrEqual(7);
+  it("quick mode: median <= 6 questions on the synthetic pools (5 nationally) and better than the fixed flow of the same length", () => {
+    expect(median).toBeLessThanOrEqual(6);
     expect(res.quickNdcg).toBeGreaterThan(res.fixed[median - 1]!);
     expect(res.quickNdcg).toBeGreaterThan(0.9 * res.fullFixed);
   });

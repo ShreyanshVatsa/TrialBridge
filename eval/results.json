@@ -178,8 +178,8 @@
    0.9624069817897365
   ],
   "quick": {
-   "medianQuestions": 5,
-   "meanNdcg": 0.9384511545284134
+   "medianQuestions": 4,
+   "meanNdcg": 0.9354510118991196
   },
   "nonResponse": {
    "checks": 5712,
@@ -261,8 +261,8 @@
    0.8657812746766588
   ],
   "quick": {
-   "medianQuestions": 7,
-   "meanNdcg": 0.8347962380424025
+   "medianQuestions": 5,
+   "meanNdcg": 0.8115211616688127
   },
   "nonResponse": {
    "checks": 5712,
