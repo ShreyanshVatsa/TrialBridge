@@ -59,9 +59,9 @@ export const en = {
     terms: "Terms of use (draft)",
   },
   landing: {
-    eyebrow: "Free for patients · Private by design",
+    eyebrow: "Free for patients. No account needed.",
     headline: "Find cancer clinical trials that fit you, in minutes.",
-    sub: "Answer a few questions in a private chat. TrialBridge searches recruiting trials near you and explains each possible match in plain language, quoting the trial's own criteria.",
+    sub: "Answer a few questions in a private chat. We search recruiting trials near you and explain each possible match in plain language, with quotes from the trial's own criteria.",
     cta: "Find a trial",
     ctaSecondary: "How we protect your privacy",
     statLoading: "Loading the latest trial data…",
@@ -89,20 +89,20 @@ export const en = {
     demoBarrier: "English required",
     howTitle: "How it works",
     how: [
-      { title: "Answer a few questions", body: "A guided chat asks about your cancer type, location, and treatment history. No account, no name, no email." },
-      { title: "We search every recruiting trial", body: "Your answers are matched against recruiting cancer trials from ClinicalTrials.gov, filtered by distance and age, right in your browser." },
-      { title: "Understand each possible match", body: "Each result explains why it might fit and what might rule you out, quoting the official eligibility criteria, so you can discuss it with your care team." },
+      { title: "Answer a few questions", body: "Answer questions about your cancer type, location and treatment history. No account, name or email." },
+      { title: "We search every recruiting trial", body: "We match your answers to recruiting cancer trials from ClinicalTrials.gov and filter by distance and age. This runs in your browser." },
+      { title: "Understand each possible match", body: "Each result says why it might fit and what might rule you out, with quotes from the official criteria. Take it to your care team." },
     ],
-    promisesTitle: "Built on trust",
+    promisesTitle: "Our promises",
     promises: [
       { title: "Free for patients", body: "Searching and reading results costs nothing, now and later." },
       { title: "Private by design", body: "Your answers stay in your browser. Your ZIP code and exact age never leave your device." },
       { title: "Independent results", body: "No one can pay to change which trials you see or how they are ranked." },
     ],
     sitesTitle: "For research sites and sponsors",
-    sitesBody: "Many trials struggle to enroll, especially from underserved communities. TrialBridge helps patients arrive better informed and shows where eligibility rules create access barriers. Partnerships never influence patient results.",
+    sitesBody: "Many trials struggle to enroll, especially from underserved communities. TrialBridge helps patients arrive better informed and shows where eligibility rules block access. Partnerships never influence patient results.",
     sitesLink: "Learn about partnering",
-    finalTitle: "Ready when you are.",
+    finalTitle: "Start your search.",
     finalBody: "It takes about two minutes. You can change any answer before searching.",
     lensLabel: "Example trial rules, each shown as written and in plain language. Illustrative, not from one specific trial.",
     lensHintHover: "Move over any rule to read it in plain language.",
@@ -126,7 +126,7 @@ export const en = {
   },
   privacy: {
     title: "Privacy",
-    intro: "TrialBridge is built so that we never need to know who you are. There are no accounts, no tracking, and no analytics.",
+    intro: "TrialBridge never needs to know who you are. There are no accounts, no tracking and no analytics.",
     browserTitle: "What stays in your browser",
     browserBody: "Your answers are kept only in this browser tab until you close it. They are held in the tab's session storage so a refresh doesn't lose them, are never sent to our servers, and are discarded after 12 hours. Use “Clear my answers” to remove them at any time. Trial matching (filtering by distance and age, and ranking) runs on your device.",
     browserItems: [
@@ -164,7 +164,7 @@ export const en = {
   },
   chat: {
     title: "Find a trial",
-    intro: "Hi. I'll ask a few short questions to find recruiting cancer trials that may be worth discussing with your care team. Your answers stay in this browser tab.",
+    intro: "I'll ask a few short questions, then show recruiting cancer trials that may be worth discussing with your care team. Your answers stay in this browser tab.",
     logLabel: "Conversation",
     you: "You",
     assistant: "TrialBridge",
@@ -179,7 +179,7 @@ export const en = {
     zipQ: "What's your ZIP code? We use it only on your device to find nearby trial sites.",
     zipLabel: "5-digit ZIP code",
     zipInvalid: "Enter a 5-digit ZIP code.",
-    zipUnknown: "We don't recognize that ZIP code. Please check it.",
+    zipUnknown: "We don't recognize that ZIP code. Check it and try again.",
     zipChecking: "Checking ZIP code…",
     travelQ: "How far are you willing to travel?",
     travelOption: "Up to {miles} miles",
@@ -243,7 +243,7 @@ export const en = {
       aboutTitle: "What is this?",
       intro: "Hi. I'll start with four quick questions, then a few more that can sharpen your matches. “Not sure” is always a fine answer. Your answers stay in this browser tab.",
       introTitle: "Let's look for studies near you",
-      introLead: "A cancer diagnosis is a lot. Take this at your own pace. There are no wrong answers.",
+      introLead: "Take your time. There are no wrong answers.",
       introTime: "It takes about 2 to 4 minutes.",
       introSkip: "You can skip anything except the first four questions, and “Not sure” is always okay.",
       introPrivate: "Your answers stay on your device. If you choose AI explanations later, only broad answers are shared.",
@@ -284,7 +284,7 @@ export const en = {
       reassure: "That's okay. Many people don't know this yet. We're keeping all {count} trials and adding this to your list of things to ask your care team.",
       reassureNoCount: "That's okay. Many people don't know this yet. Nothing is ruled out, and we'll add this to your list of things to ask your care team.",
       reassureDeferred: "Got it. This is saved under “Questions waiting for your doctor” so you can fill it in later in this tab.",
-      afterEssentials: "Thank you. You can see possible trials now, or answer a few more questions to make them more specific. Both are fine.",
+      afterEssentials: "You can see possible trials now, or answer a few more questions to narrow them down.",
       showNow: "Show my matches now",
       modeLabel: "How many questions?",
       modeQuick: "Quick",
@@ -901,7 +901,7 @@ export const en = {
   search: {
     stage: {
       loading_shards: "Downloading trial data…",
-      loading_model: "Preparing smart search on your device…",
+      loading_model: "Preparing meaning-based search on your device…",
       filtering: "Filtering by location and age…",
       ranking: "Ranking trials…",
       done: "Done",
@@ -910,7 +910,7 @@ export const en = {
     progressLabel: "Search progress",
     error: "We couldn't load trial data. Check your connection and try again.",
     errorTimeout: "Loading trial data is taking too long. Check your connection and try again.",
-    errorInvalid: "The trial data we received looks damaged. Please try again later.",
+    errorInvalid: "The trial data we received is damaged. Try again later.",
   },
   results: {
     title: "Possible matches to discuss with your care team",
@@ -924,7 +924,7 @@ export const en = {
     analyzing: "Reading eligibility criteria with AI to explain each match…",
     analyzed: "AI explanations added. Always confirm with the trial team.",
     degraded: "AI explanations are busy right now. Here are your matches based on trial criteria.",
-    keywordOnly: "Smart search couldn't load on this device, so results are ranked by keywords only.",
+    keywordOnly: "Meaning-based search couldn't load on this device, so results are ranked by keywords only.",
     distanceUnavailable: "We couldn't look up your ZIP code on this device, so your travel distance was not applied. These results may include trials far from you. Check your connection and search again.",
     zipApproximate: "We couldn't pinpoint that exact ZIP code, so distances are estimated from the general area. Check your ZIP code if distances look wrong.",
     experimental: "Explanations in Haitian Creole are experimental. Quoted criteria remain in English.",
@@ -970,7 +970,7 @@ export const en = {
     ruleOut: "What might rule you out",
     askDoctor: "Questions to ask your doctor",
     needsDoctor: "Your doctor can help check",
-    noAnalysis: "Read the eligibility criteria with your doctor to see whether this trial may be worth exploring.",
+    noAnalysis: "Read the eligibility criteria with your doctor to decide if this trial is worth asking about.",
     criterionRef: { inclusion: "Inclusion criterion {n}", exclusion: "Exclusion criterion {n}" },
     assessment: { likely_met: "Likely met", likely_not_met: "Likely not met", needs_doctor: "Ask your doctor" },
     contact: "Contact",
@@ -1038,9 +1038,9 @@ export const en = {
     piiRemoved: "We removed details that looked personal before sending your question.",
     experimental: "Answers in Haitian Creole are experimental.",
     aiNote: "Answers are written by AI and may contain mistakes. Check them against the official text.",
-    busy: "Answers are busy right now. Please try again in a little while, or contact the trial team.",
+    busy: "Answers are busy right now. Try again later, or contact the trial team.",
     limit: "You've reached the 10-question limit for this trial in this session.",
-    tooShort: "Please type a question.",
+    tooShort: "Type a question.",
     crisisTitle: "You don't have to face this alone",
     crisisBody: "If you're struggling or thinking about harming yourself, help is available now.",
     crisis988: "Call or text 988 (Suicide & Crisis Lifeline, U.S.)",
@@ -1050,7 +1050,7 @@ export const en = {
   },
   access: {
     title: "Access Intelligence",
-    intro: "Which recruiting cancer trials have eligibility rules that can shut people out? These numbers come from transparent rules applied to every trial in our data, with the exact triggering sentence stored for each flag.",
+    intro: "Some eligibility rules can shut people out. These numbers come from transparent rules applied to every trial in our data. For each flag, we store the exact sentence that triggered it.",
     dataDate: "Data from ClinicalTrials.gov as of {date}.",
     seedNote: "Preview dataset: a sample of real trials, not yet the full national set.",
     loading: "Loading access data…",
@@ -1104,7 +1104,7 @@ export const en = {
       sections: [
         {
           title: "The enrollment problem",
-          body: ["Eligibility criteria are long, technical, and written for clinicians. Patients who could take part often never hear about a trial, and many who do inquire are a poor fit. Requirements such as English-only consent or upper age limits quietly narrow who can join."],
+          body: ["Eligibility criteria are long, technical, and written for clinicians. Patients who could take part often never hear about a trial, and many who do inquire are a poor fit. Requirements such as English-only consent or upper age limits narrow who can join."],
           items: [],
         },
         {
@@ -1112,8 +1112,8 @@ export const en = {
           body: [],
           items: [
             "Better-informed patient inquiries: patients arrive having read the criteria that matter, with questions to discuss with their care team.",
-            "Access-barrier insights: transparent, rule-based analysis of English requirements, age limits, and disability exclusions across trials, states, and sites.",
-            "Multilingual reach: the patient experience works in English, Spanish, Portuguese, and Haitian Creole.",
+            "Access-barrier data: transparent, rule-based analysis of English requirements, age limits, and disability exclusions across trials, states, and sites.",
+            "Languages: the patient experience works in English, Spanish, Portuguese, and Haitian Creole.",
           ],
         },
         {
@@ -1129,7 +1129,7 @@ export const en = {
     },
     methodology: {
       title: "How it works",
-      intro: "A plain-language look at where our data comes from, how matching works, how we use AI, and where the limits are.",
+      intro: "Where our data comes from, how matching works, how we use AI, and where the limits are.",
       sections: [
         {
           title: "Data source",
@@ -1137,7 +1137,7 @@ export const en = {
           items: [],
         },
         {
-          title: "Processing pipeline",
+          title: "How we process the data",
           body: ["Each trial record is validated, grouped into cancer types using its medical subject headings (MeSH), and its eligibility text is split into numbered inclusion and exclusion criteria. Records that fail validation are skipped and logged. Updates are rejected if the trial count drops sharply or too many records fail."],
           items: [],
         },
@@ -1151,7 +1151,7 @@ export const en = {
           ],
         },
         {
-          title: "Hybrid retrieval, on your device",
+          title: "Matching on your device",
           body: ["Matching runs in your browser. We download only the data for your cancer type, then:"],
           items: [
             "Hard filters: cancer type, age range, and at least one site within your travel distance.",
@@ -1193,16 +1193,16 @@ export const en = {
     },
     about: {
       title: "About TrialBridge",
-      intro: "TrialBridge exists so that anyone facing cancer can find out, in minutes and in their own language, which clinical trials might be worth asking about.",
+      intro: "TrialBridge lets anyone facing cancer find out, in minutes and in their own language, which clinical trials might be worth asking about.",
       sections: [
         {
           title: "Our mission",
-          body: ["Clinical trials can offer access to new treatments, yet most patients never learn which trials are open near them. Trial listings are long and technical, and many people face barriers they can't see until it's too late. We want every patient to walk into their next appointment informed."],
+          body: ["Clinical trials can give access to new treatments, but most patients never learn which trials are open near them. Trial listings are long and technical, and many people run into barriers they can't see ahead of time. We want every patient to walk into their next appointment informed."],
           items: [],
         },
         {
           title: "Why we built it",
-          body: ["Searching a trial registry today means reading pages of medical criteria, trial by trial. We built TrialBridge to do that reading with you: find recruiting trials near you, explain them in plain language, and show the exact criteria behind every explanation."],
+          body: ["Searching a trial registry today means reading pages of medical criteria, trial by trial. TrialBridge does that reading with you. It finds recruiting trials near you, explains them in plain language, and shows the exact criteria behind every explanation."],
           items: [],
         },
         {
@@ -1295,7 +1295,7 @@ export const en = {
   },
   errors: {
     title: "Something went wrong",
-    body: "Sorry, this part of TrialBridge ran into a problem. Your answers were not sent anywhere.",
+    body: "Something broke in this part of TrialBridge. Your answers were not sent anywhere. Try again.",
     notFoundTitle: "Page not found",
     notFoundBody: "The page you're looking for doesn't exist or has moved.",
   },

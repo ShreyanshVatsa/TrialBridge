@@ -19,7 +19,7 @@ test("first-search and repeat-search latency", async ({ page }) => {
   const t0 = Date.now();
   await expect(page.getByText(RESULTS_HEADING)).toBeVisible({ timeout: 90_000 });
   const first = Date.now() - t0;
-  await expect(page.getByText(/Smart search couldn't load/i)).toHaveCount(0);
+  await expect(page.getByText(/Meaning-based search couldn't load/i)).toHaveCount(0);
 
   await completeIntake(page, { cancer: "Breast cancer", zip: "10032" });
   const t1 = Date.now();
