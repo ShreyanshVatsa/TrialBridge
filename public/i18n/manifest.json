@@ -70,19 +70,19 @@
   },
   "fr": {
    "status": "partial",
-   "coverage": 0,
+   "coverage": 0.999,
    "sourceHash": "plqtrd",
    "updated": "2026-10-08"
   },
   "hi": {
-   "status": "partial",
-   "coverage": 0,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "plqtrd",
    "updated": "2026-10-08"
   },
   "pl": {
    "status": "partial",
-   "coverage": 0,
+   "coverage": 0.5247,
    "sourceHash": "plqtrd",
    "updated": "2026-10-08"
   },
