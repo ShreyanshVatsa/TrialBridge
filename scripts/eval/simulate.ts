@@ -161,23 +161,35 @@ export function runSimulation(opts: { national?: National | null; seed?: number;
 
 const f3 = (n: number) => n.toFixed(3);
 
-export function simulationMarkdown(s: SimSummary): string {
-  const rowsMd = s.ks.map((k, j) => `| ${k} | ${f3(s.adaptive[j] as number)} | ${f3(s.fixed[j] as number)} | ${f3(s.adaptiveConflict[j] as number)} | ${f3(s.fixedConflict[j] as number)} |`).join("\n");
+export function simulationMarkdown(s: SimSummary, nat?: SimSummary | null): string {
+  const table = (x: SimSummary) =>
+    x.ks.map((k, j) => `| ${k} | ${f3(x.adaptive[j] as number)} | ${f3(x.fixed[j] as number)} | ${((x.adaptive[j] as number) - (x.fixed[j] as number) >= 0 ? "+" : "") + ((x.adaptive[j] as number) - (x.fixed[j] as number)).toFixed(3)} | ${f3(x.adaptiveConflict[j] as number)} | ${f3(x.fixedConflict[j] as number)} |`).join("\n");
+  const head = "| Questions asked (k) | Adaptive nDCG@10 | Fixed-order nDCG@10 | Adaptive - fixed | Adaptive conflict share | Fixed conflict share |\n|---|---|---|---|---|---|";
+  const verdict = (x: SimSummary) => {
+    const behind = x.ks.filter((_, j) => (x.adaptive[j] as number) < (x.fixed[j] as number) - 1e-9);
+    const curveBehind = x.adaptiveCurve.map((v, j) => (v < (x.fixedCurve[j] as number) - 1e-9 ? j + 1 : 0)).filter(Boolean);
+    return `- Full fixed flow: nDCG@10 **${f3(x.fullFixedNdcg)}** with ${x.fullFixedQuestions.toFixed(1)} questions on average. Adaptive first reaches 95% of that at k = **${x.kFor95 ?? "none of the tested k"}**${x.shareFor95 === null ? "" : ` (${(100 * x.shareFor95).toFixed(0)}% of the fixed flow's questions; target <= 60%: **${x.shareFor95 <= 0.6 ? "met" : "not met"}**)`}.
+- Adaptive beats or ties fixed at k = 1, 3, 5, 7: **${behind.length === 0 ? "yes" : "no"}**${behind.length ? ` (behind at k = ${behind.join(", ")})` : ""}; at every k from 1 to ${x.adaptiveCurve.length}: **${curveBehind.length === 0 ? "yes" : "no (behind at k = " + curveBehind.join(", ") + ")"}**.
+- Quick mode: median **${x.quick.medianQuestions}** adaptive questions, mean nDCG@10 ${f3(x.quick.meanNdcg)}.
+- Non-response gate: ${x.nonResponse.checks} unknown/skip answers (two per eligible question, per simulated patient) changed no trial's rank for the worse (**${x.nonResponse.rankDrops}** rank drops) or score (**${x.nonResponse.scoreDrops}** score drops).`;
+  };
   return `## Questionnaire: adaptive vs fixed (simulated patients)
-> **Synthetic, provisional.** ${s.patients} simulated patients (${s.patients / s.groups} per group x ${s.groups} cancer groups; seed ${s.seed}) over the ${s.trials} seed trials in those groups. Hidden "true" answers are sampled from the catalog's own priors, patients say "don't know" at 40% (biomarkers), 20% (ECOG), 25% (lines), 30% (subtype) and 10% (others), and the oracle ranking is the same engine with every true answer. This measures how fast each question order approaches the engine's own full-information ranking. It is **not** a measure of clinical accuracy, it shares the fact layer (66% precision) with the system under test, and the priors are catalog estimates, not real-patient data. WP2 also ran this on the 5,726-trial national set (see PROGRESS.md); this script uses the seed so CI is reproducible.
+> **Synthetic, provisional.** ${s.patients} simulated patients (${s.patients / s.groups} per group x ${s.groups} cancer groups; seed ${s.seed}). Hidden "true" answers are sampled from the catalog's own priors, patients say "don't know" at 40% (biomarkers), 20% (ECOG), 25% (lines), 30% (subtype) and 10% (others), and the oracle ranking is the same engine with every true answer. This measures how fast each question order approaches the engine's own full-information ranking. It is **not** a measure of clinical accuracy, it shares the fact layer (66% precision) with the system under test, and the priors are catalog estimates, not real-patient data. The seed run (${s.trials} trials) is CI-reproducible; the national run uses the shards in public/data when present. The engine picks questions by information gain plus the expected change of the top 10 (DECISIONS.md); the engine constants were tuned on a different patient draw (seed 777, six of the twelve groups), so these numbers (seed ${s.seed}, all groups) are held-out.
 
+### Seed (${s.trials} trials)
 nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow's top 10 that conflicts with the patient's true answers:
 
-| Questions asked (k) | Adaptive nDCG@10 | Fixed-order nDCG@10 | Adaptive conflict share | Fixed conflict share |
-|---|---|---|---|---|
-${rowsMd}
+${head}
+${table(s)}
 
-- Full fixed flow: nDCG@10 **${f3(s.fullFixedNdcg)}** with ${s.fullFixedQuestions.toFixed(1)} questions on average. Adaptive first reaches 95% of that at k = **${s.kFor95 ?? "none of the tested k"}**.
-- Adaptive beats or ties fixed at every tested k: **${s.adaptiveBeatsFixedAtAllK ? "yes" : "no"}**${s.adaptiveBeatsFixedAtAllK ? "" : ` (behind at k = ${s.ks.filter((_, j) => (s.adaptive[j] as number) < (s.fixed[j] as number) - 1e-9).join(", ")} by at most ${f3(Math.max(...s.ks.map((_, j) => (s.fixed[j] as number) - (s.adaptive[j] as number))))} nDCG; ahead at k = 1 by ${f3((s.adaptive[0] as number) - (s.fixed[0] as number))})`}. The spec's "beats fixed at every k <= 7" criterion is **not** met on the seed: its pools are small (about ${Math.round(s.trials / s.groups)} trials per group), so the first few fixed-order questions already separate most trials. On the national set WP2 measured a win at every k <= 7 (PROGRESS.md).
-- The conflict share stays near 0.5 for both flows because most seed trials in a group carry some fact the sampled patient contradicts; it differs little between flows here.
-- Quick mode: median **${s.quick.medianQuestions}** adaptive questions, mean nDCG@10 ${f3(s.quick.meanNdcg)}.
-- Non-response gate: ${s.nonResponse.checks} unknown/skip answers (two per eligible question, per simulated patient) changed no trial's rank for the worse (**${s.nonResponse.rankDrops}** rank drops) or score (**${s.nonResponse.scoreDrops}** score drops).
-`;
+${verdict(s)}
+${nat ? `
+### National (${nat.trials} trials in the ${nat.groups} groups, ${nat.patients} patients)
+${head}
+${table(nat)}
+
+${verdict(nat)}
+` : "\n_National run skipped: no public/data shards on this machine._\n"}`;
 }
 
 /** One-screen summary for tuning runs. */

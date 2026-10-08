@@ -3,8 +3,9 @@
  * except the three session helpers at the bottom (tab-scoped sessionStorage).
  *
  * Flow: the four essentials in fixed order (they are hard filters), then repeatedly the question with the
- * highest utility U(q) = IG(q) / cost(q) × tierFactor, where IG is the expected information gain about which
- * of the current top-K candidate trials fit, until a stop rule fires.
+ * highest utility U(q) = (IG(q) + REGRET(q)) / cost(q) × tierFactor, until a stop rule fires. IG is the expected
+ * information gain about which of the current top-K candidate trials fit; REGRET is the expected change of the top 10
+ * the patient sees (see expectedRegret).
  *
  *   p(t)      ∝ exp(score_t / TAU) over the TOP_K best-scoring candidates
  *   L(t, a)   = e^-LAMBDA if answer a conflicts with trial t, e^+MU if it supports it, else 1
@@ -35,9 +36,12 @@ import {
   FAMILY_DOWNWEIGHT,
   HARD_EXCLUDED_LIKELIHOOD,
   HIGH_UNKNOWN_PRIOR,
+  INFO_GAIN_WEIGHT,
   LAMBDA,
   MU,
   Q_SEX,
+  REGRET_TOP_N,
+  REGRET_WEIGHT,
   SESSION_KEY,
   SESSION_MAX_AGE_MS,
   SEX_ASK_MIN_SHARE,
@@ -199,6 +203,8 @@ export function goBack(state: QuestionnaireState, now: number = Date.now()): { s
 
 interface Scored {
   t: PoolTrial;
+  /** Relation of each of the trial's facts to the current answers: 0 neutral, 1 support, 2 conflict (policy applied). */
+  rels: Uint8Array;
   score: number;
   conflict: boolean;
   support: boolean;
@@ -209,14 +215,35 @@ function trialRelation(compiled: readonly CompiledAnswer[], facts: readonly Comp
   let conflict = false;
   let support = false;
   const notes: Array<{ key: CompactFact["key"]; kind: "conflict" | "support"; value: CompactFact["value"]; source?: "rule" | "llm"; confidence?: number }> = [];
-  for (const f of facts) {
+  const rels = new Uint8Array(facts.length);
+  facts.forEach((f, j) => {
     const rel = applyPolicy(factRelation(compiled, f), f.key, policy);
-    if (rel === "neutral") continue;
+    if (rel === "neutral") return;
     if (rel === "conflict") conflict = true;
     else support = true;
-    notes.push({ key: f.key, kind: rel, value: f.value, ...(f.source ? { source: f.source } : {}), ...(f.confidence !== undefined ? { confidence: f.confidence } : {}) });
-  }
-  return { conflict, support, notes };
+    rels[j] = rel === "conflict" ? 2 : 1;
+    notes.push(noteOf(f, rel));
+  });
+  return { conflict, support, notes, rels };
+}
+
+function noteOf(f: CompactFact, kind: "conflict" | "support") {
+  return { key: f.key, kind, value: f.value, ...(f.source ? { source: f.source } : {}), ...(f.confidence !== undefined ? { confidence: f.confidence } : {}) };
+}
+
+/** A trial's score if one more compiled answer `c` is added to its current per-fact relations (any conflict wins). */
+function scoreWith(s: Scored, c: CompiledAnswer, policy: FactPolicyMap | undefined): number {
+  const notes: Array<ReturnType<typeof noteOf>> = [];
+  s.t.facts.forEach((f, j) => {
+    let rel = s.rels[j] as number;
+    if (rel !== 2 && c.rules.has(f.key)) {
+      const add = applyPolicy(factRelation([c], f), f.key, policy);
+      if (add === "conflict") rel = 2;
+      else if (add === "support") rel = 1;
+    }
+    if (rel !== 0) notes.push(noteOf(f, rel === 2 ? "conflict" : "support"));
+  });
+  return s.t.prior - precheckPenalty(notes) + precheckBonus(notes);
 }
 
 /** Score every pool trial that passes the live hard filters (definite sex) under the current answers. */
@@ -228,6 +255,14 @@ function scorePool(state: QuestionnaireState, pool: CandidatePool, catalog: read
  *  the UI makes for the same state (live counter, next question, "about N more"), which used to repeat it. */
 interface Analysis {
   scored: Scored[];
+  compiled: CompiledAnswer[];
+  /** Scored trials best first (ties by id), and fact key -> indexes into that order. */
+  order?: Scored[];
+  byKey?: Map<string, number[]>;
+  /** Scratch space for expectedRegret: which order indexes the current hypothesis re-scored, and their new scores. */
+  stamp?: Int32Array;
+  fresh?: Float64Array;
+  round?: number;
   /** Questions ranked by utility; filled on first use. */
   ranked?: Array<{ question: QuestionDef; gain: number; utility: number }>;
 }
@@ -246,9 +281,9 @@ function analyze(state: QuestionnaireState, pool: CandidatePool, catalog: readon
   for (const t of pool.trials) {
     if (!passesHardFilters(t.sex, filters)) continue;
     const r = trialRelation(compiled, t.facts, policy);
-    scored.push({ t, score: t.prior - precheckPenalty(r.notes) + precheckBonus(r.notes), conflict: r.conflict, support: r.support });
+    scored.push({ t, rels: r.rels, score: t.prior - precheckPenalty(r.notes) + precheckBonus(r.notes), conflict: r.conflict, support: r.support });
   }
-  const value: Analysis = { scored };
+  const value: Analysis = { scored, compiled };
   entries.push({ catalog, policy, value });
   return value;
 }
@@ -417,6 +452,85 @@ function impactOf(q: QuestionDef, group: CancerGroupId, scored: readonly Scored[
   return { total, narrowedTo: narrowed < total ? narrowed : null };
 }
 
+/**
+ * Expected "regret" of not asking q: for each definite answer a (probability P(a)), re-score the pool as if the patient
+ * had given it and measure how far the CURRENT top 10 is from the top 10 that answer would produce (1 - nDCG@10 of the
+ * current order against the new top-10 set). Summed over answers by prior. Unlike entropy over the top-K, this values
+ * exactly what the patient sees: moves among trials 20-60 count for nothing, a trial entering the top 10 counts a lot.
+ */
+function expectedRegret(q: QuestionDef, group: CancerGroupId, an: Analysis, policy: FactPolicyMap | undefined): number {
+  if (!an.order) {
+    const order = [...an.scored].sort((a, b) => b.score - a.score || a.t.id.localeCompare(b.t.id));
+    const byKey = new Map<string, number[]>();
+    order.forEach((s, i) => {
+      for (const f of s.t.facts) {
+        const list = byKey.get(f.key);
+        if (!list) byKey.set(f.key, [i]);
+        else if (list[list.length - 1] !== i) list.push(i);
+      }
+    });
+    an.order = order;
+    an.byKey = byKey;
+    an.stamp = new Int32Array(order.length);
+    an.fresh = new Float64Array(order.length);
+    an.round = 0;
+  }
+  const order = an.order;
+  const byKey = an.byKey as Map<string, number[]>;
+  const stamp = an.stamp as Int32Array;
+  const fresh = an.fresh as Float64Array;
+  const n = Math.min(REGRET_TOP_N, order.length);
+  if (n === 0) return 0;
+  let total = 0;
+  for (const sub of compiledHypotheses(q, group)) {
+    let g = 0;
+    for (const h of sub) {
+      if (h.p <= 0) continue;
+      const c = h.compiled;
+      // Re-score only what the answer can change: trials that have one of its fact keys, or that a hard filter removes.
+      const round = ++an.round!;
+      const changed: number[] = [];
+      const hf = c.hardFilter;
+      if (hf) {
+        for (let i = 0; i < order.length; i++) {
+          if (!passesHardFilters((order[i] as Scored).t.sex, hf)) {
+            stamp[i] = round;
+            fresh[i] = Number.NaN; // removed
+            changed.push(i);
+          }
+        }
+      }
+      for (const key of c.rules.keys()) {
+        for (const i of byKey.get(key) ?? []) {
+          if (stamp[i] === round) continue;
+          const s = order[i] as Scored;
+          stamp[i] = round;
+          fresh[i] = scoreWith(s, c, policy);
+          changed.push(i);
+        }
+      }
+      if (changed.length === 0) continue;
+      // The new top n is among the first n unchanged trials (already in order) and the changed trials that beat them.
+      const pool: Array<{ id: string; score: number }> = [];
+      for (let i = 0; i < order.length && pool.length < n; i++) if (stamp[i] !== round) pool.push({ id: (order[i] as Scored).t.id, score: (order[i] as Scored).score });
+      const floor = pool.length === n ? (pool[n - 1] as { score: number }).score : Number.NEGATIVE_INFINITY;
+      for (const i of changed) {
+        const v = fresh[i] as number;
+        if (!Number.isNaN(v) && v >= floor) pool.push({ id: (order[i] as Scored).t.id, score: v });
+      }
+      pool.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+      const target = new Set(pool.slice(0, n).map((x) => x.id));
+      let dcg = 0;
+      for (let i = 0; i < n; i++) if (target.has((order[i] as Scored).t.id)) dcg += 1 / Math.log2(i + 2);
+      let idealT = 0;
+      for (let i = 0; i < Math.min(n, target.size); i++) idealT += 1 / Math.log2(i + 2);
+      g += h.p * (idealT === 0 ? 0 : 1 - dcg / idealT);
+    }
+    total += g;
+  }
+  return total;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Eligibility and stop rules
 
@@ -495,7 +609,8 @@ export function rankQuestions(state: QuestionnaireState, pool: CandidatePool, ca
   const streak = unknownStreak(state, byId);
   const out: Array<{ question: QuestionDef; gain: number; utility: number }> = [];
   for (const q of eligibleQuestions(state, pool, catalog)) {
-    const gain = informationGain(q, group, trials, p, opts.policy);
+    const ig = informationGain(q, group, trials, p, opts.policy);
+    const gain = INFO_GAIN_WEIGHT * ig + REGRET_WEIGHT * expectedRegret(q, group, an, opts.policy);
     let utility = (gain / q.cost) * TIER_FACTOR[state.mode][q.tier];
     if (streak.count >= UNKNOWN_STREAK && streak.family === q.type && unknownPrior(q, group) >= HIGH_UNKNOWN_PRIOR) utility *= FAMILY_DOWNWEIGHT;
     out.push({ question: q, gain, utility });

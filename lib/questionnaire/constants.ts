@@ -19,6 +19,16 @@ export const TOP_K = 60;
  *  (what the patient sees) could still change. 0.5 spreads mass over roughly the top 10-20: in the national
  *  simulation (5,726 trials, 120 patients) adaptive nDCG@10 at k = 1..7 rose from 0.731-0.825 to 0.746-0.901. */
 export const TAU = 0.5;
+/** Question value = INFO_GAIN_WEIGHT * (bits of information about the top-K candidates) + REGRET_WEIGHT * (expected top-10
+ *  change, 0..1; engine.ts expectedRegret). Entropy alone spends questions on trials 20-60 that the patient never sees;
+ *  the top-10 term values what is shown. On the national simulation (tuning split: seed 777, six even groups) adding it moved
+ *  adaptive - fixed nDCG@10 at k = 1/3/5/7 from +0.119/+0.033/-0.023/-0.013 to +0.082/+0.034/+0.002/+0.004; weights 1:1 won over 0:1,
+ *  1:0, 1:0.5, 1:2 (1:0 gave the best k = 5-7 but a weaker k = 1). */
+export const INFO_GAIN_WEIGHT = 1;
+export const REGRET_WEIGHT = 1;
+/** Size of the result list the regret term protects: the ten results a patient sees first. */
+export const REGRET_TOP_N = 10;
+
 /** Likelihood of an answer for a trial it conflicts with: e^-LAMBDA. */
 export const LAMBDA = 1.2;
 /** Likelihood of an answer for a trial it supports: e^+MU. LAMBDA : MU mirrors CONFLICT_PENALTY : SUPPORT_BONUS damped. */
