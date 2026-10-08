@@ -35,6 +35,7 @@
     "eval:labels": "tsx scripts/eval/make-labels.ts",
     "i18n:translate": "tsx scripts/i18n/translate.ts",
     "i18n:manifest": "tsx scripts/i18n/translate.ts --manifest",
+    "i18n:review-packet": "tsx scripts/i18n/review-packet.ts",
     "fonts:fetch": "tsx scripts/fetch-fonts.ts"
   },
   "dependencies": {
