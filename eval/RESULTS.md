@@ -48,7 +48,7 @@ nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow
 
 - Full fixed flow: nDCG@10 **0.963** with 14.6 questions on average. Adaptive first reaches 95% of that at k = **3** (21% of the fixed flow's questions; target <= 60%: **met**).
 - Adaptive beats or ties fixed at k = 1, 3, 5, 7: **no** (behind at k = 7); at every k from 1 to 14: **no (behind at k = 7, 8, 9, 13, 14)**.
-- Quick mode: median **5** adaptive questions, mean nDCG@10 0.938.
+- Quick mode: median **4** adaptive questions, mean nDCG@10 0.935.
 - Non-response gate: 5712 unknown/skip answers (two per eligible question, per simulated patient) changed no trial's rank for the worse (**0** rank drops) or score (**0** score drops).
 
 ### National (5286 trials in the 12 groups, 408 patients)
@@ -61,7 +61,7 @@ nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow
 
 - Full fixed flow: nDCG@10 **0.868** with 14.6 questions on average. Adaptive first reaches 95% of that at k = **6** (41% of the fixed flow's questions; target <= 60%: **met**).
 - Adaptive beats or ties fixed at k = 1, 3, 5, 7: **yes**; at every k from 1 to 14: **yes**.
-- Quick mode: median **7** adaptive questions, mean nDCG@10 0.835.
+- Quick mode: median **5** adaptive questions, mean nDCG@10 0.812.
 - Non-response gate: 5712 unknown/skip answers (two per eligible question, per simulated patient) changed no trial's rank for the worse (**0** rank drops) or score (**0** score drops).
 
 ## Eligibility facts (rule layer)

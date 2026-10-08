@@ -57,9 +57,12 @@ export interface StopRule {
  * answer moves only a few hundredths of a bit over the top 60, so 0.05 stopped quick mode after ~2 questions
  * (simulated nDCG@10 0.61 vs 0.85 for the full fixed flow). 0.01 gives a median of ~6 questions and 0.78;
  * thorough keeps the same 5x ratio. Calibrated in tests/unit/qn-simulate.test.ts.
+ * Quick was then retuned (DECISIONS.md): with the regret term the cap of 7 decided every flow (median 7). Quick
+ * minUtility 0.02 stops patients whose next question is worth little (median 5, mean ~5.3 on 408 national
+ * patients, tuning seed 101, verified on seed 202); a plain cap of 5 cost more nDCG@10 for the same mean length.
  */
 export const STOP_RULES: Record<"quick" | "thorough", StopRule> = {
-  quick: { minUtility: 0.01, maxQuestions: 7, smallSet: 12 },
+  quick: { minUtility: 0.02, maxQuestions: 7, smallSet: 12 },
   thorough: { minUtility: 0.002, maxQuestions: 20, smallSet: null },
 };
 
