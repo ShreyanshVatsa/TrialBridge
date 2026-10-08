@@ -7,14 +7,14 @@ export interface FamilyPrecision { labeled: number; correct: number; precision: 
 export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecision>>> = {
   "autoimmune": {
     "labeled": 50,
-    "correct": 36,
-    "precision": 0.72,
-    "passes": false
+    "correct": 47,
+    "precision": 0.94,
+    "passes": true
   },
   "biomarker_v2": {
-    "labeled": 39,
-    "correct": 21,
-    "precision": 0.538,
+    "labeled": 36,
+    "correct": 24,
+    "precision": 0.667,
     "passes": false
   },
   "brain_mets": {
@@ -24,22 +24,22 @@ export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecisi
     "passes": true
   },
   "group_status": {
-    "labeled": 48,
+    "labeled": 47,
     "correct": 42,
-    "precision": 0.875,
+    "precision": 0.894,
     "passes": true
   },
   "hepatitis": {
     "labeled": 50,
-    "correct": 34,
-    "precision": 0.68,
+    "correct": 38,
+    "precision": 0.76,
     "passes": false
   },
   "histology": {
-    "labeled": 38,
-    "correct": 25,
-    "precision": 0.658,
-    "passes": false
+    "labeled": 50,
+    "correct": 46,
+    "precision": 0.92,
+    "passes": true
   },
   "hiv": {
     "labeled": 48,
@@ -48,9 +48,9 @@ export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecisi
     "passes": true
   },
   "lines": {
-    "labeled": 43,
-    "correct": 31,
-    "precision": 0.721,
+    "labeled": 50,
+    "correct": 36,
+    "precision": 0.72,
     "passes": false
   },
   "measurable": {
@@ -66,9 +66,9 @@ export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecisi
     "passes": true
   },
   "other_malignancy": {
-    "labeled": 49,
-    "correct": 34,
-    "precision": 0.694,
+    "labeled": 50,
+    "correct": 39,
+    "precision": 0.78,
     "passes": false
   },
   "performance": {
@@ -78,21 +78,21 @@ export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecisi
     "passes": true
   },
   "prior_drug": {
-    "labeled": 34,
-    "correct": 19,
-    "precision": 0.559,
+    "labeled": 50,
+    "correct": 32,
+    "precision": 0.64,
     "passes": false
   },
   "recurrent": {
-    "labeled": 36,
-    "correct": 24,
-    "precision": 0.667,
+    "labeled": 50,
+    "correct": 30,
+    "precision": 0.6,
     "passes": false
   },
   "stage": {
-    "labeled": 48,
-    "correct": 29,
-    "precision": 0.604,
+    "labeled": 10,
+    "correct": 4,
+    "precision": 0.4,
     "passes": false
   },
   "transplant": {
