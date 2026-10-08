@@ -19,6 +19,7 @@ import { loadCards } from "./cards";
 import { FACT_FAMILIES, familyOf, type FactFamily } from "../../lib/ingest/eligibility-facts";
 import { partitionOf, PRECISION_GATE, summarizePrecision, type LabelFile, type LabelItem } from "../../lib/ingest/precision";
 import { LLM_LAYER_FAMILIES } from "../../lib/ingest/llm-families";
+import { GOLD_FAMILY } from "../../lib/ingest/gold";
 import type { Fact, TrialCard } from "../../lib/types/trial";
 
 const LABELS = "eval/facts-labels-v2.json";
@@ -161,6 +162,17 @@ function measure(cards: TrialCard[]): void {
   // committed directional facts on gold-v1 + gold-v2 (AI-reader labels), pass = precision >= 85% on >= 20 judged facts.
   if (existsSync(LLM_GOLD)) {
     const g = JSON.parse(readFileSync(LLM_GOLD, "utf8")) as { results: { llm: { all: Record<string, { correct: number; incorrect: number }> } } };
+    // Rule-layer families that the gold sets also cover (histology) are gated by their gold rule numbers too:
+    // 240 blind trials outweigh the 50-item provisional held-out round.
+    const gr = (g.results as unknown as { rules: { all: Record<string, { correct: number; incorrect: number }> } }).rules.all;
+    for (const fam of Object.keys(GOLD_FAMILY)) {
+      if ((LLM_LAYER_FAMILIES as readonly string[]).includes(fam) || !gr[fam] || !body[fam]) continue;
+      const t = gr[fam];
+      const n = t.correct + t.incorrect;
+      const precision = n ? t.correct / n : 0;
+      body[fam] = { labeled: n, correct: t.correct, precision: Number(precision.toFixed(3)), passes: n >= LLM_GOLD_MIN_N && precision >= PRECISION_GATE, layer: "rules" };
+      console.log(`${fam.padEnd(18)} rule layer, gold ${t.correct}/${n} = ${(precision * 100).toFixed(1)}% ${body[fam].passes ? "PASS" : "fail"}`);
+    }
     for (const fam of LLM_LAYER_FAMILIES) {
       const t = g.results.llm.all[fam];
       if (!t) continue; // not in the gold schema (autoimmune): keeps its hand-labeled rule numbers
