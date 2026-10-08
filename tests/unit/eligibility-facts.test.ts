@@ -229,7 +229,8 @@ describe("transplant, autoimmune, organ disease", () => {
     expect(exc("Autoimmune disease affecting hair").autoimmune).toBe("mentioned");
     expect(inc("Steroids are permitted in absence of active autoimmune disease").autoimmune).toBe("mentioned");
     expect(inc("No active autoimmune disease").autoimmune).toBe("excluded(active_only)");
-    expect(exc("Serious illness (e.g., autoimmune disease)").autoimmune).toBe("excluded");
+    // An example inside a vague catch-all ("serious illness (e.g., ...)") does not exclude every autoimmune patient.
+    expect(exc("Serious illness (e.g., autoimmune disease)").autoimmune).toBe("mentioned");
     expect(exc("Exceptions: autoimmune hypothyroidism").autoimmune).toBeUndefined();
     expect(exc("Exceptions: autoimmune disease").autoimmune).toBe("mentioned");
   });

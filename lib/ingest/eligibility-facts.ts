@@ -10,11 +10,24 @@
  */
 import {
   ADJUVANT_FUTURE,
+  ADJUVANT_NED,
+  ADJUVANT_NED_CONTEXT,
+  ADJUVANT_NOT_STATUS,
+  LOCALLY_ADVANCED_NOT_STATUS,
+  RECURRENT_NOT_DISEASE_V4,
+  RECURRENT_NOT_REQUIREMENT,
+  GENERIC_LABEL,
+  LINES_ALT,
+  LINES_ALT_AFTER,
+  LINES_ELIGIBLE_IF,
+  LINES_MAY,
+  LINES_MODAL_CLASS,
+  LINES_SUBSET,
+  SUBGROUP_OPENER,
   ADJUVANT_SETTING,
   ALLO_SCT,
   ALLOWED,
   AUTOIMMUNE,
-  AUTOIMMUNE_ACTIVE,
   BORDERLINE,
   BRAIN_ACTIVE,
   BRAIN_CARVEOUT,
@@ -22,12 +35,32 @@ import {
   BRAIN_REQUIRED,
   COHORT_PREFIX,
   CRPC,
+  DRUG_HISTORY_STRONG,
+  DRUG_OPTIONAL,
+  DRUG_PROGRESSION,
+  DRUG_REPRODUCTIVE,
+  DRUG_STOP,
+  DRUG_STUDY_PLAN,
+  DRUG_TIMING,
   CSPC,
   DRUG_CLASS_PATTERNS,
   ECOG_MENTION,
   EXAMPLE_CONTEXT,
   HEART_DISEASE,
   HEP_ACTIVE_CARVEOUT,
+  HEP_CARVEOUT_LEAD,
+  HEP_NOT_INFECTION_RULE,
+  HEP_TEST_DEFINED,
+  HEP_QUALIFIER,
+  HEP_VIROLOGIC_CONDITION,
+  HISTOLOGY_CONFIRM,
+  HISTOLOGY_DEFINITION,
+  HISTOLOGY_QUALIFIER,
+  HISTOLOGY_SUBGRADE,
+  HISTOLOGY_TESTING,
+  HISTOLOGY_TRANSFORMED,
+  HISTOLOGY_SECOND_CANCER,
+  HISTOLOGY_THERAPY,
   HEP_B,
   HEP_C,
   HISTOLOGY_PATTERNS,
@@ -89,6 +122,10 @@ export interface ExtractContext {
   groups: readonly CancerGroupId[];
   /** The criterion starts with a cohort/part header, so every clause in it is cohort-specific. */
   cohort?: boolean;
+  /** The trial's conditions (as registered); used to tell the trial's own disease from other diseases named in a clause. */
+  conditions?: readonly string[];
+  /** The clause sits under a header offering alternatives ("one of the following indications:"). */
+  alt?: boolean;
 }
 
 /** Keys whose `param` is merged leniently across criteria (see mergeParam). */
@@ -144,11 +181,16 @@ function insideParens(text: string, index: number): boolean {
 }
 
 /** Effective section: inclusion criteria phrased as exclusions count as exclusion. */
-function effectiveSection(section: CriterionSection, seg: string): CriterionSection {
+export function effectiveSection(section: CriterionSection, seg: string): CriterionSection {
   if (section !== "inclusion") return section;
   const m = INCLUSION_EXCLUDES.exec(seg);
   // "... unless not eligible", "if they are not eligible for X": a condition, not an exclusion.
   if (!m || /\b(unless|if|except|who (are|is)|whom|when|considered)\b[^.;]{0,25}$/i.test(seg.slice(0, m.index))) return section;
+  // "(unknown primary is excluded)": a parenthetical aside, not the criterion's own rule.
+  const pre = seg.slice(0, m.index);
+  if (pre.lastIndexOf("(") > pre.lastIndexOf(")")) return section;
+  // "ineligible for ASCT", "not eligible to receive X": a condition on the patient, unless it says "for this study".
+  if (/^(not eligible|ineligible)$/i.test(m[0]) && /^\s*(for|to|or|and)\b/i.test(seg.slice(m.index + m[0].length)) && !/^\s*(for|to)\s+(?:this|the|any|further)?\s*(study|trial|protocol|participation|enrol\w*|inclusion|randomi[sz]\w*|screening)\b/i.test(seg.slice(m.index + m[0].length))) return section;
   return "exclusion";
 }
 
@@ -335,15 +377,18 @@ export function parseLines(seg: string, section: CriterionSection): { min?: numb
     const [a, b] = nums(m);
     return incl && !classSpecificAfter(seg, m) && a !== undefined && b !== undefined ? { min: a, max: b } : null;
   }
+  // "Only 1 prior line is allowed" / "may have received 1-2 prior lines": a ceiling, not a minimum.
+  const mayHave = LINES_MAY.test(seg);
   m = LINES_EXACT.exec(seg);
   if (m) {
     const [a] = nums(m);
-    return incl && !classSpecificAfter(seg, m) && a !== undefined ? { min: a, max: a } : null;
+    if (!incl || classSpecificAfter(seg, m) || a === undefined) return null;
+    return mayHave ? { max: a } : { min: a, max: a };
   }
   m = LINES_RANGE.exec(seg);
   if (m && !classSpecificAfter(seg, m)) {
     const [a, b] = nums(m);
-    if (a !== undefined && b !== undefined && b > a && b - a <= 4) return incl ? { min: a, max: b } : null;
+    if (a !== undefined && b !== undefined && b > a && b - a <= 4) return incl ? (mayHave ? { max: b } : { min: a, max: b }) : null;
   }
   const out: { min?: number; max?: number } = {};
   if ((m = LINES_MAX_NEG.exec(seg))) {
@@ -374,12 +419,46 @@ export function parseLines(seg: string, section: CriterionSection): { min?: numb
   return out;
 }
 
-function linesFacts(section0: CriterionSection, seg: string): V2Candidate[] {
+/** "1 prior line of therapy in any setting with a PARPi-based regimen": the count is for a drug class. */
+function linesClassAfterUnit(seg: string): boolean {
+  const u = /\b(?:lines?|regimens?)\b(?:\s+of\s+(?:\w+\s+){0,2}(?:therapy|treatment))?/i.exec(seg);
+  if (!u) return false;
+  const tail = seg.slice(u.index + u[0].length, u.index + u[0].length + 80);
+  const w = /\b(?:with|containing|using|based on|that (?:contained|included|used))\b/i.exec(tail);
+  return !!w && w.index < 50 && Object.values(DRUG_CLASS_PATTERNS).some((re) => re.test(tail.slice(w.index)));
+}
+
+/** A "Label:" opener naming a disease/cohort (not a generic heading such as "Prior therapy:"). */
+export function populationLabel(seg: string): boolean {
+  const m = /^\s*(?:[*\u2022-]\s*)*(?:\(?[a-z0-9]{1,3}[.)]\s*)?([^:.;]{2,60}):\s+\S/.exec(seg);
+  return !!m && !GENERIC_LABEL.test(m[1] as string);
+}
+
+/** Several different count limits in one clause ("no more than 1 line if concurrent ... no more than 2 if sequential") are conditional. */
+function conflictingCounts(seg: string): boolean {
+  const found = new Set<number>();
+  // "at least 1 and up to 3 lines" is one range, not two conflicting rules.
+  seg = seg.replace(new RegExp(String.raw`(?:at least|≥|>=|minimum of)\s*${NUM}\b[^.;]{0,25}?\b(?:but|and|,)\s*(?:no more than|not more than|up to|at most|maximum of|≤|<=)\s*${NUM}\b`, "gi"), " ");
+  for (const m of seg.matchAll(new RegExp(String.raw`(?:no more than|not more than|up to|at most|at least|maximum of|minimum of|≥|≤|>=|<=)\s*${NUM}\b`, "gi"))) found.add(toNum(m[1] as string));
+  return found.size > 1;
+}
+
+/** The clause names a different disease than the trial's own (basket/multi-disease trials): "Participants with FH-deficient RCC should have ...". */
+export function diseasePopulationClause(seg: string, ctx?: ExtractContext): boolean {
+  if ((ctx?.groups.length ?? 0) < 2) return false;
+  const disease = String.raw`(cancers?|carcinoma|lymphoma|leuk[a]?emia|myeloma|sarcoma|tumou?rs?|melanoma|glioma|NSCLC|SCLC|HCC|RCC|CRC|AML|ALL|CLL|CML|MDS|MCL|MZL|FL|HL|NHL|PTCL|CTCL|MM|DLBCL|PCNSL|GBM|SCC|HNSCC|ESCC|PDAC|TNBC|CRPC|mCRPC|NPC)`;
+  return new RegExp(String.raw`^\s*(?:[*\u2022-]\s*)*(?:participants|patients|subjects|individuals)?\s*(?:with|who have)\s+[^.;]{0,70}?\b${disease}\b`, "i").test(seg) || new RegExp(String.raw`^\s*[*\u2022-]\s*[^.;:]{0,60}\b${disease}\b`, "i").test(seg);
+}
+
+function linesFacts(section0: CriterionSection, seg: string, ctx?: ExtractContext): V2Candidate[] {
   if (!/\b(lines?|regimens?|LOTs?)\b/i.test(seg)) return [];
   const section = effectiveSection(section0, seg);
   const parsed = parseLines(seg, section);
   if (!parsed) return [];
-  const specific = LINES_CLASS_SPECIFIC.test(seg) || COHORT_PREFIX.test(seg) || /\b(cohort|part|arm)\s+[A-Z0-9]{1,3}\b/.test(seg) || /\bfor (the )?(metastatic|advanced|recurrent)\b[^.;]{0,40}\bor\b/i.test(seg);
+  const specific =
+    LINES_CLASS_SPECIFIC.test(seg) || LINES_SUBSET.test(seg) || LINES_MODAL_CLASS.test(seg) || linesClassAfterUnit(seg) || populationLabel(seg) || SUBGROUP_OPENER.test(seg) || COHORT_PREFIX.test(seg) ||
+    LINES_ELIGIBLE_IF.test(seg) || UNLESS.test(seg) || LINES_ALT.test(seg) || LINES_ALT_AFTER.test(seg) || conflictingCounts(seg) || diseasePopulationClause(seg, ctx) ||
+    /\b(cohort|part|arm)\s+[A-Z0-9]{1,3}\b/.test(seg) || /\bfor (the )?(metastatic|advanced|recurrent)\b[^.;]{0,40}\bor\b/i.test(seg);
   const out: V2Candidate[] = [];
   if (parsed.min !== undefined) out.push(specific ? { key: "min_prior_lines", value: "mentioned", quote: seg } : { key: "min_prior_lines", value: "required", param: parsed.min, quote: seg });
   if (parsed.max !== undefined) out.push(specific ? { key: "max_prior_lines", value: "mentioned", quote: seg } : { key: "max_prior_lines", value: "required", param: parsed.max, quote: seg });
@@ -396,30 +475,67 @@ const DRUG_FUTURE = /\b(eligible (for|to)|candidates? for|planned|plan(s|ning)? 
 /** Count limits before a drug ("no more than 1 prior bevacizumab regimen") are not exclusions of the drug. */
 const DRUG_COUNT = /\b(no more than|not more than|up to|at most|maximum of|a maximum|fewer than|less than|only one|one prior|single prior|≤|<)\b/i;
 
-function drugFacts(section0: CriterionSection, seg: string): V2Candidate[] {
+/**
+ * Is the drug mention negated ("no prior X, Y, or Z")? A negation opens a list of drugs until the clause
+ * changes (period, colon, semicolon, "but/however/except") or a new predicate starts.
+ */
+function drugNegated(seg: string, index: number): boolean {
+  const lead = seg.slice(Math.max(0, index - 140), index);
+  const open = lead.lastIndexOf("(") > lead.lastIndexOf(")") ? lead.lastIndexOf("(") : -1;
+  const start = Math.max(lead.lastIndexOf("."), lead.lastIndexOf(";"), lead.lastIndexOf(":"), open, lead.search(/\b(but|however|except|unless)\b[^]*$/i));
+  const clause = lead.slice(start + 1);
+  // "no more than 3 lines", "not less than" are counts, not negations of the drug.
+  const near = new RegExp(LEAD_NEGATION.source.replace(/^\\b\(/, "\\b(?!(?:no|not)\\s+(?:more|less|fewer|greater|longer|earlier|later|sooner|within)\\b)("), "i").exec(clause);
+  if (!near) return false;
+  const after = clause.slice(near.index + near[0].length);
+  // A new subject/predicate between the negation and the drug ends its scope ("no AEs and who received X").
+  return !/\b(who|which|that|and (?:who|have|has|are|is|must|were|was)|but|also)\b/i.test(after);
+}
+
+function drugFacts(section0: CriterionSection, seg: string, ctx?: ExtractContext): V2Candidate[] {
   const out: V2Candidate[] = [];
   const section = effectiveSection(section0, seg);
   const incl = section === "inclusion";
+  const multiGroup = (ctx?.groups.length ?? 0) >= 2;
   for (const [id, re] of Object.entries(DRUG_CLASS_PATTERNS) as [DrugClassId, RegExp][]) {
     const m = re.exec(seg);
     if (!m) continue;
     const key = `prior_drug:${id}` as FactKey;
     const before = seg.slice(Math.max(0, m.index - 100), m.index);
     const after = seg.slice(m.index + m[0].length, m.index + m[0].length + 40);
-    if (!DRUG_PRIOR.test(before) && !/^\W{0,3}(\w+\W+){0,3}(refractory|resistant|exposed|naive|na[iï]ve|pretreated|failure|progression)\b/i.test(after)) continue;
+    const history = DRUG_HISTORY_STRONG.test(before) || /^\W{0,3}(\w+\W+){0,3}(refractory|resistant|exposed|naive|na[iï]ve|pretreated|failure|progression)\b/i.test(after);
+    // "after / following / post" count as history only next to progression or relapse wording in an inclusion criterion.
+    const weak = !history && DRUG_PRIOR.test(before) && incl && DRUG_PROGRESSION.test(before);
+    const priorish = history || weak;
+    if (!priorish && !DRUG_PRIOR.test(before)) continue;
     const around = seg.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30);
     const lead = leadClause(seg, m.index, 70);
     const option = WITH_OR_WITHOUT.test(seg.slice(Math.max(0, m.index - 25), m.index));
-    const negated = !option && (LEAD_NEGATION.test(lead) || /\b(na[iï]ve|not (been )?(previously )?(received|treated|exposed))\b/i.test(seg.slice(Math.max(0, m.index - 40), m.index + m[0].length + 25)));
+    const negated = !option && (drugNegated(seg, m.index) || /\b(na[iï]ve|not (been )?(previously )?(received|treated|exposed))\b/i.test(seg.slice(Math.max(0, m.index - 40), m.index + m[0].length + 25)));
     const context = EXAMPLE_CONTEXT.test(lead) || insideParens(seg, m.index) || option;
-    const future = DRUG_FUTURE.test(seg.slice(Math.max(0, m.index - 40), m.index)) && !/\b(prior|previous(ly)?|received|refractory|progress\w*|after|following)\b/i.test(seg.slice(Math.max(0, m.index - 25), m.index));
+    const future = DRUG_FUTURE.test(seg.slice(Math.max(0, m.index - 70), m.index)) && !/\b(prior|previous(ly)?|received|refractory|progress\w*|after|following)\b/i.test(seg.slice(Math.max(0, m.index - 25), m.index));
     const count = DRUG_COUNT.test(seg.slice(Math.max(0, m.index - 50), m.index));
     const otherClassNear = Object.entries(DRUG_CLASS_PATTERNS).some(([other, re2]) => other !== id && re2.test(around));
-    const alternatives = incl && ((OR_NEAR.test(around) && otherClassNear) || LIST_CONTEXT.test(seg) || /\b(either|one of the following|any of)\b/i.test(seg));
+    const alternatives = incl && (/\band\/or\b/i.test(around) || /\bor\s+(?:treatment|therapy|prior|previous|received|have)\b/i.test(seg.slice(m.index)) || (OR_NEAR.test(around) && otherClassNear) || LIST_CONTEXT.test(seg) || /\b(either|one of the following|any of|at least one of|at least 1 of|at least two of)\b/i.test(seg));
     // Exclusion naming one specific drug ("prior binimetinib") does not exclude the whole class.
     const classWord = /\b(inhibitors?|agents?|therap(y|ies)|antibod\w+|blockade|conjugates?|TKIs?|class|based|containing|directed|targeted|engagers?|BiTEs?|ICIs?|regimens?|chemotherapy|hormonal|endocrine|platinum|taxanes?|transplant\w*|CAR[- ]?T|fluoropyrimidines?|IMiDs?|hypomethylating)\b/i.test(m[0] + after.slice(0, 20));
     const singleDrug = !incl && !classWord;
-    if (singleDrug || /\b(pneumonitis|toxicit\w*|immune[- ]related|irAEs?|adverse|discontinu\w*|contracepti\w*)\b/i.test(seg) || future || count || WASHOUT.test(seg) || ALLOWED.test(seg) || UNLESS.test(seg) || context || (incl && COHORT_PREFIX.test(seg)) || /\b(hypersensitivity|allerg|contraindicat|intoleran)/i.test(seg)) {
+    // "platinum-refractory/-resistant/-sensitive" is a disease status, "not refractory to X" says nothing about ever having had X.
+    const statusWord = /^[- ]?(refractory|resistant|sensitive|free)\b/i.test(seg.slice(m.index + m[0].length, m.index + m[0].length + 14));
+    const negatedStatus = negated && /\b(refractory|resistan\w*|progress\w*|fail\w*|intoleran\w*|relaps\w*)\b[^.;]{0,12}$/i.test(seg.slice(Math.max(0, m.index - 22), m.index));
+    const ifAfter = /\bif\b/i.test(seg.slice(m.index + m[0].length, m.index + m[0].length + 60));
+    const orEnd = /\b(?:or|OR)\s*$/.test(seg.trim()) || /\sOR\s/.test(seg);
+    const genericImid = id === "imid" && /\b(?:other|any other)\s+immunomodulatory\b|CD40|checkpoint|PD-?1/i.test(seg);
+    const conditionalOpener = /^\s*(?:[*\u2022-]\s*)*(?:\(?\w{1,3}[.)]\s*)?(?:if|when|where|should|in case)\b/i.test(seg) || /:\s*$/.test(seg);
+    // Population-conditional requirement in a multi-disease trial ("Subjects with ovarian cancer must have received ...").
+    const conditional = multiGroup && diseasePopulationClause(seg, ctx);
+    const timing = DRUG_TIMING.test(seg);
+    const demote =
+      !priorish || singleDrug ||
+      /\b(pneumonitis|toxicit\w*|immune[- ]related|irAEs?|adverse|discontinu\w*|contracepti\w*)\b/i.test(seg) ||
+      future || count || WASHOUT.test(seg) || ALLOWED.test(seg) || UNLESS.test(seg) || context || (incl && COHORT_PREFIX.test(seg)) || /\b(hypersensitivity|allerg|contraindicat|intoleran)/i.test(seg) ||
+      DRUG_REPRODUCTIVE.test(seg) || timing || DRUG_OPTIONAL.test(seg) || DRUG_STOP.test(seg.slice(Math.max(0, m.index - 45), m.index)) || DRUG_STUDY_PLAN.test(seg) || conditional || conditionalOpener || negatedStatus || ifAfter || (incl && orEnd) || genericImid || (statusWord && !incl);
+    if (demote) {
       out.push({ key, value: "mentioned", quote: seg });
     } else if (incl) {
       if (alternatives && !negated) out.push({ key, value: "mentioned", quote: seg });
@@ -462,7 +578,22 @@ function recurrentFacts(section0: CriterionSection, seg0: string): V2Candidate[]
   const m = RECURRENT.exec(flat);
   if (!m) return [];
   if (/\brecurrently\b|\bfear of\b|\b(tissue|sample|specimen|biopsy)\b[^.;]{0,40}\b(recurren|relapse|progress)/i.test(seg)) return [];
-  if (RECURRENT_NOT_DISEASE.test(seg) || (OTHER_CANCER.test(seg) && /\b(curative|in remission|disease[- ]free|no (known )?active)\b/i.test(seg))) return [];
+  if (RECURRENT_NOT_DISEASE.test(seg) || RECURRENT_NOT_DISEASE_V4.test(seg) || (OTHER_CANCER.test(seg) && /\b(curative|in remission|disease[- ]free|no (known )?active)\b/i.test(seg))) return [];
+  // A header ending in a colon introduces criteria or alternatives ("Progressive disease manifest by either:").
+  if (/:\s*$/.test(seg.trim()) && !/\b(relapsed|refractory|recurrent)\b/i.test(seg)) return [{ key: "recurrent", value: "mentioned", quote: seg }];
+  // Conditionals, examples, parentheticals, trailing "or", negated predicates and bare list bullets are not a requirement to be relapsed/refractory.
+  if (
+    insideParens(seg, m.index) ||
+    /^\s*(?:[*\u2022-]\s*)*(?:\(?\w{1,3}[.)]\s*)?(?:if|when|where|should)\b/i.test(seg) ||
+    EXAMPLE_CONTEXT.test(seg.slice(Math.max(0, m.index - 60), m.index)) ||
+    /\b(?:or|OR)\s*$/.test(seg.trim()) ||
+    /\b(?:must not|should not|may not|cannot|no prior|not have received)\b|^\s*(?:[*\u2022-]\s*)*no\b/i.test(seg) ||
+    (/^\s*[*\u2022]\s/.test(seg) && seg.trim().split(/\s+/).length <= 6) ||
+    /\b(?:ideally|status of the)\b/i.test(seg) ||
+    /\bpatients? only\b/i.test(seg) ||
+    RECURRENT_NOT_REQUIREMENT.test(seg) ||
+    /\bif\b[^.;]{0,40}\b(?:recurrence|relapse)\b/i.test(seg)
+  ) return [{ key: "recurrent", value: "mentioned", quote: seg }];
   const orNear = OR_NEAR.test(flat.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)) || /\//.test(flat.slice(Math.max(0, m.index - 2), m.index + m[0].length + 2));
   const section = effectiveSection(section0, seg);
   const lead = leadClause(seg, m.index, 50);
@@ -484,7 +615,17 @@ function recurrentFacts(section0: CriterionSection, seg0: string): V2Candidate[]
 // ---------------------------------------------------------------------------------------------
 // Other malignancy
 // ---------------------------------------------------------------------------------------------
-function otherMalignancyFacts(section0: CriterionSection, seg: string): V2Candidate[] {
+/** The phrase names the trial's own organ/disease (a distinctive word of a registered condition). */
+const GENERIC_CONDITION_WORDS = new Set(["cancer", "cancers", "carcinoma", "malignant", "malignancy", "advanced", "metastatic", "recurrent", "refractory", "relapsed", "stage", "locally", "solid", "tumor", "tumors", "tumour", "neoplasm", "neoplasms", "disease", "primary", "unresectable", "patients", "adenocarcinoma", "squamous", "cell", "cells", "carcinomas", "lymphoma", "leukemia", "chronic", "acute", "newly", "diagnosed", "previously", "treated", "untreated"]);
+function ownDiseaseNamed(phrase: string, conditions: readonly string[] = []): boolean {
+  const words = new Set<string>();
+  for (const c of conditions) for (const w of c.toLowerCase().match(/[a-z]{5,}/g) ?? []) if (!GENERIC_CONDITION_WORDS.has(w)) words.add(w);
+  const low = phrase.toLowerCase();
+  for (const w of words) if (new RegExp(String.raw`\b${w}\b`).test(low)) return true;
+  return false;
+}
+
+function otherMalignancyFacts(section0: CriterionSection, seg: string, ctxConditions?: readonly string[]): V2Candidate[] {
   const m = OTHER_CANCER.exec(seg);
   if (!m) return [];
   // "prior malignancy" in the trial's own disease sense (e.g. "prior therapy for this malignancy") is not another cancer.
@@ -492,6 +633,11 @@ function otherMalignancyFacts(section0: CriterionSection, seg: string): V2Candid
   if (/\b(therapy|treatment|chemotherapy|regimen|radiation|surgery|lines?)\s+(for|of)\s+(the\s+)?(malignan|cancer)/i.test(seg) && !/\b(other|another|second|additional)\b/i.test(m[0])) return [];
   const section = effectiveSection(section0, seg);
   const lead = leadClause(seg, m.index, 40);
+  if (/\b(?:chemotherapy|therapy|treatment|radiation|radiotherapy|surgery|regimens?)s?\s+(?:for|of)\b/i.test(m[0]) || /\b(?:their|the) child\b/i.test(seg)) return [{ key: "other_malignancy", value: "mentioned", quote: seg }];
+  // "other variant prostate cancer histology" / "Prior history of endometrial cancer" (the trial's own organ) are not "another cancer".
+  const phrase = seg.slice(m.index, m.index + m[0].length + 30);
+  if (/\b(histology|histologic\w*|variant|subtype)\b/i.test(phrase) && !/\bmalignanc/i.test(m[0])) return [{ key: "other_malignancy", value: "mentioned", quote: seg }];
+  if (ownDiseaseNamed(phrase, ctxConditions) && !/\b(other|another|second|additional|any|besides|apart)\b/i.test(m[0]) && !/\b(other than|except|excluding|apart from)\b/i.test(seg)) return [{ key: "other_malignancy", value: "mentioned", quote: seg }];
   // "History of colorectal cancer" (a specific cancer, e.g. screening populations) is not "any other cancer".
   const nounAt = m.index + m[0].search(/(malignan|cancer|neoplasm|primary tumou?r|invasive|second primary)\w*\s*$/i);
   const specific = !/\b(other|another|second|additional|any)\b/i.test(m[0]) && /\b(breast|colorectal|colon|rectal|lung|prostate|hepatobiliary|liver|ovarian|bladder|kidney|renal|skin|cervical|thyroid|gastric|pancreatic|oral|mouth|head and neck|bilateral)\s+$/i.test(seg.slice(Math.max(0, nounAt - 25), nounAt));
@@ -502,10 +648,15 @@ function otherMalignancyFacts(section0: CriterionSection, seg: string): V2Candid
   if (judgment) return [{ key: "other_malignancy", value: "mentioned", quote: seg }];
   const years = /life expectancy|expected to (live|survive)/i.test(seg) ? null : YEARS_WINDOW.exec(seg);
   const yearsParam = years ? toNum(years[1] as string) : undefined;
-  const active = OTHER_CANCER_ACTIVE.test(seg);
+  const active = OTHER_CANCER_ACTIVE.test(seg) || /\b(?:therapy|treatment|chemotherapy)\s+(?:for|of)\s+(?:the\s+)?other\b/i.test(seg);
   // "unless treated with curative intent [or in remission N years]": cured cancers are allowed at any time => active only.
-  const curativeCarve = UNLESS.test(seg) && /\bcurative(ly)?\b|\bcurative intent\b/i.test(seg) && !/\bwithin\b/i.test(seg);
-  const param: FactParam | undefined = curativeCarve ? "active_only" : yearsParam !== undefined && yearsParam > 0 && yearsParam <= 10 ? yearsParam : active ? "active_only" : undefined;
+  // "unless treated with curative intent OR in remission for N years": any cured cancer is allowed => active only.
+  // "... curative intent AND disease-free for N years": the window is N. Concurrent/synchronous-only wording is active only.
+  const hasYears = yearsParam !== undefined && yearsParam > 0 && yearsParam <= 10;
+  const curativeOr = /\bcurative(?:ly)?\b[^.;]{0,50}\bor\b[^.;]{0,40}\b(?:remission|disease[- ]free|no evidence)/i.test(seg);
+  const curativeCarve = UNLESS.test(seg) && /\bcurative(ly)?\b|\bcurative intent\b/i.test(seg) && (!hasYears || curativeOr) && !/\bwithin\b/i.test(seg);
+  const concurrentOnly = /\b(?:synchronous|concurrent|concomitant|simultaneous)\b/i.test(seg) && !/\b(?:history|prior|previous|past)\b/i.test(seg);
+  const param: FactParam | undefined = curativeCarve || (concurrentOnly && !hasYears) ? "active_only" : yearsParam !== undefined && yearsParam > 0 && yearsParam <= 10 ? yearsParam : active ? "active_only" : undefined;
   const fact = (): V2Candidate => (param !== undefined ? { key: "other_malignancy", value: "excluded", param, quote: seg } : { key: "other_malignancy", value: "excluded", quote: seg });
   if (section === "exclusion") {
     // A carve-out sentence alone ("Patients with ... treated more than 3 years ago are eligible") still implies the rule.
@@ -544,29 +695,53 @@ function hivFacts(section0: CriterionSection, seg: string): V2Candidate[] {
 function hepatitisFacts(section0: CriterionSection, seg: string): V2Candidate[] {
   const out: V2Candidate[] = [];
   const section = effectiveSection(section0, seg);
-  for (const [key, re] of [["hepatitis_b", HEP_B], ["hepatitis_c", HEP_C]] as const) {
-    const m = re.exec(seg);
+  const hits = ([["hepatitis_b", HEP_B], ["hepatitis_c", HEP_C]] as const).map(([key, re]) => ({ key, m: re.exec(seg) }));
+  for (const { key, m } of hits) {
     if (!m) continue;
     if (/\b(vaccin|immuniz)/i.test(seg) && !/\b(infection|active|positive|chronic)\b/i.test(seg)) continue;
-    if (/\b(testing|tests?|screening)\b[^.;]{0,40}\b(required|performed|must be)\b|\bmust be (tested|screened)\b/i.test(seg) && !/\b(excluded|positive|known|active)\b/i.test(seg)) {
+    if ((/\b(testing|tests?|screening)\b[^.;]{0,40}\b(required|performed|must be)\b|\bmust be (tested|screened)\b/i.test(seg) && !/\b(excluded|ineligible|not eligible|must not|exclude)\b/i.test(seg) && !/\b(known|active)\b/i.test(seg)) || HEP_CARVEOUT_LEAD.test(seg.slice(0, m.index))) {
       out.push({ key, value: "mentioned", quote: seg });
       continue;
     }
-    const window = seg.slice(Math.max(0, m.index - 50), m.index + 200);
+    // Instructions about confirmatory testing ("nucleic acid quantitation must be performed") are not eligibility rules.
+    if (/\b(quantitation|quantification|PCR|viral load|DNA|RNA)\b[^.;]{0,40}\bmust be (performed|done|obtained|measured|checked)\b|\bnecessary\b[^.;]{0,20}\btest/i.test(seg)) {
+      out.push({ key, value: "mentioned", quote: seg });
+      continue;
+    }
+    // Qualifiers belong to the marker they sit next to: stop the window at the other hepatitis marker, and fall
+    // back to the whole clause when a list shares one qualifier ("Active infections, including TB, HIV or hepatitis B").
+    const other = hits.find((h) => h.key !== key)?.m ?? null;
+    const clauseStart = Math.max(seg.lastIndexOf(".", m.index), seg.lastIndexOf(";", m.index), seg.lastIndexOf(":", m.index)) + 1;
+    let lo = Math.max(0, m.index - 50);
+    let hi = m.index + 200;
+    if (other && other.index !== m.index) {
+      if (other.index < m.index && other.index + other[0].length > lo) lo = other.index + other[0].length;
+      if (other.index > m.index && other.index < hi) hi = other.index;
+    }
+    let window = seg.slice(lo, hi);
+    if (!HEP_QUALIFIER.test(window)) window = seg.slice(Math.max(clauseStart, m.index - 110), m.index + 200);
+    const activeNear = /\b(?:active|uncontrolled|ongoing|acute)\b(?!\s+(?:or|and\/or|\/)\s+chronic)[^.;]{0,30}$/i.test(seg.slice(Math.max(clauseStart, m.index - 60), m.index + m[0].length));
     // "active or chronic", "any positive test", "HBsAg reactive/positive" exclude every infection, not only active ones.
-    const blanket = /\b(chronic|or chronic|history of|reactive|any positive|seropositive)\b/i.test(window) && !/\b(unless|except|eligible|allowed|permitted|provided|undetectable|cured|resolved)\b/i.test(window);
-    const active = !blanket && HEP_ACTIVE_CARVEOUT.test(window);
+    const pastOk = /\b(core antibody|anti-?HBc|HBcAb)\b/i.test(seg) && /\b(HBsAg|surface antigen)\b[^.;]{0,15}\bnegative\b/i.test(seg);
+    const blanket = !pastOk && !activeNear && /\b(chronic(?:ally)?\s+(?:active\s+)?(?:hepatitis|HBV|HCV|viral|infection|infected)|history of|reactive|any positive|seropositive)\b/i.test(window) && !/\b(unless|except|eligible|allowed|permitted|provided|undetectable|detectable|untreated|cured|resolved|treated|requir\w+|not on|needing|in need of|active disease|meet(?:s)? (?:the )?criteria)\b/i.test(window);
+    const active = pastOk || activeNear || (!blanket && HEP_ACTIVE_CARVEOUT.test(window));
+    // "chronic or active" / "active or chronic": every infection is excluded (the carve-out words below do not apply).
+    const everyInfection = /\bchronic\s+(?:or|and\/or|\/)\s+active\b|\bactive\s+(?:or|and\/or|\/)\s+chronic\b/i.test(window);
     if (section === "exclusion") {
-      if ((PERMISSIVE.test(seg) || ALLOWED.test(seg)) && !/\b(known|history|positive|active|uncontrolled|detectable)\b[^.;]{0,30}\b(hepatitis|HBV|HCV)/i.test(seg)) out.push({ key, value: "excluded", param: "active_only", quote: seg });
+      if ((PERMISSIVE.test(seg) || ALLOWED.test(seg)) && !/\b(known|history|positive|active|uncontrolled|detectable)\b[^.;]{0,30}\b(hepatitis|HBV|HCV)/i.test(seg)) {
+        // Who MAY join: a virologic condition (undetectable load, negative PCR, resolved infection) makes it an "active infection only" rule; liver-function or etiology conditions do not.
+        out.push(HEP_VIROLOGIC_CONDITION.test(seg) && !HEP_NOT_INFECTION_RULE.test(seg) ? { key, value: "excluded", param: "active_only", quote: seg } : { key, value: "mentioned", quote: seg });
+      } else if (HEP_NOT_INFECTION_RULE.test(seg) && (PERMISSIVE.test(seg) || ALLOWED.test(seg))) out.push({ key, value: "mentioned", quote: seg });
       else if (LEAD_NEGATION.test(leadClause(seg, m.index, 40)) && !/\b(known|positive|history|active)\b/i.test(seg)) out.push({ key, value: "mentioned", quote: seg });
-      else out.push(active ? { key, value: "excluded", param: "active_only", quote: seg } : { key, value: "excluded", quote: seg });
+      else out.push(active && !everyInfection && !HEP_TEST_DEFINED.test(seg.slice(m.index, m.index + 120)) ? { key, value: "excluded", param: "active_only", quote: seg } : { key, value: "excluded", quote: seg });
       continue;
     }
     // Inclusion: liver trials requiring viral etiology, negative tests, or "if HBV, must be on antivirals".
     if (/\b(HBV|HCV|hepatitis [BC])[- ](related|associated|etiology|induced)|\b(etiology|aetiology)\b/i.test(seg) && !OR_NEAR.test(window) && !/\bif\b/i.test(seg)) out.push({ key, value: "required", quote: seg });
     else if (/\bnegative\b|\bno (active|known|evidence of|history of)?\s*(chronic )?(hepatitis|HBV|HCV)/i.test(window) && !PERMISSIVE.test(seg)) out.push({ key, value: "excluded", ...(active && !/\bnegative\b/i.test(window) ? { param: "active_only" } : {}), quote: seg });
     else if (/\b(HBV|HCV|hepatitis [BC])[- ]?(HCC|related|associated)|\b(viral|non-viral)[- ]HCC\b/i.test(seg)) out.push({ key, value: "mentioned", quote: seg });
-    else if (PERMISSIVE.test(seg) || /\b(if|must be (on|receiving)|antiviral|viral load|undetectable|DNA\s*<)/i.test(window)) out.push({ key, value: "excluded", param: "active_only", quote: seg });
+    else if (HEP_NOT_INFECTION_RULE.test(seg)) out.push({ key, value: "mentioned", quote: seg });
+    else if ((PERMISSIVE.test(seg) && HEP_VIROLOGIC_CONDITION.test(seg)) || (/\b(if|must|should|need)\b/i.test(window) && /\b(antiviral|viral load|undetectable|DNA\s*<)/i.test(window))) out.push({ key, value: "excluded", param: "active_only", quote: seg });
     else out.push({ key, value: "mentioned", quote: seg });
   }
   return out;
@@ -607,12 +782,18 @@ function autoimmuneFacts(section0: CriterionSection, seg: string): V2Candidate[]
   if (!m) return [];
   const section = effectiveSection(section0, seg);
   const lead = leadClause(seg, m.index, 40);
-  if (EXAMPLE_CONTEXT.test(lead) && !/^\s*(\W\s*)?(active|history|known|any)/i.test(seg)) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
+  if ((EXAMPLE_CONTEXT.test(lead) || /\b(?:such as|including|e\.g\.?|for example)\b/i.test(seg.slice(0, m.index))) && !/^\s*(\W\s*)?(active|history|known|any)/i.test(seg)) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
+  // "(eg, autoimmune disease, active infection)" lists autoimmune disease as an example of a vague interfering condition;
+  // "steroids are permitted in the absence of active autoimmune disease" is a steroid carve-out.
+  if (/\b(?:eg|ie|e\.g|i\.e)\b[^.;]{0,25}$/i.test(seg.slice(0, m.index)) || /\b(?:interfere|hazard|condition or disease)\b/i.test(seg) && /\(\s*(?:eg|e\.g|such as)/i.test(seg) || /\bin the absence of\b[^.;]{0,15}$/i.test(seg.slice(0, m.index)) || /\b(?:inhaled|topical|replacement|physiologic)\b[^.;]{0,60}\b(?:permitted|allowed)\b/i.test(seg)) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
   // Narrow subsets ("autoimmune disease affecting hair / with CNS involvement") are not "any autoimmune disease".
   if (/^\s*(\w+\s+){0,2}(affecting|involving|with (central|cns|neurolog))/i.test(seg.slice(m.index + m[0].length, m.index + m[0].length + 40))) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
   // "history of", "known or suspected", "active or history" exclude any history: no carve-out param.
-  const history = /\b(history|known or suspected|suspected|prior)\b/i.test(seg.slice(0, m.index + 5)) && !/\b(unless|except|exceptions?|allowed|permitted|eligible|may enroll|remote)\b/i.test(seg) || /\bor (a )?history of\b/i.test(seg);
-  const active = !history && AUTOIMMUNE_ACTIVE.test(seg);
+  // Time- or treatment-limited wording ("requiring systemic treatment", "in the past 2 years", "within 90 days") makes it an active-disease rule even after "history of".
+  const limited = /\b(?:requir\w+|treated|treatment|therapy|immunosuppress\w*)\b[^.;]{0,40}\b(?:in|within|during) the (?:past|last|previous)\b|\b(?:requir\w+|resulting in)\b[^.;]{0,25}\b(?:systemic|immunosuppress\w*|steroids?|corticosteroids?|disease[- ]modifying)/i.test(seg) || /\b(?:in|within|during|over)\s+(?:the\s+)?(?:past|last|previous|preceding)\s+(?:\w+\s+){0,2}(?:days?|weeks?|months?|years?)\b|[≤<]\s*\d+\s*(?:days?|weeks?|months?|years?)|\bwithin\s+\w+\s+(?:days?|months?|years?)\b/i.test(seg);
+  // Without such limits, any "history of / known or suspected / active or history" wording excludes every autoimmune patient (exceptions are carve-outs, not limits).
+  const history = /\b(history|known or suspected|suspected|prior|known)\b/i.test(seg.slice(0, m.index + 5)) && !/\b(remote|well[- ]controlled)\b/i.test(seg) || /\b(?:or|and\/or) (?:a )?history\b|\bhistory (?:of )?(?:or|and\/or) active\b/i.test(seg);
+  const active = limited || (!history && /\b(active|uncontrolled|ongoing|currently|symptomatic|requir\w+)\b/i.test(seg));
   if (section === "inclusion" && !/^\s*(\W\s*)?(no|must not|participants must not|patients must not)\b/i.test(seg)) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
   if (section === "exclusion") {
     if (/^\s*(\W\s*)?(exceptions?|note)\b/i.test(seg) || (LEAD_NEGATION.test(lead) && !/\b(active|history|known)\b/i.test(seg))) return [{ key: "autoimmune", value: "mentioned", quote: seg }];
@@ -694,17 +875,20 @@ function stageFacts(section0: CriterionSection, seg: string): V2Candidate[] {
   const la = LOCALLY_ADVANCED.exec(seg);
   if (la) {
     const near = seg.slice(Math.max(0, la.index - 40), la.index + la[0].length + 40);
-    const optional = OR_NEAR.test(near) || /\//.test(near) || LIST_CONTEXT.test(seg) || COHORT_PREFIX.test(seg) || PERMISSIVE.test(seg) || /\bmetasta/i.test(seg) || /\bborderline\b|\b(defined|definition)\b/i.test(seg);
+    const optional = OR_NEAR.test(near) || /\//.test(near) || LIST_CONTEXT.test(seg) || COHORT_PREFIX.test(seg) || PERMISSIVE.test(seg) || /\bmetasta/i.test(seg) || /\bborderline\b|\b(defined|definition)\b/i.test(seg) || LOCALLY_ADVANCED_NOT_STATUS.test(seg) || insideParens(seg, la.index);
     if (section === "inclusion" && !optional && !LEAD_NEGATION.test(leadClause(seg, la.index, 30))) out.push({ key: "locally_advanced", value: "required", quote: seg });
     else out.push({ key: "locally_advanced", value: "mentioned", quote: seg });
   }
   const adj = ADJUVANT_SETTING.exec(seg);
-  // "NED" must be the upper-case abbreviation (not "deﬁNED" after a ligature).
-  if (adj && section === "inclusion" && !(adj[0].toLowerCase() === "ned" && adj[0] !== "NED")) {
-    const near = seg.slice(Math.max(0, adj.index - 40), adj.index + adj[0].length + 40);
-    const prior = /\b(prior|previous|history of|received|exposure|treatment|therapy|after (completion of )?adjuvant|completed adjuvant)\b[^.;]{0,60}\badjuvant\b/i.test(seg) && /adjuvant/i.test(adj[0]);
-    const optional = OR_NEAR.test(near) || COHORT_PREFIX.test(seg) || PERMISSIVE.test(seg) || ALLOWED.test(seg) || prior || ADJUVANT_FUTURE.test(near) || /\bbrain metasta|\bprogression\b/i.test(seg) || (/\bneo-?adjuvant\b/i.test(near) && !/\bcomplete/i.test(near));
-    if (!optional && !LEAD_NEGATION.test(leadClause(seg, adj.index, 25))) out.push({ key: "adjuvant_setting", value: "required", quote: seg });
+  // "No evidence of disease" / "NED" is a post-treatment state only next to surgery or therapy wording.
+  const ned = !adj ? ADJUVANT_NED.exec(seg) : null;
+  const nedOk = !!ned && ADJUVANT_NED_CONTEXT.test(seg);
+  const hit = adj ?? (nedOk ? ned : null);
+  if (hit && section === "inclusion") {
+    const near = seg.slice(Math.max(0, hit.index - 40), hit.index + hit[0].length + 40);
+    const prior = /\b(prior|previous|history of|received|exposure|treatment|therapy|after (completion of )?adjuvant|completed adjuvant)\b[^.;]{0,60}\badjuvant\b/i.test(seg) && /adjuvant/i.test(hit[0]);
+    const optional = OR_NEAR.test(near) || COHORT_PREFIX.test(seg) || PERMISSIVE.test(seg) || ALLOWED.test(seg) || prior || ADJUVANT_FUTURE.test(seg.replace(/\bresectable\b/gi, "")) || ADJUVANT_NOT_STATUS.test(seg) || insideParens(seg, hit.index) || /\bbrain metasta|\bprogression\b/i.test(seg) || (/\bneo-?adjuvant\b/i.test(near) && !/\bcomplete/i.test(near));
+    if (!optional && !LEAD_NEGATION.test(leadClause(seg, hit.index, 25))) out.push({ key: "adjuvant_setting", value: "required", quote: seg });
     else out.push({ key: "adjuvant_setting", value: "mentioned", quote: seg });
   }
   return out;
@@ -713,18 +897,28 @@ function stageFacts(section0: CriterionSection, seg: string): V2Candidate[] {
 // ---------------------------------------------------------------------------------------------
 // Histology / subtype
 // ---------------------------------------------------------------------------------------------
+/** Histology ids a trial's own conditions/title mention (every pattern, every group). */
+function conditionHistologies(conditions: readonly string[]): Set<string> {
+  const text = conditions.join(" ; ");
+  const ids = new Set<string>();
+  for (const h of HISTOLOGY_PATTERNS) if (h.re.test(text) && !h.negated?.test(text)) ids.add(h.id);
+  // "Squamous NSCLC" names one disease: the parent/child pair is not a list of competing diseases.
+  if (ids.has("nsclc") && ids.has("lung_squamous")) ids.delete("lung_squamous");
+  return ids;
+}
+
 function histologyFacts(section0: CriterionSection, seg: string, ctx: ExtractContext): V2Candidate[] {
   const section = effectiveSection(section0, seg);
-  const hits: { key: FactKey; idx: number; negated: boolean; group: CancerGroupId }[] = [];
+  const hits: { key: FactKey; id: string; idx: number; negated: boolean; group: CancerGroupId }[] = [];
   for (const h of HISTOLOGY_PATTERNS) {
     if (!h.groups.some((g) => ctx.groups.includes(g))) continue;
     const neg = h.negated?.exec(seg);
     if (neg) {
-      hits.push({ key: `histology:${h.id}` as FactKey, idx: neg.index, negated: true, group: h.groups[0] as CancerGroupId });
+      hits.push({ key: `histology:${h.id}` as FactKey, id: h.id, idx: neg.index, negated: true, group: h.groups[0] as CancerGroupId });
       continue;
     }
     const m = h.re.exec(seg);
-    if (m) hits.push({ key: `histology:${h.id}` as FactKey, idx: m.index, negated: false, group: h.groups[0] as CancerGroupId });
+    if (m) hits.push({ key: `histology:${h.id}` as FactKey, id: h.id, idx: m.index, negated: false, group: h.groups[0] as CancerGroupId });
   }
   if (hits.length === 0) return [];
   const out: V2Candidate[] = [];
@@ -732,29 +926,53 @@ function histologyFacts(section0: CriterionSection, seg: string, ctx: ExtractCon
   const perGroup = new Map<CancerGroupId, number>();
   for (const h of hits) if (!h.negated) perGroup.set(h.group, (perGroup.get(h.group) ?? 0) + 1);
   const listy = LIST_CONTEXT.test(seg) || COHORT_PREFIX.test(seg) || /\b(cohort|arm|part)\s+[A-Z0-9]{1,2}\b/.test(seg) || /\b(including|such as|e\.g|i\.e)\b/i.test(seg);
+  const gated = ctx.conditions !== undefined;
+  const condIds = gated ? conditionHistologies(ctx.conditions ?? []) : new Set<string>();
+  // Clause is about a response/definition rule, a second cancer, or treatment history rather than the diagnosis itself.
+  const notDiagnosis = HISTOLOGY_DEFINITION.test(seg) || (section === "exclusion" && HISTOLOGY_SECOND_CANCER.test(seg));
   for (const h of hits) {
-    const lead = leadClause(seg, h.idx, 50);
+    const lead = leadClause(seg, h.idx, 50).replace(/^[^)]*\)/, "");
     const around = seg.slice(Math.max(0, h.idx - 30), h.idx + 50);
+    const own = condIds.has(h.id);
+    const competing = [...condIds].some((id) => id !== h.id);
+    const confirmed = HISTOLOGY_CONFIRM.test(seg.slice(Math.max(0, h.idx - 70), h.idx + 12));
+    const therapyBefore = HISTOLOGY_THERAPY.test(seg.slice(Math.max(0, h.idx - 90), h.idx));
+    // Molecular/biologic qualifiers before the term ("Ph+ leukemia", "FLT3-mutated AML"), a sub-grade after it ("FL grade 3B"), transformation, testing notes and "For X," openers narrow or change the rule.
+    const narrowed =
+      (section === "exclusion" && h.id !== "all" && HISTOLOGY_QUALIFIER.test(seg.slice(Math.max(0, h.idx - 40), h.idx))) ||
+      /\bgrade\s*(?:3\s*b|iii\s*b)\s*$/i.test(seg.slice(Math.max(0, h.idx - 14), h.idx)) ||
+      /^\s*(?:[*\u2022-]\s*)*note\b/i.test(seg) ||
+      (/^\s*[*\u2022]\s/.test(seg) && seg.trim().split(/\s+/).length <= 6) ||
+      HISTOLOGY_SUBGRADE.test(seg.slice(h.idx, h.idx + 45)) ||
+      HISTOLOGY_TRANSFORMED.test(seg) ||
+      (section === "exclusion" && (HISTOLOGY_TESTING.test(seg) || /^\s*(?:[*\u2022-]\s*)*for\b/i.test(seg))) ||
+      insideParens(seg, h.idx);
+    if (notDiagnosis || narrowed || (therapyBefore && !confirmed)) {
+      out.push({ key: h.key, value: "mentioned", quote: seg });
+      continue;
+    }
     if (h.negated) {
-      out.push({ key: h.key, value: section === "inclusion" && !OR_NEAR.test(around) && !listy ? "excluded" : "mentioned", quote: seg });
+      out.push({ key: h.key, value: section === "inclusion" && !OR_NEAR.test(around) && !listy && (!gated || confirmed) && !ctx.alt ? "excluded" : "mentioned", quote: seg });
       continue;
     }
     const negLead = LEAD_NEGATION.test(lead) || /\b(other than|excluding|except)\b/i.test(lead);
     // "prior therapy for CLL", "treatment for rectal cancer", "blast phase CML": about treatment or a phase, not the histology rule.
-    const aside = /\b(therap(y|ies)|treatments?|treated|regimens?|agents?|drugs?|chemotherapy|transplant\w*|surgery|evaluation|testing|criteria)\s+(for|of|by)\s+(the\s+|their\s+|a\s+)?(\w+\s+){0,2}$/i.test(seg.slice(Math.max(0, h.idx - 45), h.idx)) || /\b(blast (phase|crisis)|accelerated phase|transformed|therapy-related|secondary)\s+$/i.test(seg.slice(Math.max(0, h.idx - 25), h.idx));
+    const aside = /\b(therap(y|ies)|treatments?|treated|treating|regimens?|agents?|drugs?|chemotherapy|transplant\w*|surgery|evaluation|testing|criteria)\s+(for|of|by)\s+(the\s+|their\s+|a\s+)?(\w+\s+){0,2}$/i.test(seg.slice(Math.max(0, h.idx - 45), h.idx)) || /\b(blast (phase|crisis)(\s+of)?|accelerated phase|transformed|therapy-related|secondary)\s+$/i.test(seg.slice(Math.max(0, h.idx - 25), h.idx));
     if (aside || (section === "inclusion" && listy)) {
       out.push({ key: h.key, value: "mentioned", quote: seg });
       continue;
     }
     if (section === "inclusion") {
       const multiple = (perGroup.get(h.group) ?? 0) > 1;
-      if (negLead) out.push({ key: h.key, value: "excluded", quote: seg });
-      else if (!/\b(histolog\w*|cytolog\w*|patholog\w*|confirmed|diagnos\w*|documented|proven|must have|with (a )?(known )?)\b/i.test(seg) && !/^\s*(\W\s*)?[A-Za-z-]+(\s+[A-Za-z-]+){0,4}\s*\.?$/.test(seg)) out.push({ key: h.key, value: "mentioned", quote: seg });
-      else if (multiple || listy || OR_NEAR.test(around) || PERMISSIVE.test(seg) || ALLOWED.test(seg) || /\b(history of|prior|previous|transformed|transformation|secondary to|arising from|component|features|mixed)\b/i.test(seg)) out.push({ key: h.key, value: "mentioned", quote: seg });
+      // Required needs the trial's own disease: the condition list names it and no other disease, or names nothing and the clause is a plain diagnosis.
+      const evidence = !gated || (own && !competing) || (condIds.size === 0 && ctx.groups.length === 1 && confirmed);
+      if (negLead) out.push({ key: h.key, value: gated && !confirmed ? "mentioned" : "excluded", quote: seg });
+      else if (!/\b(histolog\w*|cytolog\w*|patholog\w*|confirmed|diagnos\w*|documented|proven|must have|with (a )?(known )?)\b/i.test(seg) && !(/^\s*(\W\s*)?[A-Za-z-]+(\s+[A-Za-z-]+){0,4}\s*\.?$/.test(seg) && (!gated || (own && !competing)))) out.push({ key: h.key, value: "mentioned", quote: seg });
+      else if (!evidence || ctx.alt || multiple || listy || OR_NEAR.test(around) || PERMISSIVE.test(seg) || ALLOWED.test(seg) || /\b(history of|prior|previous|transformed|transformation|secondary to|arising from|component|features|mixed)\b/i.test(seg)) out.push({ key: h.key, value: "mentioned", quote: seg });
       else out.push({ key: h.key, value: "required", quote: seg });
     } else {
-      // Exclusion: "Mixed small cell histology", "uveal or mucosal melanoma" => excluded.
-      if (negLead || UNLESS.test(seg) || PERMISSIVE.test(seg) || EXAMPLE_CONTEXT.test(lead) || /\b(after|following|with|del\(|deletion|t\(|acute promyelocytic|APL|therapy|treatment|transformation|transformed)\b/i.test(seg.slice(h.idx, h.idx + 60)) && !/^\s*(\W\s*)?(known |diagnosis of |patients with |participants with )?\S+(\s+\S+){0,3}\s*\.?$/i.test(seg) || /\b(prior|previous|history of|treated for)\b[^.;]{0,30}$/i.test(seg.slice(0, h.idx))) out.push({ key: h.key, value: "mentioned", quote: seg });
+      // Exclusion: "Mixed small cell histology", "uveal or mucosal melanoma" => excluded. Never the trial's own disease.
+      if (own || negLead || UNLESS.test(seg) || PERMISSIVE.test(seg) || EXAMPLE_CONTEXT.test(lead) || /\b(after|following|with|del\(|deletion|t\(|acute promyelocytic|APL|therapy|treatment|transformation|transformed)\b/i.test(seg.slice(h.idx, h.idx + 60)) && !/^\s*(\W\s*)?(known |diagnosis of |patients with |participants with )?\S+(\s+\S+){0,3}\s*\.?$/i.test(seg) || /\b(prior|previous|history of|treated for)\b[^.;]{0,30}$/i.test(seg.slice(0, h.idx))) out.push({ key: h.key, value: "mentioned", quote: seg });
       else out.push({ key: h.key, value: "excluded", quote: seg });
     }
   }
@@ -764,27 +982,38 @@ function histologyFacts(section0: CriterionSection, seg: string, ctx: ExtractCon
 /** All v2 candidate facts in one clause of one criterion. Pure; exported for tests. */
 /** The clause (or its criterion's header) limits the rule to one cohort, part, arm or subgroup. */
 export function cohortSpecific(seg: string): boolean {
-  return COHORT_PREFIX.test(seg) || /\b([Cc]ohorts?|[Pp]arts?|[Aa]rms?|[Mm]odules?|[Gg]roups?|[Ss]teps?|[Ee]scalation|[Ee]xpansion|[Bb]ackfill)\s+[A-Z0-9]{1,3}[a-z]?\b(?!\s*(cells?|years?|weeks?|months?|days?|%))/.test(seg) || /\b(additional|specific) (inclusion|exclusion|eligibility) criteria for\b|\bfor (participants|patients|subjects) (with|in|enrolled|receiving)\b|\b(dose[- ]escalation|dose[- ]expansion|backfill|phase 1[ab]?|phase 2)( cohort| part| portion)?\s*(only)?\s*[:)]/i.test(seg);
+  return COHORT_PREFIX.test(seg) || /\(\s*[\w\s-]{1,25}\s+(?:cohort|arm|group)\s*\)/i.test(seg) || /\bbackfill\s+cohorts?\b|\bin the (?:dose[- ])?(?:expansion|escalation)\b|\b[Rr]egimens?\s+[A-Z]\d?\b/.test(seg) || /\bcohorts?\s+only\b|\b(?:dose[- ])?(?:expansion|escalation)\s+(?:cohorts?|parts?|phase)\b/i.test(seg) || /\b([Cc]ohorts?|[Pp]arts?|[Aa]rms?|[Mm]odules?|[Gg]roups?|[Ss]teps?|[Ee]scalation|[Ee]xpansion|[Bb]ackfill)\s+[A-Z0-9]{1,3}[a-z]?\b(?!\s*(cells?|years?|weeks?|months?|days?|%))/.test(seg) || /\b(additional|specific) (inclusion|exclusion|eligibility) criteria for\b|\bfor (participants|patients|subjects) (with|in|enrolled|receiving)\b|\b(dose[- ]escalation|dose[- ]expansion|backfill|phase 1[ab]?|phase 2)( cohort| part| portion)?\s*(only)?\s*[:)]/i.test(seg);
 }
 
 /** Families whose rule usually holds trial-wide even when stated per part (the lenient merge handles parts). */
 const COHORT_EXEMPT = new Set<string>(["ecog_max"]);
 
+/** Families whose directional facts are demoted when the clause is one option of a list or belongs to a named sub-population. */
+const POPULATION_FAMILIES = new Set<string>(["histology", "lines", "prior_drug", "recurrent", "stage", "biomarker_v2"]);
+
+/** True when a clause is an option under an "one of the following" header or is addressed to a named sub-population. */
+export function subPopulationClause(section: CriterionSection, seg: string, alt = false): boolean {
+  const s = effectiveSection(section, seg);
+  return (alt && s === "inclusion") || populationLabel(seg) || SUBGROUP_OPENER.test(seg);
+}
+
 export function v2FactsForSegment(section: CriterionSection, seg: string, ctx: ExtractContext): V2Candidate[] {
   const all = rawV2Facts(section, seg, ctx);
-  if (!(ctx.cohort || cohortSpecific(seg))) return all;
-  return all.map((f) => (COHORT_EXEMPT.has(f.key) || f.value === "mentioned" ? f : { key: f.key, value: "mentioned" as const, quote: f.quote }));
+  const cohort = ctx.cohort || cohortSpecific(seg);
+  const sub = subPopulationClause(section, seg, ctx.alt);
+  if (!cohort && !sub) return all;
+  return all.map((f) => (f.value === "mentioned" || (cohort && COHORT_EXEMPT.has(f.key)) || (!cohort && !POPULATION_FAMILIES.has(familyOf(f.key) ?? "")) ? f : { key: f.key, value: "mentioned" as const, quote: f.quote }));
 }
 
 function rawV2Facts(section: CriterionSection, seg: string, ctx: ExtractContext): V2Candidate[] {
   return [
     ...performanceFacts(section, seg),
     ...brainFacts(section, seg),
-    ...linesFacts(section, seg),
-    ...drugFacts(section, seg),
+    ...linesFacts(section, seg, ctx),
+    ...drugFacts(section, seg, ctx),
     ...measurableFacts(section, seg),
     ...recurrentFacts(section, seg),
-    ...otherMalignancyFacts(section, seg),
+    ...otherMalignancyFacts(section, seg, ctx.conditions),
     ...hivFacts(section, seg),
     ...hepatitisFacts(section, seg),
     ...transplantFacts(section, seg),
