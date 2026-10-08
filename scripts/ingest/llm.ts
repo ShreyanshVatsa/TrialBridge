@@ -4,8 +4,14 @@
  *
  *   npm run ingest:llm -- --families lines,prior_drug --limit 50      (sample)
  *   npm run ingest:llm -- --dry                                        (count calls + time estimate, no model)
- *   npm run ingest:llm                                                  (FULL national run, all families; overnight)
+ *   npm run ingest:llm                                                  (FULL national run, all families, ~1 day)
  *   then: npm run ingest                                                (merges the cache into the shards)
+ *
+ * Overnight run (the only family that passed the gold gate, ~5 h on an M4 Pro; resumable, rerun the same command
+ * after an interruption):
+ *   nohup npm run ingest:llm -- --families other_malignancy > data/cache/llm-run.log 2>&1 && npm run ingest
+ * All LLM-layer families (support-only except other_malignancy; ~24 h, can be split over several nights):
+ *   npm run ingest:llm -- --families lines,prior_drug,stage,recurrent,other_malignancy,hepatitis,biomarker_v2
  *
  * Flags (both `--x=v` and `--x v` work):
  *   --families a,b      subset of: lines, prior_drug, stage, recurrent, other_malignancy, hepatitis, biomarker_v2, histology, autoimmune
@@ -176,9 +182,10 @@ async function main(): Promise<void> {
   const allCalls = plan.reduce((s, p) => s + p.fams.length, 0);
   console.log(`LLM v2 facts [${families.join(", ")}]: ${cards.length} trials, ${plan.length} with work left (${allCalls} calls), ${cachedCalls} calls cached; this run: ${batch.length} trials, ${calls} calls, concurrency ${concurrency}`);
   if (args.has("dry")) {
-    // Measured on this machine (M4 Pro, Qwen3-14B Q4_K_M, -np 4): see PROGRESS.md; override with --sec-per-trial.
-    const per = Number(args.get("sec-per-trial") ?? 9);
-    console.log(`Estimate at ${per} s/trial (wall clock, ${concurrency} parallel): ~${((plan.length * per) / 3600).toFixed(1)} h for all ${plan.length} trials`);
+    // Measured on this machine (M4 Pro, Qwen3-14B Q4_K_M, -np 4, 2026-10-08): 5.9 s per call wall clock on the
+    // 240 gold trials (all families; 20.8 s/trial), 6.3 s per call on single-family dev calls. Override with --sec-per-call.
+    const per = Number(args.get("sec-per-call") ?? 6);
+    console.log(`Estimate at ${per} s/call (wall clock, ${concurrency} parallel): ~${((allCalls * per) / 3600).toFixed(1)} h for all ${allCalls} calls (${plan.length} trials)`);
     return;
   }
   if (batch.length === 0) return;
