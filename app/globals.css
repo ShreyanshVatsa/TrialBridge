@@ -119,6 +119,15 @@
   --bubble: oklch(0.26 0.06 293);
 }
 
+/* Lenis (landing page smooth scrolling) needs the document to keep its natural height. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
 /* Hidden until the saved non-English language has rendered (see /theme-init.js and LanguageReady). */
 html[data-lang-pending] body {
   visibility: hidden;

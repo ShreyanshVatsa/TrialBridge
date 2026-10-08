@@ -15,6 +15,7 @@ export function SiteHeader() {
   const m = useMessages();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDetailsElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const links = [
     { href: "/access/", label: m.nav.accessIntel },
     { href: "/for-sites/", label: m.nav.forSites },
@@ -28,6 +29,32 @@ export function SiteHeader() {
     if (menuRef.current) menuRef.current.open = false;
   }, [pathname]);
 
+  // Glass appears once the page moves; the bar slides away while reading down and returns on any scroll up.
+  // State lives in data attributes so scrolling never re-renders the header.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    let last = window.scrollY;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      const y = window.scrollY;
+      el.dataset.scrolled = String(y > 8);
+      if (Math.abs(y - last) < 6) return;
+      el.dataset.hidden = String(y > last && y > 240 && !menuRef.current?.open);
+      last = y;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    read();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
   const isActive = (href: string) => (pathname ?? "").replace(/\/?$/, "/") === href;
   const linkClass = (href: string) =>
     cn(
@@ -36,8 +63,13 @@ export function SiteHeader() {
     );
 
   return (
-    <header className="no-print sticky top-0 z-30 px-3 pt-3 sm:px-6">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-border bg-background/80 ps-3 pe-2 shadow-[0_12px_40px_-24px_var(--iris)] backdrop-blur-md supports-[backdrop-filter]:bg-background/65 sm:ps-4">
+    <header
+      ref={headerRef}
+      data-scrolled="false"
+      data-hidden="false"
+      className="group/header no-print sticky top-0 z-30 px-3 pt-3 transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] data-[hidden=true]:not-focus-within:-translate-y-[calc(100%+0.75rem)] sm:px-6 motion-reduce:transition-none"
+    >
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-transparent ps-3 pe-2 transition-[background-color,border-color,box-shadow] duration-500 group-data-[scrolled=true]/header:border-border group-data-[scrolled=true]/header:bg-background/90 group-data-[scrolled=true]/header:shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_10px_30px_-18px_oklch(0.2_0.06_295/0.35)] group-data-[scrolled=true]/header:backdrop-blur-xl group-data-[scrolled=true]/header:backdrop-saturate-150 supports-[backdrop-filter]:group-data-[scrolled=true]/header:bg-background/88 sm:ps-4">
         <Link href="/" className="flex items-center gap-2.5 rounded-full font-heading text-2xl font-extrabold tracking-tight [font-stretch:70%]">
           <LogoMark />
           <span className="sr-only min-[400px]:not-sr-only">{m.common.brand}</span>

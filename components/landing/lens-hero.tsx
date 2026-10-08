@@ -159,7 +159,7 @@ export function LensHero() {
           target.current.h = 0;
           kick();
         }}
-        className="relative mt-6 h-[clamp(17rem,44svh,27rem)] touch-pan-y select-none [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
+        className="relative mt-10 h-[clamp(17rem,44svh,27rem)] sm:mt-14 touch-pan-y select-none [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
       >
         <CriteriaGrid pairs={m.lensPairs} show="legal" />
         {/* Under the glass: the same grid in plain language, magnified slightly around the lens centre. */}
@@ -186,7 +186,7 @@ export function LensHero() {
       <div className="mx-auto grid max-w-7xl gap-x-16 gap-y-8 px-4 pt-6 pb-20 sm:px-6 lg:grid-cols-[1.5fr_1fr] lg:items-end lg:pb-28">
         <h1
           id="hero-title"
-          className="text-[clamp(2.9rem,7vw,7rem)] leading-[0.92] font-extrabold tracking-[-0.025em] text-balance [font-stretch:64%]"
+          className="text-[clamp(2.9rem,7vw,7rem)] leading-[0.92] font-[760] tracking-[-0.012em] text-balance [font-stretch:66%]"
         >
           {m.headline.split(" ").map((word, i) => (
             <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
