@@ -10,14 +10,14 @@ describe("planLocal", () => {
   it("does nothing extra when everything is fresh", () => {
     expect(planLocal(base)).toMatchObject({ fetchModels: false, ingest: null, createDevVars: false, build: false });
   });
-  it("seeds when no data exists and rebuilds", () => {
+  it("fetches national data when no data exists and rebuilds", () => {
     const p = planLocal({ ...base, dataVersion: null, criteriaSqlPresent: false });
-    expect(p.ingest).toBe("seed");
+    expect(p.ingest).toBe("national");
     expect(p.build).toBe(true);
   });
-  it("keeps existing seed or national data by default", () => {
-    expect(planLocal({ ...base, dataVersion: "seed-1" }).ingest).toBeNull();
-    expect(planLocal(base).ingest).toBeNull();
+  it("keeps existing national data and upgrades seed data to national by default", () => {
+    expect(planLocal({ ...base, dataVersion: "seed-1" }).ingest).toBe("national");
+    expect(planLocal({ ...base, dataVersion: "national-1" }).ingest).toBeNull();
   });
   it("never replaces national data with seed unless local:seed is explicit", () => {
     expect(planLocal({ ...base, criteriaSqlPresent: false }).ingest).toBe("national");

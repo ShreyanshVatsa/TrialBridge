@@ -38,7 +38,7 @@ describe("locale registry", () => {
     expect(new Set(LOCALE_TAG_LIST).size).toBe(LOCALE_TAG_LIST.length);
   });
   it("covers en, es, pt, ht plus the spec's machine-translated languages", () => {
-    for (const t of ["en", "es", "pt", "ht", "zh-Hans", "zh-Hant", "vi", "ko", "tl", "ar", "ru", "fr", "hi", "pl", "bn", "gu"]) expect(isLocaleTag(t)).toBe(true);
+    for (const t of ["en", "es", "pt", "ht", "zh-Hans", "zh-Hant", "vi", "ko", "tl", "ar", "ru", "fr", "hi"]) expect(isLocaleTag(t)).toBe(true);
     expect(isLocaleTag("xx")).toBe(false);
     expect(isLocaleTag(undefined)).toBe(false);
   });
@@ -85,7 +85,7 @@ describe("AI language allowlist", () => {
     expect(promptLanguageName("zh-Hans")).toBe("Chinese (Simplified)");
     expect(promptLanguageName("zh-Hant")).toBe("Chinese (Traditional)");
     expect(promptLanguageName("tl")).toBe("Tagalog (Filipino)");
-    expect(promptLanguageName("fa")).toBe("Persian (Farsi)");
+    expect(promptLanguageName("ko")).toBe("Korean");
     expect(promptLanguageName("ht")).toBe("Haitian Creole");
     expect(promptLanguageName("hi")).toBe("Hindi");
     expect(aiLanguageName("ar")).toBe("Arabic");

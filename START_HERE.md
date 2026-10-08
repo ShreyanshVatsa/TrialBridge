@@ -10,8 +10,8 @@ You will see "TrialBridge is running at http://localhost:8787". Leave the window
 ## Stop it
 Press **Ctrl+C** in the Terminal window, or just close the window.
 
-## Get all national trials (about 5,700)
-By default the app uses the data already on this computer (a small sample the first time). For all cancer trials from ClinicalTrials.gov, open Terminal in this folder and run `npm run local:national`. The first run downloads data and takes a while; later runs are quick. Use `npm run local:seed` to go back to the small sample.
+## Data: all national cancer trials (about 5,700) by default
+The first launch downloads every US cancer trial from ClinicalTrials.gov automatically (a few minutes, resumable; later launches reuse it). If you are offline the first time, it falls back to a small sample and upgrades next time. `npm run local:seed` forces the small sample.
 
 ## AI keys (optional)
 Without keys the app uses a built-in practice AI, which is fine for trying everything out. To use a real AI service, paste your keys into the file `.dev.vars` in this folder yourself (never share them in chat). The Terminal says whether real or practice AI is active.

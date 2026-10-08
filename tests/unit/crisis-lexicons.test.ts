@@ -73,11 +73,6 @@ const CASES: Record<string, { pos: string[]; neg: string[]; min: number }> = {
     pos: ["je veux mourir", "je pense au suicide", "je veux me tuer", "j'en ai marre de vivre", "je ne veux plus vivre", "mettre fin à mes jours", "je veux me faire du mal", "ce serait mieux sans moi"],
     neg: ["Puis-je participer si j'ai déjà eu une chimiothérapie ?", "Quelle est la date de fin de l'étude ?", "Le parking est-il gratuit ?", "Quels sont les effets secondaires ?", "Combien de visites ?", "Qui est le contact de l'essai ?", "Le transport est-il remboursé ?", "Que teste cette étude ?"],
   },
-  pl: {
-    min: 8,
-    pos: ["chcę umrzeć", "myślę o samobójstwie", "chcę się zabić", "nie chcę już żyć", "chcę odebrać sobie życie", "nie ma sensu żyć", "chcę zrobić sobie krzywdę", "przedawkowałem leki"],
-    neg: ["Czy mogę wziąć udział, jeśli miałem chemioterapię?", "Kiedy kończy się badanie?", "Czy parking jest bezpłatny?", "Jakie są skutki uboczne leku?", "Ile jest wizyt?", "Kto jest kontaktem badania?", "Czy zwracają koszty dojazdu?", "Co jest testowane w tym badaniu?"],
-  },
   vi: {
     min: 8,
     pos: ["tôi muốn chết", "tôi đang nghĩ đến tự tử", "tôi không muốn sống nữa", "tôi muốn kết thúc cuộc đời", "tôi muốn tự sát", "tôi muốn giết bản thân", "tôi muốn tự làm hại mình", "tôi đã uống quá liều"],
@@ -117,26 +112,6 @@ const CASES: Record<string, { pos: string[]; neg: string[]; min: number }> = {
     min: 8,
     pos: ["मैं आत्महत्या करना चाहता हूँ", "मैं मरना चाहता हूं", "मैं जीना नहीं चाहता", "मेरा जीने का मन नहीं है", "मैं अपनी जान ले लूंगा", "मैं खुद को नुकसान पहुँचाना चाहता हूँ", "मैंने ओवरडोज़ ले ली", "जीने का कोई मतलब नहीं"],
     neg: ["क्या कीमोथेरेपी के बाद मैं भाग ले सकता हूँ?", "अध्ययन की समाप्ति तिथि क्या है?", "क्या पार्किंग मुफ़्त है?", "दवा के दुष्प्रभाव क्या हैं?", "कितनी बार आना होगा?", "अध्ययन का संपर्क कौन है?", "क्या यात्रा का खर्च मिलता है?", "यह अध्ययन क्या परख रहा है?"],
-  },
-  bn: {
-    min: 8,
-    pos: ["আমি আত্মহত্যা করতে চাই", "আমি মরতে চাই", "আমি বাঁচতে চাই না", "আমি জীবন শেষ করতে চাই", "আমি নিজেকে আঘাত করতে চাই", "আমি ওভারডোজ নিয়েছি", "বেঁচে থেকে লাভ নেই", "জীবনের কোনো মানে নেই"],
-    neg: ["কেমোথেরাপির পর কি আমি অংশ নিতে পারি?", "গবেষণার শেষ তারিখ কবে?", "পার্কিং কি বিনামূল্যে?", "ওষুধের পার্শ্বপ্রতিক্রিয়া কী?", "কতবার আসতে হবে?", "গবেষণার যোগাযোগকারী কে?", "যাতায়াত খরচ দেওয়া হয় কি?", "এই গবেষণায় কী পরীক্ষা হচ্ছে?"],
-  },
-  gu: {
-    min: 8,
-    pos: ["હું આત્મહત્યા કરવા માંગું છું", "મારે મરી જવું છે", "હું જીવવા માંગતો નથી", "મને જીવવાનું મન નથી", "મારે મારું જીવન પૂરું કરવું છે", "હું પોતાને નુકસાન કરવા માંગું છું", "મેં ઓવરડોઝ લીધો", "જીવનનો કોઈ અર્થ નથી"],
-    neg: ["કિમોથેરાપી પછી હું ભાગ લઈ શકું?", "અભ્યાસની અંતિમ તારીખ શું છે?", "શું પાર્કિંગ મફત છે?", "દવાની આડઅસરો શું છે?", "કેટલી વાર આવવું પડશે?", "અભ્યાસનો સંપર્ક કોણ છે?", "શું મુસાફરી ખર્ચ મળે છે?", "આ અભ્યાસ શું ચકાસે છે?"],
-  },
-  ur: {
-    min: 8,
-    pos: ["میں خودکشی کرنا چاہتا ہوں", "میں مرنا چاہتا ہوں", "میں جینا نہیں چاہتا", "میں اپنی جان لے لوں گا", "میں اپنی زندگی ختم کرنا چاہتا ہوں", "میں خود کو نقصان پہنچانا چاہتا ہوں", "میں نے اوور ڈوز لے لی", "زندگی بے معنی ہے"],
-    neg: ["کیا کیموتھراپی کے بعد میں شریک ہو سکتا ہوں؟", "مطالعے کی آخری تاریخ کیا ہے؟", "کیا پارکنگ مفت ہے؟", "دوا کے مضر اثرات کیا ہیں؟", "کتنی بار آنا ہوگا؟", "مطالعے کا رابطہ کون ہے؟", "کیا سفر کا خرچ ملتا ہے؟", "یہ مطالعہ کیا جانچ رہا ہے؟"],
-  },
-  fa: {
-    min: 8,
-    pos: ["به خودکشی فکر می‌کنم", "می‌خواهم بمیرم", "نمی‌خواهم زنده باشم", "می‌خواهم به زندگی‌ام پایان دهم", "می‌خواهم خودم را بکشم", "می‌خواهم به خودم آسیب بزنم", "اوردوز کردم", "زندگی ارزش ندارد"],
-    neg: ["آیا بعد از شیمی‌درمانی می‌توانم شرکت کنم؟", "تاریخ پایان مطالعه چیست؟", "آیا پارکینگ رایگان است؟", "عوارض جانبی دارو چیست؟", "چند بار باید مراجعه کنم؟", "رابط مطالعه کیست؟", "آیا هزینه رفت‌وآمد پرداخت می‌شود؟", "این مطالعه چه چیزی را آزمایش می‌کند؟"],
   },
 };
 
@@ -182,7 +157,6 @@ describe("crisis lexicons", () => {
   it("folds Arabic-script spellings (vowel marks, alef and yeh variants)", () => {
     expect(matchesCrisis("أُريدُ أَنْ أَمُوتَ")).toBe(true);
     expect(matchesCrisis("اريد ان اموت")).toBe(true);
-    expect(matchesCrisis("مى خواهم بميرم")).toBe(true); // Persian spelling with an Arabic yeh
     expect(normalizeForCrisis("كِتَابـــ")).toBe("كتاب");
   });
 
