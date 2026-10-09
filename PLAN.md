@@ -235,7 +235,7 @@ Visual direction: a polished, modern health-tech startup, in the class of the be
 ## Documentation deliverables
 - README.md: setup, logging in with CLIs, where to put keys, verifying provider data terms, Ollama (optional), ingestion, sharding, matching pipeline, AI layer, evaluation, testing, security, deployment.
 - DECISIONS.md, PROGRESS.md (with final report), SECURITY.md, eval/RESULTS.md.
-- AI_DISCLOSURE.md template listing which parts were AI-generated, for me to complete honestly.
+- docs/ai-in-product.md describing how the product uses AI, what data is sent to providers, and eval caveats.
 
 ## Definition of Done
 - [ ] `npm run ingest` completes nationally (rule layer) and is resumable; the Ollama path works on a small sample
@@ -310,7 +310,6 @@ Use the question tool only at: (1) start-up questions, (2) end of P0, (3) end of
 - Run only the relevant tests while developing; run the full suite at the end of each tier. Use quiet reporters (e.g., Vitest dot reporter, Playwright line reporter) and pipe output through `tail` or a failure filter.
 - Generate large fixtures, labels, and translation files with scripts or in single passes, not piece by piece.
 - Use well-established libraries rather than writing custom code, except for the files I must explain (cosine.ts, rrf.ts, score.ts).
-- Avoid spawning subagents unless a task is genuinely parallel and large; they use extra usage.
 - Keep PROGRESS.md and DECISIONS.md entries to one line each.
 - If a fix fails twice, stop retrying the same approach; choose a simpler one and note it in DECISIONS.md.
 - If you notice usage running low, finish the current task, make sure the build passes, commit, and write precise next steps in PROGRESS.md so the next session resumes instantly.

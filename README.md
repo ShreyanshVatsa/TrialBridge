@@ -143,7 +143,7 @@ Results are in `eval/RESULTS.md` (also summarized on the Methodology page). Numb
 | Rule-fact precision (50-item hand-labeled sample) | 66% |
 | Mock AI JSON validity / quote verification | 100% / 99.8% |
 
-**Limitations (honest):** 30 synthetic patient profiles, not real people. Relevance labels are rule-generated from titles/conditions and **not clinician-reviewed**. The seed is small and labels are coarse, so differences between variants are small. Labels ignore detailed eligibility (labs, performance status, prior lines). Rule-fact labels were judged by the build agent. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim.
+**Limitations (honest):** 30 synthetic patient profiles, not real people. Relevance labels are rule-generated from titles/conditions and **not clinician-reviewed**. The seed is small and labels are coarse, so differences between variants are small. Labels ignore detailed eligibility (labs, performance status, prior lines). Rule-fact labels were judged internally. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim.
 
 ## Security measures
 

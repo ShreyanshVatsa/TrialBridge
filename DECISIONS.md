@@ -11,7 +11,7 @@
 - npm 11 install-script allowlist: esbuild, workerd, onnxruntime-node, protobufjs, unrs-resolver approved; fsevents denied. Reason: required native binaries only.
 - Storage: D1 for backend trial-criteria copy, analysis cache, rate limits, and provider budgets. Reason: KV free tier allows only 1k writes/day; D1 free allows 100k row writes/day, 5M reads/day, 5 GB.
 - Generated data (public/data, public/models, data/build) is gitignored; `npm run setup` / prebuild regenerates from committed data/seed. Reason: keep repo small; seed is committed for offline builds.
-- Team split: Agent A (data, lib/match, functions, security) / Agent B (app/, components/ UI). Contract documented in API.md.
+- Team split: Backend track (data, lib/match, functions, security) / UI track (app/, components/ UI). Contract documented in API.md.
 - Seed: 305 real ClinicalTrials.gov API v2 records (12 cancer-type queries x 32, recruiting, interventional, U.S. site), 302 pass validation. Reason: real data only; small enough to commit (3.2 MB).
 - ZIP centroids: U.S. Census 2025 Gazetteer ZCTA internal points (public domain), committed as data/geo/zcta.csv; unknown ZIP falls back to its 3-digit-prefix average. Reason: free, official, offline.
 - Embeddings: Xenova/all-MiniLM-L6-v2 q8 (P1 eval will compare bge-small), L2-normalized, stored int8 (x127). Reason: 23 MB model, 384 dims, 4x smaller than float32.
@@ -32,7 +32,7 @@
 - Access Intelligence computed at ingestion into /data/access.json (compact count tuples per state, cancer type, state x type, and sites with 5+ trials; site-number suffixes merged). Disability exclusion intentionally includes compliance-based psychiatric exclusions (documented in API.md methodology note).
 - Local LLM layer: llama-server + Qwen3-14B Q4_K_M, thinking disabled, per-fact zod validation, verbatim-quote check; cached by NCT+lastUpdated+prompt version; disagreements stored as two needsReview facts which the pre-check ignores. Sample: 4 trials at ~13-30 s/trial (~1.5-2.5 h for the seed; full national run deferred).
 - Embedding model kept: MiniLM-L6-v2 q8 + int8 storage. Reason: eval shows all 6 variants within ~0.01 nDCG@10 (prod 0.819 full pipeline); bge-small is no better and int8/q8 is the smallest download.
-- Eval labels are synthetic and rule-generated from titles/conditions (not clinician-reviewed); fact precision labels hand-judged by the build agent. Reason: no clinical reviewer available; documented as provisional.
+- Eval labels are synthetic and rule-generated from titles/conditions (not clinician-reviewed); fact precision labels hand-judged internally. Reason: no clinical reviewer available; documented as provisional.
 - UI i18n: one typed messages file per language (components/i18n/{en,es,pt,ht}.ts) + localStorage language store, no locale routes. Reason: static export simplicity; TS enforces complete translations.
 - U.S. map: equal-tile grid map built in SVG/CSS with a single-hue sequential blue ramp and per-tile labels, not react-simple-maps. Reason: no geometry dependency, small states readable, colorblind-safe.
 - Theme: class-based dark mode set pre-paint by /theme-init.js (external file, CSP-safe). Reason: no inline scripts allowed.

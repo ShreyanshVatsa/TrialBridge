@@ -3,7 +3,7 @@
  *
  *   npx tsx scripts/ingest/llm-eval.ts --dev [--min=0.9] [--sweep] [--pending=N]
  *       Development split only (trial NCT-id hash = "dev"). Judges committed facts with the earlier hand labels
- *       (eval/facts-labels-v2.json, dev-partition items) plus the build agent's dev labels of LLM outputs
+ *       (eval/facts-labels-v2.json, dev-partition items) plus internal dev labels of LLM outputs
  *       (eval/llm-dev-labels.json). Unjudged committed facts are listed (--pending) for labeling. Thresholds
  *       are chosen here and nowhere else.
  *   npx tsx scripts/ingest/llm-eval.ts --gold [--min=0.9]

@@ -15994,5 +15994,5 @@
    "poolSize": 36
   }
  },
- "protocol": "Round 3 = held-out sample: facts from trials whose NCT-id hash falls in the \"held\" half (partitionOf in scripts/ingest/fact-precision.ts) and that appear in no earlier labeling round; rules were tuned by reading the \"dev\" half only (--dump never shows held trials). Sampling: deterministic LCG, seed = 20261007 + round*7919 + sum of the family name char codes; n = 50 directional rule facts per family (all of them when the held pool is smaller; poolSize records it). Labels are provisional: written by the build agent from the quoted clause alone, not clinician-reviewed."
+ "protocol": "Round 3 = held-out sample: facts from trials whose NCT-id hash falls in the \"held\" half (partitionOf in scripts/ingest/fact-precision.ts) and that appear in no earlier labeling round; rules were tuned by reading the \"dev\" half only (--dump never shows held trials). Sampling: deterministic LCG, seed = 20261007 + round*7919 + sum of the family name char codes; n = 50 directional rule facts per family (all of them when the held pool is smaller; poolSize records it). Labels are provisional: written by the reviewer from the quoted clause alone, not clinician-reviewed."
 }

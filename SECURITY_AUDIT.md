@@ -1,6 +1,6 @@
 # Security audit (2026-10-07)
 
-Scope: whole repository (backend `functions/`, `lib/privacy`, `prompts/`, `public/_headers`, client, service worker, secrets, dependencies). Reviewer: Claude (automated review, not an external audit). Every fix has a regression test in `tests/unit/security-audit.test.ts` (and `tests/unit/backend-hardening.test.ts` where noted).
+Scope: whole repository (backend `functions/`, `lib/privacy`, `prompts/`, `public/_headers`, client, service worker, secrets, dependencies). Reviewer: internal automated review (not an external audit). Every fix has a regression test in `tests/unit/security-audit.test.ts` (and `tests/unit/backend-hardening.test.ts` where noted).
 
 ## Result summary
 

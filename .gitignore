@@ -20,3 +20,9 @@ public/ort/
 data/build/
 data/cache/
 .scaffold-ready
+
+# Local tooling
+.claude/
+AGENTS.md
+CLAUDE.md
+skills-lock.json

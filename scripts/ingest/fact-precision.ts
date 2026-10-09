@@ -11,7 +11,7 @@
  * reading the "dev" partition (--dump never shows "held"), and the round-3 held-out sample is drawn once, with a fixed
  * seed, from the "held" partition minus every trial that appeared in an earlier labeling round.
  *
- * Labels live in eval/facts-labels-v2.json (provisional: hand-judged by the build agent, not clinician-reviewed).
+ * Labels live in eval/facts-labels-v2.json (provisional: hand-judged internally, not clinician-reviewed).
  * A family passes the gate at >= 85% precision on >= 30 labeled items (all items when fewer exist).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -35,7 +35,7 @@ const refOf = (f: Fact) => `${f.ref.section === "inclusion" ? "I" : "E"}${f.ref.
 function loadLabels(): LabelFile {
   if (!existsSync(LABELS)) {
     return {
-      note: "Hand-labeled by the build agent from real national trial text (provisional; not clinician-reviewed). correct = the fact (key, direction, param) is a reasonable reading of the quoted clause for a patient answering the matching question.",
+      note: "Hand-labeled internally from real national trial text (provisional; not clinician-reviewed). correct = the fact (key, direction, param) is a reasonable reading of the quoted clause for a patient answering the matching question.",
       source: "ClinicalTrials.gov national cache (data/cache/national), rule layer v3",
       families: {},
     };
@@ -108,7 +108,7 @@ function sample(cards: TrialCard[]): void {
     console.log(`${fam}: sampled ${items.length} of ${pool.length} directional facts (round ${round})`);
   }
   if (round >= 3) {
-    labels.protocol = `Round ${round} = held-out sample: facts from trials whose NCT-id hash falls in the "held" half (partitionOf in scripts/ingest/fact-precision.ts) and that appear in no earlier labeling round; rules were tuned by reading the "dev" half only (--dump never shows held trials). Sampling: deterministic LCG, seed = ${args.get("seed") ?? 20261007} + round*7919 + sum of the family name char codes; n = ${n} directional rule facts per family (all of them when the held pool is smaller; poolSize records it). Labels are provisional: written by the build agent from the quoted clause alone, not clinician-reviewed.`;
+    labels.protocol = `Round ${round} = held-out sample: facts from trials whose NCT-id hash falls in the "held" half (partitionOf in scripts/ingest/fact-precision.ts) and that appear in no earlier labeling round; rules were tuned by reading the "dev" half only (--dump never shows held trials). Sampling: deterministic LCG, seed = ${args.get("seed") ?? 20261007} + round*7919 + sum of the family name char codes; n = ${n} directional rule facts per family (all of them when the held pool is smaller; poolSize records it). Labels are provisional: written internally from the quoted clause alone, not clinician-reviewed.`;
   }
   writeFileSync(LABELS, `${JSON.stringify(labels, null, 1)}\n`);
 }

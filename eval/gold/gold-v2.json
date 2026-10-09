@@ -9,7 +9,7 @@
    "keyword": 60,
    "random": 60
   },
-  "labeler": "AI reader (Claude), blind to rule-layer code, generated facts and prior labels; not clinician-reviewed",
+  "labeler": "Automated language-model labeler (auto-v1), blind to rule-layer code, generated facts and prior labels; not clinician-reviewed",
   "data_version": "national-20261008-e97a2aa466",
   "families": [
    "lines_of_therapy",
