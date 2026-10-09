@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site/header";
 import { DocumentMeta } from "@/components/site/document-meta";
 import { ServiceWorkerRegister } from "@/components/site/sw-register";
 import { SkipLink } from "@/components/site/skip-link";
+import { PointerFx } from "@/components/fx/pointer-fx";
 import { LanguageReady } from "@/components/i18n";
 import { LanguageSuggest, TranslationNote } from "@/components/i18n/translation-note";
 
@@ -41,11 +42,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <DocumentMeta />
         <SkipLink />
         <SessionProvider>
-          <SiteHeader />
-          <LanguageSuggest />
-          <TranslationNote />
-          {children}
+          {/* The page is a sheet that lifts off the footer waiting underneath it (see .tb-sheet). */}
+          <div className="tb-sheet relative z-10 flex flex-1 flex-col">
+            <SiteHeader />
+            <LanguageSuggest />
+            <TranslationNote />
+            {children}
+          </div>
           <SiteFooter />
+          <PointerFx />
           <ServiceWorkerRegister />
         </SessionProvider>
       </body>
