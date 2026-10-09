@@ -2,7 +2,7 @@
 
 TrialBridge helps people find recruiting **cancer clinical trials** in the United States. Patients use it free. It is an early-stage startup project, not a medical service, and it gives no medical advice.
 
-> **Status:** `PROGRESS.md` has the latest status and numbers. The code is changing, so this README describes stable design rather than exact counts. Design rationale lives in `DECISIONS.md`, the UI/library contract in `API.md`, and the original spec in `PLAN.md`.
+> **Status:** `PROGRESS.md` has the latest status and numbers. The code is changing, so this README describes stable design rather than exact counts. Design rationale lives in `DECISIONS.md`, and the UI/library contract in `API.md`.
 
 TrialBridge is not affiliated with any investor, accelerator, hospital, or trial sponsor. It uses public data from ClinicalTrials.gov.
 

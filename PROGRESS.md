@@ -51,7 +51,7 @@ Current checkpoint: P2 complete under the competition-first override (hosting/de
 
 ## Previously planned for P1 (done)
 - National ingestion run (background); then make the `_all` "not sure" shard a lite cross-group index (full-card `_all` is ~4 MB raw for 302 trials, too big nationally).
-- Q&A endpoint, Access Intelligence, eval, e2e tests, remaining pages/translations (see PLAN.md P1).
+- Q&A endpoint, Access Intelligence, eval, e2e tests, remaining pages/translations.
 - llama.cpp (Qwen3-14B) LLM fact layer: code path + small-sample test (deferred full run).
 
 ## How to run locally
