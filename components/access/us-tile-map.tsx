@@ -6,8 +6,10 @@ import { cn } from "@/lib/utils";
 /**
  * U.S. tile-grid map: one equal-size square per state (plus DC and PR), placed to echo geography.
  * Equal tiles keep small states readable and avoid a map-geometry dependency.
- * Colors: single-hue sequential blue ramp (colorblind-safe, validated reference palette),
- * and every tile is also labeled with its rate, so color is never the only cue.
+ * Colors: a single-hue sequential ramp from lavender to deep violet (lightness carries the order, so it
+ * survives colour-blindness), and every tile is also labeled with its rate, so colour is never the only cue.
+ * Tiles are raised keys: they lift under the pointer, sink when selected, and fade between colours
+ * column by column when a filter changes.
  */
 const GRID: Record<string, [number, number]> = {
   AK: [0, 0], ME: [11, 0],
@@ -31,8 +33,8 @@ export const STATE_NAMES: Record<string, string> = {
   GU: "Guam", VI: "U.S. Virgin Islands",
 };
 
-/** Sequential ramp (light -> dark). Text on the two darkest steps is white, otherwise ink (AA contrast). */
-const RAMP = ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"] as const;
+/** Sequential ramp (light -> dark). Text on the two darkest steps is white, otherwise ink (AA contrast on every step). */
+const RAMP = ["#ece6ff", "#cfc2ff", "#a68ff2", "#6544d0", "#36228f"] as const;
 
 export interface StateRate {
   state: string;
@@ -63,7 +65,7 @@ export function UsTileMap({
 
   return (
     <div>
-      <div className="grid grid-cols-12 gap-[3px] sm:gap-1">
+      <div className="grid grid-cols-12 gap-[3px] [perspective:900px] sm:gap-1.5">
         {Object.entries(GRID).map(([code, [col, row]]) => {
           const r = byState.get(code);
           const has = !!r && r.trials > 0;
@@ -81,12 +83,21 @@ export function UsTileMap({
               aria-label={label}
               aria-pressed={isSel}
               onClick={() => onSelect(isSel ? null : code)}
-              style={{ gridColumnStart: col + 1, gridRowStart: row + 1, backgroundColor: has ? RAMP[bin] : undefined }}
+              style={{
+                gridColumnStart: col + 1,
+                gridRowStart: row + 1,
+                backgroundColor: has ? RAMP[bin] : undefined,
+                transitionDelay: `0ms, 0ms, ${(col + row) * 22}ms`,
+              }}
               className={cn(
-                "flex aspect-square min-w-0 flex-col items-center justify-center rounded-[4px] leading-none transition-transform",
-                has ? "hover:scale-105 hover:shadow-md" : "bg-muted text-muted-foreground",
-                has && (bin >= 3 ? "text-white" : "text-[#0d1b2a]"),
-                isSel && "ring-3 ring-foreground ring-offset-2 ring-offset-background",
+                "relative flex aspect-square min-w-0 flex-col items-center justify-center rounded-[5px] leading-none sm:rounded-lg",
+                "transition-[transform,box-shadow,background-color] duration-[250ms,250ms,700ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+                has
+                  ? "bg-[image:linear-gradient(180deg,oklch(1_0_0/0.22),transparent_55%)] shadow-[inset_0_1px_0_oklch(1_0_0/0.45),inset_0_-1px_0_oklch(0_0_0/0.12),0_1px_2px_oklch(0.2_0.06_295/0.25)] hover:z-10 hover:-translate-y-0.5 hover:scale-[1.08] hover:shadow-[inset_0_1px_0_oklch(1_0_0/0.5),0_10px_18px_-8px_oklch(0.2_0.06_295/0.6)]"
+                  : "bg-muted text-muted-foreground",
+                has && (bin >= 3 ? "text-white" : "text-ink"),
+                isSel &&
+                  "z-10 translate-y-px shadow-[inset_0_2px_4px_oklch(0_0_0/0.3)] ring-3 ring-foreground ring-offset-2 ring-offset-card hover:translate-y-px hover:scale-100",
               )}
             >
               <span className="text-[0.6rem] font-semibold sm:text-xs">{code}</span>
@@ -106,7 +117,7 @@ export function UsTileMap({
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground" aria-hidden>
         {RAMP.map((c, i) => (
           <span key={c} className="inline-flex items-center gap-1.5">
-            <span className="size-3.5 rounded-[3px]" style={{ backgroundColor: c }} />
+            <span className="size-3.5 rounded-[4px] shadow-[inset_0_1px_0_oklch(1_0_0/0.4)]" style={{ backgroundColor: c }} />
             {i === 0 ? `< ${bins[0]}%` : i === RAMP.length - 1 ? `≥ ${bins[i - 1]}%` : `${bins[i - 1]}–${bins[i]}%`}
           </span>
         ))}
