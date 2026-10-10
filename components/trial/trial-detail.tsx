@@ -119,7 +119,7 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
         <h1 className="tb-display animate-enter text-[clamp(2.1rem,4.6vw,3.75rem)]">{card.title}</h1>
         {card.officialTitle && card.officialTitle !== card.title && <p className="max-w-[75ch] text-lg text-muted-foreground">{card.officialTitle}</p>}
         {/* Spec sheet: three facts on hairlines, like the masthead of a printed protocol. */}
-        <dl className="grid border-y border-foreground/12 text-sm sm:grid-cols-3 sm:divide-x sm:divide-foreground/12 rtl:sm:divide-x-reverse">
+        <dl className="grid border-y border-foreground/12 text-sm sm:grid-cols-3 sm:divide-x sm:divide-foreground/12">
           <div className="py-3 sm:pe-5">
             <dt className="text-muted-foreground">{m.trial.sponsor}</dt>
             <dd className="mt-0.5 text-base font-medium">{card.sponsor}</dd>

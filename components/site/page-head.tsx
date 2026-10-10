@@ -32,7 +32,7 @@ export function PageHead({
       <h1
         ref={titleRef}
         tabIndex={titleRef ? -1 : undefined}
-        className={cn("tb-display outline-none", size === "lg" ? "text-[clamp(2.75rem,7vw,6rem)]" : "text-[clamp(2.25rem,5vw,4rem)]")}
+        className={cn("tb-display outline-none", size === "lg" ? "text-[clamp(2.4rem,7vw,6rem)]" : "text-[clamp(2.25rem,5vw,4rem)]")}
       >
         {title.split(" ").map((word, i) => (
           <Fragment key={i}>

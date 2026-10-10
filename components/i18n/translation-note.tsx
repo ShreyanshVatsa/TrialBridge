@@ -38,7 +38,7 @@ export function TranslationNote() {
   if (kind === "none" || dismissed === lang) return null;
   const parts = [kind === "partial" ? t("i18n.notePartial") : null, t("i18n.noteMachine")].filter(Boolean);
   return (
-    <div role="status" data-testid="translation-note" className="no-print flex items-start justify-between gap-3 border-b border-border bg-muted/60 px-4 py-2 text-sm">
+    <div role="status" data-testid="translation-note" className="no-print mx-3 mt-3 flex items-start justify-between gap-3 rounded-2xl border border-border bg-muted/60 px-4 py-2 text-sm sm:mx-6">
       <p className="mx-auto max-w-6xl flex-1">{parts.join(" ")}</p>
       <button
         type="button"
@@ -51,7 +51,7 @@ export function TranslationNote() {
           }
           setDismissed(lang);
         }}
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg hover:bg-background"
+        className="inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-background"
       >
         <X className="size-4" aria-hidden />
       </button>
@@ -88,7 +88,7 @@ export function LanguageSuggest() {
     setSuggestion(null);
   };
   return (
-    <div role="region" aria-label={t("i18n.pickerLabel")} className="no-print flex flex-wrap items-center justify-center gap-3 border-b border-border bg-accent/40 px-4 py-2 text-sm">
+    <div role="region" aria-label={t("i18n.pickerLabel")} className="no-print mx-3 mt-3 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-accent/40 px-4 py-2 text-sm sm:mx-6">
       <span lang="en">{t("i18n.suggest")}</span>
       <button
         type="button"
@@ -98,11 +98,11 @@ export function LanguageSuggest() {
           setLanguage(def.tag);
           hide();
         }}
-        className="min-h-9 rounded-lg border border-border bg-background px-3 font-medium hover:bg-muted"
+        className="tb-btn-glass min-h-9 rounded-full border border-border bg-background px-4 font-medium transition-colors hover:bg-muted"
       >
         {def.nativeName}
       </button>
-      <button type="button" onClick={hide} className="min-h-9 rounded-lg px-3 underline underline-offset-4">
+      <button type="button" onClick={hide} className="min-h-9 rounded-full px-3 underline underline-offset-4">
         {t("i18n.dismiss")}
       </button>
     </div>
