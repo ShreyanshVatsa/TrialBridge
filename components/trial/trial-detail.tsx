@@ -11,6 +11,7 @@ import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
 import { Skeleton } from "@/components/site/skeleton";
+import { SectionRail } from "@/components/site/section-rail";
 import { AskPanel } from "./ask-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { loadTrial } from "@/lib/data/loader";
@@ -28,28 +29,46 @@ type State =
 
 const INITIAL_SITES = 10;
 
-function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
+function Section({ title, children, id }: { title: string; children: ReactNode; id: string }) {
   return (
-    <section aria-labelledby={id} className="border-t border-border pt-8">
-      <h2 id={id} className="text-2xl font-semibold">
+    <section id={id} aria-labelledby={`${id}-t`} className="tb-reveal scroll-mt-28 border-t border-foreground/12 pt-8">
+      <h2 id={`${id}-t`} className="text-[clamp(1.75rem,3vw,2.35rem)] leading-[1.02] font-bold [font-stretch:70%]">
         {title}
       </h2>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
 
-function CriteriaList({ items, empty }: { items: Criterion[]; empty: string }) {
-  if (items.length === 0) return <p className="text-muted-foreground">{empty}</p>;
+/**
+ * Eligibility criteria typeset as the official document they are: a sheet of paper with a running head,
+ * criterion numbers hanging in the margin and a hairline between rules. The text is the registry's, verbatim.
+ */
+function CriteriaDocument({ title, items, empty, tone }: { title: string; items: Criterion[]; empty: string; tone: "in" | "out" }) {
   return (
-    <ol className="space-y-3" lang="en">
-      {items.map((c) => (
-        <li key={c.n} className="grid grid-cols-[2.25rem_1fr] gap-2">
-          <span className="font-semibold text-muted-foreground tabular-nums">{c.n}.</span>
-          <span className="whitespace-pre-line">{c.text}</span>
-        </li>
-      ))}
-    </ol>
+    <figure className="tb-surface relative overflow-hidden rounded-2xl">
+      <span aria-hidden className={`absolute inset-y-0 start-0 w-1 ${tone === "in" ? "bg-primary" : "bg-muted-foreground/50"}`} />
+      <figcaption className="flex items-baseline justify-between gap-4 border-b border-border px-5 py-4 ps-7 sm:px-8 sm:ps-10">
+        <h3 className="font-sans text-lg font-semibold [font-stretch:100%]">{title}</h3>
+        {items.length > 0 && (
+          <span aria-hidden className="font-heading text-2xl leading-none font-extrabold text-primary tabular-nums [font-stretch:64%]">
+            {items.length}
+          </span>
+        )}
+      </figcaption>
+      {items.length === 0 ? (
+        <p className="px-5 py-5 ps-7 text-muted-foreground sm:px-8 sm:ps-10">{empty}</p>
+      ) : (
+        <ol lang="en" className="divide-y divide-border/70 px-5 ps-7 sm:px-8 sm:ps-10">
+          {items.map((c) => (
+            <li key={c.n} className="grid grid-cols-[2rem_1fr] gap-3 py-3.5 leading-relaxed sm:grid-cols-[2.75rem_1fr]">
+              <span className="pt-0.5 font-heading text-lg leading-snug font-bold text-muted-foreground tabular-nums [font-stretch:70%]">{c.n}.</span>
+              <span className="whitespace-pre-line">{c.text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </figure>
   );
 }
 
@@ -74,12 +93,22 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
     document.title = `${card.title} · TrialBridge`;
   }, [card.title]);
 
+  const rail = [
+    { id: "tested", label: m.trial.tested },
+    { id: "who", label: m.trial.whoMight },
+    { id: "barriers", label: m.trial.barriers },
+    { id: "sites", label: m.trial.sites },
+    { id: "contact", label: m.trial.contact },
+    { id: "ask", label: m.ask.title },
+  ];
+
   return (
-    <article className="space-y-8">
-      <header className="space-y-4">
+    <article className="space-y-10">
+      <header className="relative max-w-5xl space-y-5">
+        <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[28rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
         {session && (
-          <Link href="/find/" className="no-print inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline">
-            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+          <Link href="/find/" className="group/back no-print inline-flex min-h-11 items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
+            <ArrowLeft className="size-4 transition-transform duration-300 group-hover/back:-translate-x-1 rtl:-scale-x-100 rtl:group-hover/back:translate-x-1" aria-hidden />
             {m.trial.backToResults}
           </Link>
         )}
@@ -87,20 +116,21 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
           <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
           <span className="text-sm text-muted-foreground">{card.id}</span>
         </div>
-        <h1 className="text-3xl font-semibold sm:text-4xl">{card.title}</h1>
-        {card.officialTitle && card.officialTitle !== card.title && <p className="text-muted-foreground">{card.officialTitle}</p>}
-        <dl className="grid gap-3 text-sm sm:grid-cols-3">
-          <div>
+        <h1 className="tb-display animate-enter text-[clamp(2.1rem,4.6vw,3.75rem)]">{card.title}</h1>
+        {card.officialTitle && card.officialTitle !== card.title && <p className="max-w-[75ch] text-lg text-muted-foreground">{card.officialTitle}</p>}
+        {/* Spec sheet: three facts on hairlines, like the masthead of a printed protocol. */}
+        <dl className="grid border-y border-foreground/12 text-sm sm:grid-cols-3 sm:divide-x sm:divide-foreground/12 rtl:sm:divide-x-reverse">
+          <div className="py-3 sm:pe-5">
             <dt className="text-muted-foreground">{m.trial.sponsor}</dt>
-            <dd className="font-medium">{card.sponsor}</dd>
+            <dd className="mt-0.5 text-base font-medium">{card.sponsor}</dd>
           </div>
-          <div>
+          <div className="border-t border-foreground/12 py-3 sm:border-t-0 sm:px-5">
             <dt className="text-muted-foreground">{m.trial.conditions}</dt>
-            <dd className="font-medium">{card.conditions.join(", ")}</dd>
+            <dd className="mt-0.5 text-base font-medium">{card.conditions.join(", ")}</dd>
           </div>
-          <div>
+          <div className="border-t border-foreground/12 py-3 sm:border-t-0 sm:ps-5">
             <dt className="sr-only">{m.trial.lastUpdated}</dt>
-            <dd className="text-muted-foreground">{format(m.trial.lastUpdated, { date: formatDate(card.lastUpdated, locale) })}</dd>
+            <dd className="text-muted-foreground sm:pt-[1.3rem]">{format(m.trial.lastUpdated, { date: formatDate(card.lastUpdated, locale) })}</dd>
           </div>
         </dl>
         <div className="no-print flex flex-wrap gap-3">
@@ -116,11 +146,16 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
         </div>
       </header>
 
-      <Disclaimer />
-      <p className="text-sm text-muted-foreground">{m.trial.officialOnly}</p>
+      <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16">
+      <SectionRail items={rail} label={card.id} />
+      <div className="min-w-0 max-w-3xl space-y-12">
+      <div className="space-y-3">
+        <Disclaimer />
+        <p className="text-sm text-muted-foreground">{m.trial.officialOnly}</p>
+      </div>
 
       <Section title={m.trial.tested} id="tested">
-        <p className="max-w-prose whitespace-pre-line" lang="en">
+        <p className="max-w-prose text-[1.0625rem] leading-relaxed whitespace-pre-line" lang="en">
           {card.summary}
         </p>
       </Section>
@@ -134,13 +169,9 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
             <Badge>{m.trial.sex[card.sex]}</Badge>
           </li>
         </ul>
-        <h3 className="font-sans text-lg font-semibold">{m.trial.inclusion}</h3>
-        <div className="mt-3 max-w-prose">
-          <CriteriaList items={card.inclusion} empty={m.trial.inclusionNone} />
-        </div>
-        <h3 className="mt-8 font-sans text-lg font-semibold">{m.trial.exclusion}</h3>
-        <div className="mt-3 max-w-prose">
-          <CriteriaList items={card.exclusion} empty={m.trial.exclusionNone} />
+        <div className="space-y-6">
+          <CriteriaDocument title={m.trial.inclusion} items={card.inclusion} empty={m.trial.inclusionNone} tone="in" />
+          <CriteriaDocument title={m.trial.exclusion} items={card.exclusion} empty={m.trial.exclusionNone} tone="out" />
         </div>
       </Section>
 
@@ -160,11 +191,13 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
 
       <Section title={m.trial.sites} id="sites">
         {origin && <p className="mb-3 text-sm text-muted-foreground">{m.trial.sitesNearest}</p>}
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+        <ul className="tb-surface divide-y divide-border overflow-hidden rounded-2xl">
           {visibleSites.map(({ site, miles }, i) => (
-            <li key={`${site.facility}-${site.zip}-${i}`} className="flex items-start justify-between gap-3 px-4 py-3">
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <li key={`${site.facility}-${site.zip}-${i}`} className="flex items-start justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-muted/50 sm:px-5">
+              <div className="flex items-start gap-3">
+                <span aria-hidden className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                  <MapPin className="size-3.5" />
+                </span>
                 <div>
                   <p className="font-medium">{site.facility}</p>
                   <p className="text-sm text-muted-foreground">
@@ -173,7 +206,7 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
                 </div>
               </div>
               {miles !== null && (
-                <span className="shrink-0 text-sm font-medium">{format(m.card.distance, { miles: formatMiles(miles) })}</span>
+                <span className="shrink-0 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-sm font-medium tabular-nums">{format(m.card.distance, { miles: formatMiles(miles) })}</span>
               )}
             </li>
           ))}
@@ -212,6 +245,8 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
       </Section>
 
       <AskPanel nctId={card.id} />
+      </div>
+      </div>
     </article>
   );
 }
@@ -252,7 +287,7 @@ export function TrialDetail() {
 
   return (
     // min-h keeps the footer below the fold while loading, so content arriving doesn't shift it.
-    <main id="main" className="mx-auto min-h-dvh w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-7xl flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14 sm:pb-32">
       {current.kind === "loading" && <TrialSkeleton label={m.trial.loading} />}
       {current.kind === "invalid" && <ErrorView title={m.trial.notFoundTitle} body={m.trial.invalidId} />}
       {current.kind === "not_found" && <ErrorView title={m.trial.notFoundTitle} body={m.trial.notFoundBody} />}
@@ -264,21 +299,38 @@ export function TrialDetail() {
   );
 }
 
+/** Same shapes as the loaded page (title, spec sheet, buttons, rail, first sections), so nothing jumps. */
 function TrialSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" className="space-y-6">
+    <div role="status" className="space-y-10">
       <span className="sr-only">{label}</span>
-      <Skeleton className="h-7 w-40 rounded-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-3/4" />
-      <Skeleton className="h-5 w-2/3" />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Skeleton className="h-10" />
-        <Skeleton className="h-10" />
-        <Skeleton className="h-10" />
+      <div className="max-w-5xl space-y-5">
+        <Skeleton className="h-7 w-44 rounded-full" />
+        <Skeleton className="h-12 w-full rounded-xl sm:h-14" />
+        <Skeleton className="h-12 w-3/4 rounded-xl sm:h-14" />
+        <Skeleton className="h-6 w-2/3" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+        </div>
+        <div className="flex gap-3">
+          <Skeleton className="h-11 w-48 rounded-full" />
+          <Skeleton className="h-11 w-72 rounded-full" />
+        </div>
       </div>
-      <Skeleton className="h-16 w-full rounded-xl" />
-      <Skeleton className="h-40 w-full rounded-xl" />
+      <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16">
+        <div className="hidden space-y-3 lg:block">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-5 w-40" />
+          ))}
+        </div>
+        <div className="max-w-3xl space-y-6">
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -286,7 +338,7 @@ function TrialSkeleton({ label }: { label: string }) {
 export function TrialLoading() {
   const m = useMessages();
   return (
-    <main id="main" className="mx-auto min-h-dvh w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-7xl flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14 sm:pb-32">
       <TrialSkeleton label={m.trial.loading} />
     </main>
   );

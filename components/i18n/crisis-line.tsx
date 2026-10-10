@@ -29,7 +29,7 @@ export function CrisisLine({ context = "results" }: { context?: "qa" | "results"
   const showEnglish = lang !== "en";
   const showUrgent = context === "qa" && !(def?.crisisLexicon ?? false);
   return (
-    <aside role="note" aria-label={t("i18n.crisisLabel")} data-testid="crisis-line" className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
+    <aside role="note" aria-label={t("i18n.crisisLabel")} data-testid="crisis-line" className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm">
       <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
       <div className="space-y-1" dir={dir}>
         <p>{withPhoneLinks(t("i18n.crisisLine"))}</p>
