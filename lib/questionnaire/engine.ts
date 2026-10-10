@@ -16,6 +16,7 @@
  */
 import type { CancerGroupId } from "@/config/cancer-groups";
 import { precheckBonus, precheckPenalty } from "@/lib/match/score";
+import { perfCounters } from "@/lib/perf/counters";
 import {
   DEFER,
   PREFER_NOT,
@@ -233,6 +234,7 @@ function noteOf(f: CompactFact, kind: "conflict" | "support") {
 
 /** A trial's score if one more compiled answer `c` is added to its current per-fact relations (any conflict wins). */
 function scoreWith(s: Scored, c: CompiledAnswer, policy: FactPolicyMap | undefined): number {
+  perfCounters.rescore++;
   const notes: Array<ReturnType<typeof noteOf>> = [];
   s.t.facts.forEach((f, j) => {
     let rel = s.rels[j] as number;
@@ -280,6 +282,7 @@ function analyze(state: QuestionnaireState, pool: CandidatePool, catalog: readon
   const scored: Scored[] = [];
   for (const t of pool.trials) {
     if (!passesHardFilters(t.sex, filters)) continue;
+    perfCounters.trialScore++;
     const r = trialRelation(compiled, t.facts, policy);
     scored.push({ t, rels: r.rels, score: t.prior - precheckPenalty(r.notes) + precheckBonus(r.notes), conflict: r.conflict, support: r.support });
   }

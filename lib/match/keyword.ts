@@ -4,6 +4,7 @@
  * shard's index is parsed once, not once per feature.
  */
 import MiniSearch from "minisearch";
+import { perfCounters } from "@/lib/perf/counters";
 import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, type SearchDoc } from "./minisearch-config";
 
 const indexCache = new Map<string, MiniSearch<SearchDoc>>();
@@ -25,6 +26,7 @@ export function getShardIndex(shard: { id: string; indexJson: string }): MiniSea
 export function keywordScores(indexes: readonly MiniSearch<SearchDoc>[], text: string, candidates: ReadonlySet<string>): Map<string, number> {
   const scores = new Map<string, number>();
   for (const idx of indexes) {
+    perfCounters.bm25Search++;
     for (const r of idx.search(text, { ...MINISEARCH_SEARCH, filter: (res) => candidates.has(String(res.id)) })) {
       const id = String(r.id);
       scores.set(id, Math.max(scores.get(id) ?? 0, r.score));

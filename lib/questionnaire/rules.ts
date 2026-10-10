@@ -7,6 +7,7 @@
  * exclude a trial, or shrink the live counter.
  */
 import { BIOMARKERS } from "@/config/biomarkers";
+import { perfCounters } from "@/lib/perf/counters";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "@/config/cancer-groups";
 import type { FactKey, FactValue } from "@/lib/types/trial";
 import {
@@ -186,6 +187,7 @@ export function compileAnswer(q: QuestionDef, v: AnswerValue | undefined): Compi
 
 /** Combined relation of compiled answers to one fact: any conflict wins, then any support. */
 export function factRelation(compiled: readonly CompiledAnswer[], fact: CompactFact): FactRelation {
+  perfCounters.factRelation++;
   if (fact.value === "mentioned" || fact.needsReview) return "neutral"; // uncertain facts never penalize
   let support = false;
   for (const c of compiled) {

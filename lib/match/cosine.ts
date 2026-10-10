@@ -1,3 +1,4 @@
+import { perfCounters } from "@/lib/perf/counters";
 /**
  * Cosine similarity, written by hand (no library).
  *
@@ -11,6 +12,7 @@
  * quantized trial vectors). Because cosine ignores length, the int8 scale factor cancels out.
  */
 export function cosineSimilarity(a: ArrayLike<number>, b: ArrayLike<number>): number {
+  perfCounters.cosine++;
   // Vectors must live in the same space (same number of dimensions).
   if (a.length !== b.length) {
     throw new Error(`cosineSimilarity: length mismatch (${a.length} vs ${b.length})`);

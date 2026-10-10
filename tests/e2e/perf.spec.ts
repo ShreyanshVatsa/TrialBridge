@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { completeIntake, RESULTS_HEADING } from "./helpers";
 
+const BUDGETS = (JSON.parse(readFileSync("perf/budgets.json", "utf8")) as { bytes: { coldSearchKB: { data: number; model: number; wasm: number } } }).bytes.coldSearchKB;
+
 /**
  * First-search latency (cold cache) and repeat-search latency, with transferred bytes by kind.
- * Budgets are generous (local machine); the numbers are logged for PROGRESS.md.
+ * Latency budgets are generous (local machine) and logged for PROGRESS.md; the bytes transferred per kind are
+ * held to perf/budgets.json (cold search: model + wasm + the data for one group plus ZIP/manifest files).
  */
 test("first-search and repeat-search latency", async ({ page }) => {
   const bytes: Record<string, number> = {};
@@ -29,4 +33,8 @@ test("first-search and repeat-search latency", async ({ page }) => {
   console.log(`PERF intake-automation ${intakeMs} ms (shards + model prefetched meanwhile), first-search ${first} ms, repeat-search ${repeat} ms, KB transferred ${JSON.stringify(kb)}`);
   expect(first).toBeLessThan(30_000);
   expect(repeat).toBeLessThan(10_000);
+  // Two searches in two breast ZIPs: one group download plus small ZIP/manifest/meta files.
+  expect(kb.data ?? 0).toBeLessThanOrEqual(BUDGETS.data + 200);
+  expect(kb.model ?? 0).toBeLessThanOrEqual(BUDGETS.model);
+  expect(kb.wasm ?? 0).toBeLessThanOrEqual(BUDGETS.wasm);
 });

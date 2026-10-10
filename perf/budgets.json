@@ -1,0 +1,50 @@
+{
+  "bytes": {
+    "routeJsGzKB": {
+      "/": 289,
+      "/find/": 337,
+      "/trial/": 304,
+      "/access/": 294
+    },
+    "groupShardGzKB": {
+      "breast": 3516,
+      "lung": 3519,
+      "colorectal": 2495,
+      "prostate": 2486,
+      "leukemia": 2240,
+      "lymphoma": 2082,
+      "myeloma": 1100,
+      "melanoma": 2075,
+      "pancreatic": 1917,
+      "ovarian": 2110,
+      "brain": 2513,
+      "bladder": 2316,
+      "kidney": 1792,
+      "liver": 1939,
+      "head-neck": 2550,
+      "gastroesophageal": 1829,
+      "uterine-cervical": 1951,
+      "sarcoma": 1984,
+      "thyroid": 1259,
+      "solid-tumors": 3997,
+      "other": 2913
+    },
+    "largestAssetBytes": 25165824,
+    "maxFiles": 15000,
+    "coldSearchKB": {
+      "data": 3997,
+      "model": 25445,
+      "wasm": 15351
+    }
+  },
+  "work": {
+    "searchCosines": 20,
+    "searchBm25Searches": 2,
+    "searchFactRelations": 250,
+    "questionnaireFactRelations": 850000,
+    "questionnaireRescores": 18600,
+    "questionnaireTrialScores": 1900
+  },
+  "headroom": 1.1,
+  "note": "Byte budgets: measured by scripts/budgets.ts on the national build (headroom x1.1; re-baseline deliberately with --write). Work budgets: counts from tests/unit/perf-budget.test.ts on the seed (search: profile p01; questionnaire: 3 groups x 2 patients x 8 steps)."
+}
