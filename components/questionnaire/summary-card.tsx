@@ -72,9 +72,9 @@ export function SummaryCard({
   const anyUnknown = rows.some((r) => !(ESSENTIAL_IDS as readonly string[]).includes(r.id) && findOut.some((f) => f.question === r.id));
 
   return (
-    <section aria-labelledby="summary-title" className="animate-fade-up space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section aria-labelledby="summary-title" className="tb-surface animate-enter space-y-6 rounded-3xl p-5 sm:p-7">
       <div>
-        <h2 id="summary-title" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold outline-none">
+        <h2 id="summary-title" ref={headingRef} tabIndex={-1} className="text-[1.875rem] leading-[1.02] font-bold [font-stretch:72%] outline-none sm:text-[2.25rem]">
           {t("questionnaire.ui.summaryTitle")}
         </h2>
         <p className="mt-1 text-muted-foreground">{t("questionnaire.ui.summaryIntro")}</p>
@@ -83,7 +83,7 @@ export function SummaryCard({
       {groups.map((g) =>
         g.rows.length === 0 ? null : (
           <section key={g.key} aria-labelledby={`sum-${g.key}`}>
-            <h3 id={`sum-${g.key}`} className="flex items-center gap-2 text-lg font-semibold">
+            <h3 id={`sum-${g.key}`} className="flex items-center gap-2 border-b border-border pb-2 font-sans text-sm font-semibold tracking-[0.06em] text-muted-foreground uppercase [font-stretch:100%]">
               {g.key === "later" && <ClipboardList aria-hidden className="size-4 text-primary" />}
               {t(`questionnaire.ui.summaryGroup.${g.key}`)}
             </h3>
@@ -110,10 +110,10 @@ export function SummaryCard({
         ),
       )}
 
-      {anyUnknown && <p className="rounded-xl bg-secondary/60 px-4 py-3">{t("questionnaire.ui.summaryUnknownNote")}</p>}
+      {anyUnknown && <p className="rounded-2xl bg-secondary/60 px-4 py-3">{t("questionnaire.ui.summaryUnknownNote")}</p>}
 
       {waiting.length > 0 && (
-        <section aria-labelledby="waiting-title" className="rounded-xl border border-border p-4">
+        <section aria-labelledby="waiting-title" className="rounded-2xl border border-border p-4 sm:p-5">
           <h3 id="waiting-title" className="flex items-center gap-2 text-lg font-semibold">
             <Clock aria-hidden className="size-4 text-primary" />
             {t("questionnaire.ui.waitingTitle")}
@@ -134,10 +134,10 @@ export function SummaryCard({
         </section>
       )}
 
-      <FindOutList entries={findOut} headingLevel={3} className="border-dashed" />
+      <FindOutList entries={findOut} headingLevel={3} className="border-dashed shadow-none" />
 
       {deepLeft > 0 && (
-        <div className="flex flex-col gap-2 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-2xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <p className="text-muted-foreground">{t("questionnaire.ui.moreOptionalNote")}</p>
           <Button variant="outline" onClick={onMore} className="h-auto min-h-11 whitespace-normal">
             {t("questionnaire.ui.moreOptional", { count: deepLeft })}
@@ -158,9 +158,10 @@ export function SummaryCard({
         </select>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
         <Button
           size="lg"
+          className="min-h-14 shrink-0 px-8 text-lg"
           disabled={searching}
           aria-busy={searching}
           onClick={() => {

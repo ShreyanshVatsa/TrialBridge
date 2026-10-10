@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 import { BIOMARKER_ANSWERS, UNKNOWN, type BiomarkerAnswer } from "./contract";
 import { useKeyT } from "./t";
 
-/** Shared chip look: 44px+ targets, 16px text, visible focus, state not shown by color alone (check mark / pressed). */
-export const chipClass =
-  "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-start text-base leading-snug transition-colors";
-export const chipIdle = "border-input bg-card text-foreground hover:border-primary hover:bg-secondary";
-export const chipOn = "border-primary bg-primary text-primary-foreground";
+/**
+ * Shared chip look: 44px+ targets, 16px text, visible focus, state not shown by color alone (check mark / pressed).
+ * Chips are tactile keys (.tb-key): raised at rest, they sink when pressed and light up when chosen.
+ */
+export const chipClass = "tb-key inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-start text-base leading-snug";
+export const chipIdle = "";
+export const chipOn = "tb-key-on";
 const focusRing = "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring";
 
 export function travelLabel(miles: number | null, m: Messages): string {
@@ -166,7 +168,7 @@ export function AgeInput({ initial, onAnswer }: { initial?: number; onAnswer: (a
 
   if (minor) {
     return (
-      <div role="alert" className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <div role="alert" className="tb-surface-flat space-y-3 rounded-2xl p-5">
         <h3 className="text-lg font-semibold">{m.chat.under18Title}</h3>
         <p>{m.chat.under18Body}</p>
         <div className="flex flex-wrap gap-3">
@@ -279,7 +281,7 @@ export function SingleChoice({
               }}
               className="sr-only"
             />
-            <span aria-hidden className={cn("size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
+            <span aria-hidden className={cn("tb-pop size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
             <span>
               {o.label}
               {o.help && <span className={cn("block", on ? "text-primary-foreground" : "text-muted-foreground")}>{o.help}</span>}
@@ -319,7 +321,7 @@ export function MultiChoice({
           <label key={o.id} className={cn(chipClass, focusRing, on ? chipOn : chipIdle)}>
             <input type="checkbox" checked={on} onChange={() => toggle(o.id)} className="sr-only" />
             <span aria-hidden className={cn("flex size-4 shrink-0 items-center justify-center rounded border-2", on ? "border-primary-foreground" : "border-muted-foreground")}>
-              {on && <Check className="size-3" />}
+              {on && <Check className="tb-pop size-3" strokeWidth={3} />}
             </span>
             <span>
               {o.label}
@@ -379,12 +381,12 @@ export function BiomarkerGrid({
         </div>
       )}
       {shown.length === 0 && <p className="text-muted-foreground">{t("questionnaire.ui.biomarkerNone")}</p>}
-      <ul aria-label={t("questionnaire.ui.biomarkerCaption")} className="divide-y divide-border rounded-xl border border-border">
+      <ul aria-label={t("questionnaire.ui.biomarkerCaption")} className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background/40">
         {shown.map((id) => {
           const name = biomarkerLabel(id, m);
           const current = value[id] ?? UNKNOWN;
           return (
-            <li key={id} className={cn("space-y-2 px-3 py-3", current !== UNKNOWN && "bg-secondary/40")}>
+            <li key={id} className={cn("space-y-2 px-3 py-3 transition-colors duration-300 sm:px-4", current !== UNKNOWN && "bg-secondary/50")}>
               <p id={`${base}-${id}`} className="font-medium break-words">
                 {name}
               </p>
@@ -394,7 +396,7 @@ export function BiomarkerGrid({
                   return (
                     <label key={s} className={cn(chipClass, focusRing, "min-h-11 justify-start px-3 max-sm:rounded-xl", on ? chipOn : chipIdle)}>
                       <input type="radio" name={`${base}-${id}`} value={s} checked={on} onChange={() => onChange({ ...value, [id]: s })} className="sr-only" />
-                      <span aria-hidden className={cn("size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
+                      <span aria-hidden className={cn("tb-pop size-3 shrink-0 rounded-full border-2", on ? "border-primary-foreground bg-primary-foreground" : "border-muted-foreground")} />
                       {statusLabel(s)}
                     </label>
                   );

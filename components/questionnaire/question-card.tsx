@@ -138,17 +138,18 @@ export function QuestionCard({
   const fieldset = (
     <fieldset aria-describedby={essential ? undefined : describedBy} className="min-w-0 space-y-3">
       <legend className="float-start w-full">
-        <span ref={legendRef} tabIndex={-1} className="block text-xl font-semibold leading-snug outline-none sm:text-2xl">
+        <span ref={legendRef} tabIndex={-1} className="block text-[1.375rem] leading-snug font-semibold text-balance outline-none sm:text-[1.625rem]">
           {label}
         </span>
       </legend>
       <div className="clear-both flex flex-wrap items-center gap-2 pt-1">
         <span
           className={cn(
-            "inline-flex items-center rounded-full border px-3 py-0.5 text-base",
-            q.tier === "deep" ? "border-dashed border-muted-foreground/60 text-muted-foreground" : "border-border text-muted-foreground",
+            "inline-flex items-center gap-2 rounded-full border px-3 py-0.5 text-base",
+            q.tier === "deep" ? "border-dashed border-muted-foreground/60 text-muted-foreground" : "border-border bg-muted/60 text-muted-foreground",
           )}
         >
+          <span aria-hidden className="size-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]" />
           {essential ? t("questionnaire.ui.essentialStep", { step: essentialStep, total: ESSENTIAL_IDS.length }) : t(`questionnaire.ui.tierBadge.${q.tier}`)}
         </span>
       </div>
@@ -165,10 +166,10 @@ export function QuestionCard({
       )}
       {body}
       {(why || about) && (
-        <details className="group rounded-xl border border-border bg-muted/40">
+        <details className="group rounded-2xl border border-border bg-muted/40 transition-colors open:bg-muted/60">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
             {about ? t("questionnaire.ui.whyAskAbout") : t("questionnaire.ui.whyAsk")}
-            <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform group-open:rotate-180" />
+            <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform duration-300 group-open:rotate-180" />
           </summary>
           <div className="space-y-2 px-4 pb-3">
             {why && <p>{why}</p>}
@@ -219,7 +220,7 @@ export function QuestionCard({
   const needsContinue = q.type === "single" || q.type === "multi" || q.type === "biomarker_grid";
   const bar =
     onBack || needsContinue ? (
-      <div className="sticky bottom-0 z-10 -mx-5 mt-2 flex items-center justify-between gap-3 border-t border-border bg-card/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:backdrop-blur-none">
+      <div className="sticky bottom-0 z-10 -mx-5 mt-2 flex items-center justify-between gap-3 border-t border-border bg-card/95 px-5 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-card/75 sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:backdrop-blur-none">
         {onBack ? (
           <Button type="button" variant="outline" onClick={onBack} className="min-h-11">
             <ArrowLeft aria-hidden className="rtl:-scale-x-100" />
@@ -229,7 +230,7 @@ export function QuestionCard({
           <span />
         )}
         {needsContinue && (
-          <Button type="submit" className="min-h-11 px-6">
+          <Button type="submit" size="lg" className="min-h-11 px-7">
             {m.common.continue}
           </Button>
         )}
@@ -248,7 +249,7 @@ export function QuestionCard({
   }
 
   return (
-    <section ref={rootRef} aria-label={label} data-question={q.id} onKeyDown={onKeyDown} className="animate-fade-up space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section ref={rootRef} aria-label={label} data-question={q.id} onKeyDown={onKeyDown} className="tb-surface animate-enter scroll-mt-28 space-y-4 rounded-3xl p-5 sm:p-7">
       {needsContinue ? (
         <form onSubmit={commit} noValidate className="space-y-4">
           {fieldset}
