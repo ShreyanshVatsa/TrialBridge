@@ -1,42 +1,61 @@
 /**
  * Ingestion pipeline: `npm run ingest` (national, resumable) or `npm run ingest:seed` (committed seed).
  *
- * fetch/load -> zod-validate -> build cards (groups, barriers, rule facts) -> embeddings (int8)
+ * snapshot/load -> zod-validate -> build cards (groups, barriers, rule facts) -> embeddings (int8)
  * -> shards (cards, sites, MiniSearch index, embeddings per cancer group) -> ZIP tables
- * -> validate -> atomically replace public/data, and write the backend's criteria copy (data/build).
+ * -> content-hash data version over every staged file -> validate -> atomically replace public/data,
+ * write the backend's criteria copy (data/build) and, for national data, data/data-lock.json.
+ *
+ * Flags: `--source=seed|national` (default national), `--snapshot=<dir>` (read exactly these ClinicalTrials.gov pages),
+ * `--refresh` (fetch a new snapshot into data/cache/snapshots/<stamp>/). Without either, the snapshot named in
+ * data/data-lock.json is used (else the newest one, else the pre-v5 cache), so a rebuild reproduces the dataset.
  *
  * Safety: aborts (keeping the last good dataset) if >5% of records fail validation or the trial
  * count drops >40% versus the previous dataset of the same source.
  */
 import { mkdir, readFile, writeFile, rm, rename, stat, readdir } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import path from "node:path";
 import MiniSearch from "minisearch";
-import { RawStudySchema } from "../../lib/ingest/raw";
+import { CTGOV_FIELDS, RawStudySchema } from "../../lib/ingest/raw";
 import { buildRecord, embeddingText, NOT_CANCER, OUT_OF_SCOPE } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
 import { ManifestSchema, MetaSchema, trialBucketKey, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
 import { aggregateAccess } from "../../lib/access/aggregate";
 import { BASKET_SHARD_ID, CANCER_GROUP_IDS, basketAppliesTo, isBasketOnly, type CancerGroupId } from "../../config/cancer-groups";
-import { EMBEDDING_DIMS, EMBEDDING_MODEL, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
-import { embedTexts } from "./embed";
+import { DATA_FORMAT_VERSION, EMBEDDING_DIMS, EMBEDDING_MODEL, EMBEDDING_MODEL_FILES, EMBEDDING_MODEL_REVISION, INT8_SCALE, PIPELINE_VERSION, PROMPT_VERSION } from "../../config/embedding";
+import { embeddingKey, embedTexts } from "./embed";
 import { ingestAbortReason } from "../../lib/ingest/safety";
 import { LLM_CACHE_FILE, readV2Cache, toTrialText, type LlmCacheEntry } from "./llm";
 import { llmCacheKey, mergeFacts } from "../../lib/ingest/llm-facts";
 import { applyLlmLayer, DEFAULT_VERIFY, familyCacheKey, LLM_FAMILY_IDS, LLM_LAYER_FAMILIES, type FamilyCacheEntry, type LlmFamily } from "../../lib/ingest/llm-families";
 import { FAMILY_PRECISION } from "../../config/questionnaire/precision.generated";
-import { fetchAllResumable, NATIONAL_CONDITION_QUERY, SCOPE_PARAMS } from "./ctgov";
+import { fetchAllResumable, NATIONAL_QUERY } from "./ctgov";
+import {
+  computeDataVersion,
+  DATA_LOCK_FILE,
+  DataLockSchema,
+  newSnapshotDir,
+  readDataLock,
+  readSnapshotState,
+  resolveSnapshotDir,
+  snapshotPageHashes,
+  verifyModelFiles,
+  type DataLock,
+} from "../../lib/ingest/snapshot";
 
-const OUT = "public/data";
-const TMP = "public/.data-tmp";
+/** Output directory (override with INGEST_OUT for tests and CI). */
+const OUT = process.env.INGEST_OUT ?? "public/data";
+const TMP = `${OUT}.tmp`;
 const BUILD = "data/build";
 /** Split a group into parts above this many trials to keep each shard a few MB. */
 const MAX_PER_SHARD = 700;
 const ALL_SHARD = "_all";
+/** Shards are staged under this name until the content hash (the data version) is known. */
+const STAGING = "_staging";
 
-const args = new Map(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=") as [string, string]));
+const args = new Map(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=") as [string, string | undefined]));
 const source = (args.get("source") ?? "national") as "seed" | "national";
 
 function fail(msg: string): never {
@@ -55,13 +74,28 @@ async function loadZipTable(): Promise<Map<string, { lat: number; lon: number }>
   return map;
 }
 
-async function loadRaw(): Promise<unknown[]> {
+interface RawInput {
+  studies: unknown[];
+  /** ISO time the records were fetched from ClinicalTrials.gov. */
+  fetchedAt: string;
+  fetchedAtApproximate: boolean;
+  /** Snapshot directory (national only). */
+  snapshotDir: string | null;
+}
+
+async function loadRaw(lock: DataLock | null): Promise<RawInput> {
   if (source === "seed") {
-    const seed = JSON.parse(await readFile("data/seed/studies.json", "utf8")) as { studies: unknown[] };
-    return seed.studies;
+    const seed = JSON.parse(await readFile("data/seed/studies.json", "utf8")) as { studies: unknown[]; fetchedAt?: string };
+    const st = await stat("data/seed/studies.json");
+    return { studies: seed.studies, fetchedAt: seed.fetchedAt ?? st.mtime.toISOString(), fetchedAtApproximate: !seed.fetchedAt, snapshotDir: null };
   }
-  console.log("Fetching national dataset from ClinicalTrials.gov (resumable)...");
-  return fetchAllResumable({ ...SCOPE_PARAMS, "query.cond": NATIONAL_CONDITION_QUERY }, "data/cache/national");
+  const explicit = args.get("snapshot");
+  const dir = args.has("refresh") ? newSnapshotDir() : (resolveSnapshotDir({ ...(explicit ? { explicit } : {}), lock }) ?? newSnapshotDir());
+  console.log(`Snapshot: ${dir}${args.has("refresh") ? " (new fetch from ClinicalTrials.gov)" : ""}`);
+  const studies = await fetchAllResumable(NATIONAL_QUERY, dir);
+  const state = readSnapshotState(dir);
+  if (!state?.fetchedAt) throw new Error(`snapshot ${dir} has no state`);
+  return { studies, fetchedAt: state.fetchedAt, fetchedAtApproximate: state.fetchedAtApproximate === true, snapshotDir: dir };
 }
 
 async function previousMeta(): Promise<Meta | null> {
@@ -78,17 +112,25 @@ function quantize(vec: Float32Array): Int8Array {
   return q;
 }
 
-async function writeJson(file: string, data: unknown): Promise<number> {
-  const body = JSON.stringify(data);
+/** Every staged file written so far, for the content hash and the manifest byte counts. */
+const staged = new Map<string, Uint8Array>();
+async function writeStaged(file: string, data: Uint8Array | string): Promise<number> {
+  const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
   await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, body);
-  return Buffer.byteLength(body);
+  await writeFile(file, bytes);
+  staged.set(path.relative(TMP, file).split(path.sep).join("/"), bytes);
+  return bytes.byteLength;
 }
+const writeJson = (file: string, data: unknown) => writeStaged(file, JSON.stringify(data));
 
 async function main(): Promise<void> {
   const t0 = Date.now();
-  const raw = await loadRaw();
-  console.log(`Loaded ${raw.length} raw studies (${source})`);
+  const modelDir = path.join("public/models", EMBEDDING_MODEL);
+  const modelProblems = verifyModelFiles(modelDir, EMBEDDING_MODEL_FILES);
+  if (modelProblems.length) fail(`embedding model files failed verification (${modelProblems.join("; ")}); run npm run models:fetch`);
+  const lock = source === "national" ? readDataLock() : null;
+  const raw = await loadRaw(lock);
+  console.log(`Loaded ${raw.studies.length} raw studies (${source}; fetched ${raw.fetchedAt}${raw.fetchedAtApproximate ? ", approximate" : ""})`);
 
   // 1. Validate + build cards.
   const zips = await loadZipTable();
@@ -97,7 +139,7 @@ async function main(): Promise<void> {
   const failures: string[] = [];
   let outOfScope = 0;
   const seen = new Set<string>();
-  for (const r of raw) {
+  for (const r of raw.studies) {
     const parsed = RawStudySchema.safeParse(r);
     if (!parsed.success) {
       failures.push(`invalid record: ${parsed.error.issues[0]?.path.join(".")} ${parsed.error.issues[0]?.message}`);
@@ -115,11 +157,11 @@ async function main(): Promise<void> {
     cards.push(built.card);
     sitesById.set(built.card.id, built.sites);
   }
-  const invalidFraction = failures.length / Math.max(1, raw.length);
+  const invalidFraction = failures.length / Math.max(1, raw.studies.length);
   console.log(`Built ${cards.length} trials; ${outOfScope} out of scope (no recruiting U.S. site, or not a cancer trial); ${failures.length} failed validation (${(invalidFraction * 100).toFixed(1)}%)`);
   for (const f of failures.slice(0, 10)) console.log(`  skipped ${f}`);
   const prev = await previousMeta();
-  const abort = ingestAbortReason({ rawCount: raw.length, invalidCount: failures.length, builtCount: cards.length, previousCount: prev && prev.source === source ? prev.totalTrials : null });
+  const abort = ingestAbortReason({ rawCount: raw.studies.length, invalidCount: failures.length, builtCount: cards.length, previousCount: prev && prev.source === source ? prev.totalTrials : null });
   if (abort) fail(abort);
   cards.sort((a, b) => a.id.localeCompare(b.id));
 
@@ -165,24 +207,19 @@ async function main(): Promise<void> {
     console.log(`LLM v2 layer [${[...gated].join(", ")}]: ${withLlm} trials with verified-LLM results; demoted when missing: [${[...demote].join(", ")}]`);
   }
 
-  // 2. Embeddings (cached by NCT ID + last-updated + model so unchanged trials are not re-embedded).
-  const vectors = await embedTexts(
-    cards.map((c) => ({ key: `${c.id}|${c.lastUpdated}|${EMBEDDING_MODEL}`, text: embeddingText(c) })),
-  );
+  // 2. Embeddings, cached by NCT id + hash of the embedded text + model + dtype (pre-v5 entries are adopted after a spot check).
+  const vectors = await embedTexts(cards.map((c) => ({ key: embeddingKey(c.id, embeddingText(c)), text: embeddingText(c), legacyKey: `${c.id}|${c.lastUpdated}|${EMBEDDING_MODEL}` })), { label: "trials" });
   const quantized = new Map(cards.map((c, i) => [c.id, quantize(vectors[i] as Float32Array)]));
 
-  // 3. Data version = content hash, so caches refresh exactly when data changes.
-  const hash = createHash("sha256").update(JSON.stringify(cards)).digest("hex").slice(0, 10);
-  const dataDate = new Date().toISOString().slice(0, 10);
-  const dataVersion = `${source}-${dataDate.replaceAll("-", "")}-${hash}`;
-
-  // 4. Shards.
+  // 3. Shards, staged under a placeholder name until the content hash is known.
   await rm(TMP, { recursive: true, force: true });
+  staged.clear();
   const shards: ShardInfo[] = [];
   const groups: Manifest["groups"] = {};
+  const stagingDir = path.join(TMP, "shards", STAGING);
 
   const writeShard = async (id: string, group: CancerGroupId, list: TrialCard[]) => {
-    const dir = path.join(TMP, "shards", dataVersion, id);
+    const dir = path.join(stagingDir, id);
     const index = new MiniSearch<SearchDoc>(MINISEARCH_OPTIONS);
     index.addAll(list.map(toSearchDoc));
     const emb = new Int8Array(list.length * EMBEDDING_DIMS);
@@ -193,8 +230,7 @@ async function main(): Promise<void> {
     bytes += await writeJson(path.join(dir, "cards.json"), list);
     bytes += await writeJson(path.join(dir, "sites.json"), sites);
     bytes += await writeJson(path.join(dir, "index.json"), index.toJSON());
-    await writeFile(path.join(dir, "emb.bin"), emb);
-    bytes += emb.byteLength;
+    bytes += await writeStaged(path.join(dir, "emb.bin"), new Uint8Array(emb.buffer));
     shards.push({ id, group, kind: "full", count: list.length, files: { cards: "cards.json", sites: "sites.json", index: "index.json", embeddings: "emb.bin" }, bytes });
   };
 
@@ -225,7 +261,7 @@ async function main(): Promise<void> {
   // site details; keyword index over title/conditions/MeSH only. Full cards for the final top
   // results come from the per-trial buckets below.
   {
-    const dir = path.join(TMP, "shards", dataVersion, ALL_SHARD);
+    const dir = path.join(stagingDir, ALL_SHARD);
     const lite: LiteCard[] = cards.map((c) => ({
       id: c.id,
       title: c.title,
@@ -252,8 +288,7 @@ async function main(): Promise<void> {
     bytes += await writeJson(path.join(dir, "cards.json"), lite);
     bytes += await writeJson(path.join(dir, "sites.json"), liteSites);
     bytes += await writeJson(path.join(dir, "index.json"), index.toJSON());
-    await writeFile(path.join(dir, "emb.bin"), emb);
-    bytes += emb.byteLength;
+    bytes += await writeStaged(path.join(dir, "emb.bin"), new Uint8Array(emb.buffer));
     shards.push({ id: ALL_SHARD, group: "other", kind: "lite", count: cards.length, files: { cards: "cards.json", sites: "sites.json", index: "index.json", embeddings: "emb.bin" }, bytes });
   }
 
@@ -265,12 +300,9 @@ async function main(): Promise<void> {
     b[c.id] = { card: c, sites: sitesById.get(c.id) ?? [] };
     buckets.set(k, b);
   }
-  for (const [k, b] of buckets) await writeJson(path.join(TMP, "shards", dataVersion, "trials", `${k}.json`), b);
+  for (const [k, b] of buckets) await writeJson(path.join(stagingDir, "trials", `${k}.json`), b);
 
-  // Access Intelligence aggregates (public).
-  await writeJson(path.join(TMP, "access.json"), AccessDataSchema.parse(aggregateAccess(cards, sitesById, dataDate, dataVersion)));
-
-  // 5. ZIP tables by 3-digit prefix (loaded on demand by the browser).
+  // 4. ZIP tables by 3-digit prefix (loaded on demand by the browser).
   const byPrefix = new Map<string, Record<string, [number, number]>>();
   for (const [zip, c] of zips) {
     const p = zip.slice(0, 3);
@@ -280,7 +312,16 @@ async function main(): Promise<void> {
   }
   for (const [p, rec] of byPrefix) await writeJson(path.join(TMP, "zip", `${p}.json`), rec);
 
-  // 6. Manifest, meta, lookup.
+  // 5. Data version = hash of every staged file + the format version; dataDate = the snapshot's fetch date.
+  // access.json, manifest.json and meta.json are derived from these files and the version, so they are written after.
+  const dataDate = raw.fetchedAt.slice(0, 10);
+  const dataVersion = computeDataVersion(source, dataDate, staged, DATA_FORMAT_VERSION);
+  await rename(stagingDir, path.join(TMP, "shards", dataVersion));
+
+  // Access Intelligence aggregates (public).
+  await writeJson(path.join(TMP, "access.json"), AccessDataSchema.parse(aggregateAccess(cards, sitesById, dataDate, dataVersion)));
+
+  // 6. Manifest, meta.
   const manifest: Manifest = {
     dataVersion,
     shardBase: `/data/shards/${dataVersion}`,
@@ -328,7 +369,7 @@ async function main(): Promise<void> {
   const serverTrials = Object.fromEntries(
     cards.map((c) => [c.id, { id: c.id, title: c.title, summary: c.summary, inclusion: c.inclusion, exclusion: c.exclusion, minAge: c.minAge, maxAge: c.maxAge, groups: c.groups, facts: c.facts, barriers: c.barriers, lastUpdated: c.lastUpdated }]),
   );
-  await writeJson(path.join(BUILD, "criteria.json"), { dataVersion, trials: serverTrials });
+  await writeFile(path.join(BUILD, "criteria.json"), JSON.stringify({ dataVersion, trials: serverTrials }));
   const esc = (s: string) => s.replaceAll("'", "''");
   const sql = [
     "DELETE FROM trials;",
@@ -336,7 +377,28 @@ async function main(): Promise<void> {
   ].join("\n");
   await writeFile(path.join(BUILD, "criteria.sql"), sql);
 
-  // 9. Report.
+  // 9. Lock file (national): the exact inputs that produced this dataset.
+  if (source === "national" && raw.snapshotDir) {
+    const lockOut: DataLock = DataLockSchema.parse({
+      lockVersion: 1,
+      source,
+      snapshot: raw.snapshotDir.split(path.sep).join("/"),
+      query: NATIONAL_QUERY,
+      fields: CTGOV_FIELDS,
+      fetchedAt: raw.fetchedAt,
+      ...(raw.fetchedAtApproximate ? { fetchedAtApproximate: true } : {}),
+      pages: snapshotPageHashes(raw.snapshotDir),
+      model: { id: EMBEDDING_MODEL, revision: EMBEDDING_MODEL_REVISION, files: EMBEDDING_MODEL_FILES },
+      pipelineVersion: PIPELINE_VERSION,
+      formatVersion: DATA_FORMAT_VERSION,
+      dataVersion,
+      totalTrials: cards.length,
+    });
+    await writeFile(DATA_LOCK_FILE, `${JSON.stringify(lockOut, null, 1)}\n`);
+    console.log(`Wrote ${DATA_LOCK_FILE} (${lockOut.pages.length} pages, snapshot ${lockOut.snapshot})`);
+  }
+
+  // 10. Report.
   console.log(`\nData version ${dataVersion}: ${cards.length} trials, ${meta.statesCovered} states, ${shards.length} shards`);
   const sizes: Record<string, { trials: number; raw: number; gzip: number }> = {};
   for (const s of shards) {
@@ -351,7 +413,7 @@ async function main(): Promise<void> {
   for (const f of await readdir(bucketDir)) maxBucketGz = Math.max(maxBucketGz, gzipSync(await readFile(path.join(bucketDir, f))).byteLength);
   const accessGz = gzipSync(await readFile(path.join(OUT, "access.json"))).byteLength;
   console.log(`  trial buckets: ${buckets.size} files, largest ${(maxBucketGz / 1024).toFixed(0)} KB gzip; access.json ${(accessGz / 1024).toFixed(0)} KB gzip`);
-  await writeJson(path.join(BUILD, "shard-sizes.json"), { dataVersion, totalTrials: cards.length, skipped: failures.length, shards: sizes, buckets: buckets.size, maxBucketGzip: maxBucketGz, accessGzip: accessGz });
+  await writeFile(path.join(BUILD, "shard-sizes.json"), JSON.stringify({ dataVersion, totalTrials: cards.length, skipped: failures.length, shards: sizes, buckets: buckets.size, maxBucketGzip: maxBucketGz, accessGzip: accessGz }));
   console.log(`Done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 

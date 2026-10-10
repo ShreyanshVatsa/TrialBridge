@@ -36,7 +36,11 @@
     "i18n:translate": "tsx scripts/i18n/translate.ts",
     "i18n:manifest": "tsx scripts/i18n/translate.ts --manifest",
     "i18n:review-packet": "tsx scripts/i18n/review-packet.ts",
-    "fonts:fetch": "tsx scripts/fetch-fonts.ts"
+    "fonts:fetch": "tsx scripts/fetch-fonts.ts",
+    "data:verify": "tsx scripts/data-verify.ts",
+    "budgets": "tsx scripts/budgets.ts",
+    "ci": "npm run lint && npm run typecheck && npm test && npm run build && npm run budgets && npm run data:verify",
+    "eval:vignettes": "tsx scripts/eval/vignettes/run.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

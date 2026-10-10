@@ -3,9 +3,10 @@
  * exponential backoff + jitter, per-request timeout, descriptive User-Agent, and resumable paging
  * (each page is saved to disk with the next page token, so an interrupted run continues).
  */
-import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CTGOV_FIELDS } from "../../lib/ingest/raw";
+import { readSnapshotStudies, snapshotQueryKey, type SnapshotState } from "../../lib/ingest/snapshot";
 
 const BASE = "https://clinicaltrials.gov/api/v2/studies";
 const USER_AGENT = "TrialBridge-ingest/0.1 (cancer clinical trial matching; open data use)";
@@ -53,27 +54,25 @@ export async function fetchPage(params: Record<string, string>): Promise<PageRes
   throw new Error(`ClinicalTrials.gov request failed after ${MAX_RETRIES} retries (${lastError})`);
 }
 
-interface ResumeState {
-  queryKey: string;
-  pages: number;
-  nextPageToken: string | null;
-  done: boolean;
-  totalCount?: number;
-}
-
 /**
- * Fetch every page of a query into `cacheDir` (page-0001.json, ...), resuming from `state.json`.
+ * Fetch every page of a query into the snapshot directory `cacheDir` (page-0001.json, ...), resuming from
+ * `state.json`. The resume key covers the query parameters AND the requested field list, so asking for a new field
+ * starts a new fetch instead of reusing pages that lack it. `fetchedAt` (first page time) is recorded in the state.
  * Returns all studies (unvalidated) from the saved pages.
  */
 export async function fetchAllResumable(params: Record<string, string>, cacheDir: string, pageSize = 1000): Promise<unknown[]> {
   await mkdir(cacheDir, { recursive: true });
   const statePath = path.join(cacheDir, "state.json");
-  const queryKey = JSON.stringify(params);
-  let state: ResumeState = { queryKey, pages: 0, nextPageToken: null, done: false };
+  const queryKey = snapshotQueryKey(params, CTGOV_FIELDS);
+  let state: SnapshotState = { queryKey, pages: 0, nextPageToken: null, done: false };
   try {
-    const prev = JSON.parse(await readFile(statePath, "utf8")) as ResumeState;
-    if (prev.queryKey === queryKey) state = prev;
-  } catch {
+    const prev = JSON.parse(await readFile(statePath, "utf8")) as SnapshotState;
+    // Pre-v5 snapshots keyed the query alone; a complete one is still readable (never extended) for exact comparisons.
+    const legacy = prev.queryKey === JSON.stringify(params) && prev.done;
+    if (prev.queryKey === queryKey || legacy) state = prev;
+    else if (prev.pages > 0) throw new Error(`${cacheDir} holds a different query or field list; use --refresh to fetch a new snapshot`);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("--refresh")) throw err;
     /* no previous state: fresh run */
   }
   if (state.pages > 0 && !state.done) console.log(`Resuming after page ${state.pages}`);
@@ -81,6 +80,7 @@ export async function fetchAllResumable(params: Record<string, string>, cacheDir
   while (!state.done) {
     const page = await fetchPage({ ...params, pageSize: String(pageSize), countTotal: "true", ...(state.nextPageToken ? { pageToken: state.nextPageToken } : {}) });
     state.pages += 1;
+    state.fetchedAt ??= new Date().toISOString();
     if (page.totalCount !== undefined) state.totalCount = page.totalCount;
     await writeFile(path.join(cacheDir, `page-${String(state.pages).padStart(4, "0")}.json`), JSON.stringify(page.studies));
     state.nextPageToken = page.nextPageToken ?? null;
@@ -89,11 +89,7 @@ export async function fetchAllResumable(params: Record<string, string>, cacheDir
     const fetched = Math.min(state.pages * pageSize, state.totalCount ?? Infinity);
     console.log(`  page ${state.pages}: ${fetched}/${state.totalCount ?? "?"} studies`);
   }
-
-  const files = (await readdir(cacheDir)).filter((f) => f.startsWith("page-")).sort();
-  const all: unknown[] = [];
-  for (const f of files) all.push(...(JSON.parse(await readFile(path.join(cacheDir, f), "utf8")) as unknown[]));
-  return all;
+  return readSnapshotStudies(cacheDir);
 }
 
 /** Base filters for v1 scope: recruiting, interventional, at least one U.S. location. */
@@ -105,3 +101,6 @@ export const SCOPE_PARAMS = {
 /** National condition query: broad cancer terms (MeSH-expanded by ClinicalTrials.gov). */
 export const NATIONAL_CONDITION_QUERY =
   "cancer OR neoplasm OR tumor OR carcinoma OR lymphoma OR leukemia OR myeloma OR melanoma OR sarcoma OR glioma OR malignancy OR myelodysplastic";
+
+/** The full national query (scope + condition), the one thing a national snapshot is keyed by. */
+export const NATIONAL_QUERY: Record<string, string> = { ...SCOPE_PARAMS, "query.cond": NATIONAL_CONDITION_QUERY };
