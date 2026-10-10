@@ -9,6 +9,7 @@ import { ResultsView, SearchProgressView } from "@/components/results/results-vi
 import { useSession } from "@/components/session/session-provider";
 import { Disclaimer } from "@/components/site/disclaimer";
 import { ErrorView } from "@/components/site/error-view";
+import { PageHead } from "@/components/site/page-head";
 import { lookupZip } from "@/lib/data/loader";
 import type { IntakeAnswers, Language, RankedTrial, SearchProgress } from "@/lib/types";
 
@@ -177,7 +178,7 @@ export function FindFlow() {
   } else {
     body = (
       <>
-        <h1 className="mb-6 text-3xl font-semibold sm:text-4xl">{m.chat.title}</h1>
+        <PageHead title={m.chat.title} size="md" className="mb-8 sm:mb-10" />
         <QuestionnaireFlow
           state={questionnaire}
           setState={setQuestionnaire}
@@ -191,7 +192,7 @@ export function FindFlow() {
   }
 
   return (
-    <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+    <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 pt-8 pb-20 sm:px-6 sm:pt-14 sm:pb-28">
       {body}
       {/* Turnstile renders an interaction-only widget here when a check is needed. */}
       <div className="no-print mt-6 flex justify-center" aria-label={m.results.verification} role="region" ref={turnstileRef} />

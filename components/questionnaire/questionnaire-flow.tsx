@@ -173,7 +173,15 @@ export function QuestionnaireFlow({
 
   const tier: Tier | "summary" = current === null ? "summary" : current === "loading" ? "helpful" : current.tier;
   const essentialsLeft = ESSENTIAL_IDS.filter((id) => state.answers[id] === undefined).length;
+  // How far through the current tier: essentials are counted exactly; later tiers are an estimate from the
+  // engine's remaining range, so the meter can slow down but never claims a finish it can't promise.
   const remaining = essentialsLeft > 0 ? essentialsLeft : stopped || engineDone ? 0 : activePool ? Math.max(1, estimateRemaining(state, activePool, catalog)) : null;
+
+  const tierAnswered = tier === "summary" ? 0 : state.history.filter((id) => !isEssential(id) && byId.get(id)?.tier === tier).length;
+  const tierFill =
+    tier === "essential" || essentialsLeft > 0
+      ? (ESSENTIAL_IDS.length - essentialsLeft) / ESSENTIAL_IDS.length
+      : tierAnswered / (tierAnswered + Math.max(1, remaining ?? 1));
 
   function answer(q: QuestionDef, value: AnswerValue, gain?: number) {
     const res = applyAnswer(state, q.id, value, catalog, gain !== undefined && Number.isFinite(gain) ? { gain } : {});
@@ -244,10 +252,10 @@ export function QuestionnaireFlow({
 
   return (
     <div className="space-y-5">
-      <TierProgress tier={tier} remaining={remaining} count={count} />
+      <TierProgress tier={tier} remaining={remaining} count={count} fill={tierFill} />
 
       {notice && (
-        <p role="status" className="rounded-xl border border-border bg-secondary/60 px-4 py-3">
+        <p role="status" className="animate-enter rounded-2xl border border-border bg-secondary/60 px-4 py-3">
           {notice.kind === "resumed" && t("questionnaire.ui.resumed")}
           {notice.kind === "cleared" && t("questionnaire.ui.cleared")}
           {notice.kind === "dropped" &&

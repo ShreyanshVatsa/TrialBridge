@@ -81,10 +81,28 @@
   --warn: oklch(0.95 0.045 70);
   --warn-foreground: oklch(0.42 0.11 50);
   --warn-border: oklch(0.85 0.08 65);
-  --success: oklch(0.94 0.04 170);
-  --success-foreground: oklch(0.36 0.08 170);
+  /* "Likely fits": a cool blue-violet, never green. Paired with an icon and a word, never colour alone. */
+  --success: oklch(0.93 0.04 262);
+  --success-foreground: oklch(0.4 0.15 262);
   --bubble: oklch(0.93 0.022 300);
   --radius: 0.875rem;
+
+  /* Material: light from the top left. A lit rim on top, a crisp contact shadow, a long violet ambient one. */
+  --rim: inset 0 1px 0 oklch(1 0 0 / 0.95);
+  --rim-low: inset 0 -1px 0 oklch(0.2 0.06 295 / 0.06);
+  --shadow-1: 0 1px 1px oklch(0.2 0.06 295 / 0.06), 0 2px 5px -2px oklch(0.2 0.06 295 / 0.12);
+  --shadow-2: 0 1px 2px oklch(0.2 0.06 295 / 0.07), 0 10px 22px -12px oklch(0.2 0.06 295 / 0.2), 0 30px 60px -36px oklch(0.45 0.2 285 / 0.4);
+  --shadow-3: 0 2px 4px oklch(0.2 0.06 295 / 0.08), 0 18px 36px -16px oklch(0.2 0.06 295 / 0.28), 0 50px 90px -40px oklch(0.45 0.2 285 / 0.55);
+  --surface-top: oklch(1 0 0);
+  --surface-bottom: oklch(0.985 0.005 300);
+  --glass: oklch(0.985 0.006 300 / 0.72);
+  --spec: oklch(0.45 0.2 285 / 0.09);
+  --spec-rim: oklch(0.55 0.2 285 / 0.75);
+  --key-top: oklch(1 0 0);
+  --key-bottom: oklch(0.965 0.01 300);
+  --ambient: oklch(0.82 0.1 293 / 0.55);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 .dark {
@@ -114,9 +132,23 @@
   --warn: oklch(0.3 0.06 60);
   --warn-foreground: oklch(0.88 0.1 75);
   --warn-border: oklch(0.45 0.08 65);
-  --success: oklch(0.28 0.05 170);
-  --success-foreground: oklch(0.86 0.08 170);
+  --success: oklch(0.3 0.08 262);
+  --success-foreground: oklch(0.87 0.08 262);
   --bubble: oklch(0.26 0.06 293);
+
+  --rim: inset 0 1px 0 oklch(1 0 0 / 0.09);
+  --rim-low: inset 0 -1px 0 oklch(0 0 0 / 0.35);
+  --shadow-1: 0 1px 1px oklch(0 0 0 / 0.3), 0 2px 6px -2px oklch(0 0 0 / 0.4);
+  --shadow-2: 0 1px 2px oklch(0 0 0 / 0.35), 0 12px 26px -12px oklch(0 0 0 / 0.55), 0 30px 70px -40px oklch(0.6 0.2 290 / 0.45);
+  --shadow-3: 0 2px 4px oklch(0 0 0 / 0.4), 0 20px 40px -16px oklch(0 0 0 / 0.6), 0 60px 110px -40px oklch(0.6 0.2 290 / 0.55);
+  --surface-top: oklch(0.235 0.055 295);
+  --surface-bottom: oklch(0.205 0.05 295);
+  --glass: oklch(0.2 0.05 295 / 0.7);
+  --spec: oklch(0.82 0.1 293 / 0.08);
+  --spec-rim: oklch(0.82 0.1 293 / 0.8);
+  --key-top: oklch(0.28 0.055 295);
+  --key-bottom: oklch(0.235 0.05 295);
+  --ambient: oklch(0.45 0.2 285 / 0.35);
 }
 
 /* Lenis (landing page smooth scrolling) needs the document to keep its natural height. */
@@ -159,8 +191,9 @@ html[data-lang-pending] body {
     background: var(--lavender);
     color: var(--ink);
   }
+  /* One focus style everywhere: a 2px ring with a small paper-coloured gap, following each control's radius. */
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-ring;
+    @apply outline-2 outline-offset-[3px] outline-ring;
   }
 }
 
@@ -273,6 +306,355 @@ body::after {
   animation: tb-dot 1.2s infinite ease-in-out;
 }
 
+/* ------------------------------------------------------------------------------------------------
+ * v5 material system (docs/design-v5.md). Component classes sit in @layer components so Tailwind
+ * utilities on the same element still win. Light comes from the top left; shadows fall down.
+ * ---------------------------------------------------------------------------------------------- */
+@layer components {
+  /* Card material: a sheet with a lit top rim, a crisp contact shadow and a long violet ambient one. */
+  .tb-surface {
+    background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+    border: 1px solid var(--border);
+    box-shadow: var(--rim), var(--rim-low), var(--shadow-2);
+  }
+  .tb-surface-flat {
+    background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+    border: 1px solid var(--border);
+    box-shadow: var(--rim), var(--shadow-1);
+  }
+
+  /* Frosted glass for sticky bars and popovers. Solid where backdrop-filter is missing. */
+  .tb-glass-panel {
+    background: var(--popover);
+    border: 1px solid var(--border);
+    box-shadow: var(--rim), var(--shadow-3);
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .tb-glass-panel {
+      background: var(--glass);
+      backdrop-filter: blur(22px) saturate(1.6);
+    }
+  }
+
+  /* Pointer light: a wash inside and a lit rim near the pointer. --mx/--my are written by PointerFx. */
+  .tb-spec {
+    position: relative;
+    isolation: isolate;
+  }
+  .tb-spec::before,
+  .tb-spec::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: var(--spec-on, 0);
+    transition: opacity 500ms var(--ease-out);
+  }
+  .tb-spec::before {
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(520px circle at var(--mx, 20%) var(--my, 0%), var(--spec), transparent 62%);
+  }
+  .tb-spec::after {
+    inset: -1px;
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx, 20%) var(--my, 0%), var(--spec-rim), transparent 70%);
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tb-spec:hover {
+      --spec-on: 1;
+    }
+  }
+
+  /* Tilt: a physical lean toward the pointer (PointerFx writes --rx/--ry; reduced motion leaves them unset). */
+  [data-tilt] {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+    transition:
+      transform 700ms var(--ease-out),
+      box-shadow 500ms var(--ease-out);
+  }
+  [data-tilt][data-tilting] {
+    transition:
+      transform 140ms ease-out,
+      box-shadow 500ms var(--ease-out);
+  }
+
+  /* Tactile key: chips, map tiles and option buttons. Raised at rest, sinks when pressed, lit when chosen. */
+  .tb-key {
+    background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+    border-color: var(--input);
+    color: var(--foreground);
+    box-shadow:
+      var(--rim),
+      0 1px 0 oklch(0.2 0.06 295 / 0.06),
+      0 2px 4px -2px oklch(0.2 0.06 295 / 0.16);
+    transition:
+      transform 220ms var(--ease-spring),
+      box-shadow 220ms var(--ease-out),
+      border-color 200ms,
+      background-color 200ms,
+      color 200ms;
+  }
+  @media (hover: hover) {
+    .tb-key:hover {
+      border-color: color-mix(in oklch, var(--primary) 55%, var(--input));
+      transform: translateY(-1px);
+      box-shadow:
+        var(--rim),
+        0 1px 0 oklch(0.2 0.06 295 / 0.06),
+        0 8px 16px -10px oklch(0.45 0.2 285 / 0.55);
+    }
+  }
+  .tb-key:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow:
+      inset 0 2px 4px oklch(0.2 0.06 295 / 0.18),
+      0 0 0 oklch(0 0 0 / 0);
+  }
+  .tb-key-on,
+  .tb-key-on:hover {
+    background: linear-gradient(180deg, color-mix(in oklch, var(--primary), white 14%), var(--primary));
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.3),
+      inset 0 -1px 0 oklch(0 0 0 / 0.2),
+      0 8px 18px -8px color-mix(in oklch, var(--primary) 70%, transparent);
+  }
+  .dark .tb-key {
+    box-shadow:
+      var(--rim),
+      0 1px 0 oklch(0 0 0 / 0.4),
+      0 3px 6px -3px oklch(0 0 0 / 0.6);
+  }
+  .tb-key-on .tb-pop {
+    animation: tb-pop 420ms var(--ease-spring) both;
+  }
+
+  /* Primary button: violet ink with a lit top edge and a coloured contact shadow. */
+  .tb-btn-primary {
+    background: linear-gradient(180deg, color-mix(in oklch, var(--primary), white 12%), var(--primary) 70%);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.28),
+      inset 0 -1px 0 oklch(0 0 0 / 0.18),
+      0 1px 2px oklch(0.2 0.06 295 / 0.3),
+      0 10px 22px -12px var(--iris);
+  }
+  .tb-btn-primary:hover {
+    filter: brightness(1.07) saturate(1.05);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.3),
+      inset 0 -1px 0 oklch(0 0 0 / 0.18),
+      0 1px 2px oklch(0.2 0.06 295 / 0.3),
+      0 14px 28px -12px var(--iris);
+  }
+  .tb-btn-primary:active {
+    box-shadow:
+      inset 0 2px 4px oklch(0 0 0 / 0.22),
+      0 1px 1px oklch(0.2 0.06 295 / 0.2);
+  }
+  .dark .tb-btn-primary {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.55),
+      inset 0 -1px 0 oklch(0.2 0.06 295 / 0.3),
+      0 1px 2px oklch(0 0 0 / 0.5),
+      0 12px 30px -12px oklch(0.82 0.1 293 / 0.55);
+  }
+  .tb-btn-glass {
+    background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+    box-shadow:
+      var(--rim),
+      0 1px 2px oklch(0.2 0.06 295 / 0.06);
+  }
+
+  /* Skeleton with a slow sweep of light, shaped like the content it stands in for. */
+  .tb-shimmer {
+    background: linear-gradient(100deg, var(--muted) 30%, color-mix(in oklch, var(--muted), var(--surface-top) 70%) 50%, var(--muted) 70%);
+    background-size: 300% 100%;
+    animation: tb-shimmer 1.9s linear infinite;
+  }
+  .dark .tb-shimmer {
+    background-image: linear-gradient(100deg, var(--muted) 30%, oklch(0.3 0.07 293) 50%, var(--muted) 70%);
+  }
+
+  /* Popover entrance: a short scale out of the trigger. */
+  .tb-pop-in {
+    animation: tb-pop-in 260ms var(--ease-out) both;
+  }
+
+  /* Display type for page titles: Anybody, condensed, tight. */
+  .tb-display {
+    font-family: var(--font-heading);
+    font-weight: 760;
+    font-stretch: 66%;
+    letter-spacing: -0.012em;
+    line-height: 0.94;
+    text-wrap: balance;
+  }
+
+  /* Quiet light behind a page head: a soft lavender bloom, never a pattern. */
+  .tb-ambient {
+    background:
+      radial-gradient(60% 70% at 12% -10%, var(--ambient), transparent 70%),
+      radial-gradient(40% 50% at 88% -20%, color-mix(in oklch, var(--ambient) 60%, transparent), transparent 70%);
+  }
+
+  /* Print never gets the material. */
+  @media print {
+    .tb-surface,
+    .tb-surface-flat,
+    .tb-key {
+      box-shadow: none !important;
+      background: white !important;
+    }
+  }
+}
+
+@keyframes tb-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@keyframes tb-pop {
+  0% {
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tb-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Question cards and panels: rise into place with a little depth. */
+@keyframes tb-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-enter {
+  animation: tb-enter 560ms var(--ease-out) both;
+}
+
+/* Scroll-driven entrance, no JavaScript. Browsers without scroll timelines show content as is. */
+@keyframes tb-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .tb-reveal {
+      animation: tb-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+/* Spinning light arc for the search lens. */
+@keyframes tb-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Page sheet over the footer: the page lifts off and the footer waits underneath. */
+.tb-sheet {
+  background: var(--background);
+  /* Clip (not hidden): decorative blooms may bleed sideways without creating a scroll container. */
+  overflow-x: clip;
+}
+@media (min-width: 48rem) and (prefers-reduced-motion: no-preference) {
+  .tb-sheet {
+    border-end-start-radius: 2.25rem;
+    border-end-end-radius: 2.25rem;
+    box-shadow: 0 40px 70px -30px oklch(0.2 0.06 295 / 0.45);
+  }
+  .tb-footer-reveal {
+    position: sticky;
+    bottom: var(--reveal-bottom, 0px);
+    z-index: 0;
+  }
+}
+
+/* Route transitions (React <ViewTransition>, see components/fx/page-transition.tsx). */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+::view-transition-old(.tb-page) {
+  animation: tb-vt-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(.tb-page) {
+  animation: tb-vt-in 520ms var(--ease-out) 110ms both;
+}
+@keyframes tb-vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.992);
+    filter: blur(4px);
+  }
+}
+@keyframes tb-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -302,6 +684,10 @@ body::after {
   }
   body::after {
     display: none;
+  }
+  .tb-sheet {
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
   body {
     background: white;

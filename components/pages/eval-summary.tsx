@@ -4,6 +4,7 @@ import { z } from "zod";
 import evalResults from "@/eval/results.json";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate } from "@/components/format";
+import { Ticker } from "@/components/fx/ticker";
 
 /** Shape of eval/results.json (written by `npm run eval`); validated so a format change can't break the page. */
 const EvalSchema = z.object({
@@ -35,15 +36,22 @@ export function EvalSummary() {
     { label: format(m.evalQuotes, { quotes: e.mockAi.quotes }), value: pctFmt(e.mockAi.quotePassRate) },
   ];
   return (
-    <div className="mt-4 space-y-3">
-      <p className="rounded-xl border border-warn-border bg-warn px-4 py-3 text-sm text-warn-foreground">
+    <div className="mt-6 space-y-4">
+      <p className="rounded-2xl border border-warn-border bg-warn px-4 py-3 text-sm text-warn-foreground">
         {format(m.evalProvisional, { profiles: e.profiles, types: e.cancerTypes, date: formatDate(e.date, locale) })}
       </p>
-      <dl className="divide-y divide-border rounded-2xl border border-border bg-card">
-        {rows.map((r) => (
-          <div key={r.label} className="flex items-baseline justify-between gap-4 px-4 py-3">
-            <dt>{r.label}</dt>
-            <dd className="font-heading text-xl font-semibold text-primary tabular-nums">{r.value}</dd>
+      {/* Each figure is a raised tile that leans toward the pointer; the numbers roll in when seen. */}
+      <dl className="grid gap-3 sm:grid-cols-2">
+        {rows.map((r, i) => (
+          <div
+            key={r.label}
+            data-tilt
+            className={`tb-surface tb-spec flex flex-col justify-between gap-4 rounded-2xl p-5 ${i === 0 ? "sm:col-span-2" : ""}`}
+          >
+            <dt className="text-base leading-snug">{r.label}</dt>
+            <dd className="font-heading text-[2.75rem] leading-none font-extrabold text-primary [font-stretch:64%]">
+              <Ticker value={r.value} />
+            </dd>
           </div>
         ))}
       </dl>

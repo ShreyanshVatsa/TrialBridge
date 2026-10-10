@@ -96,17 +96,24 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
   }
 
   return (
-    <article aria-labelledby={titleId} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-      <div className="flex flex-wrap items-center gap-2">
+    <article aria-labelledby={titleId} className="tb-surface tb-spec rounded-3xl p-5 sm:p-7">
+      {/* Rank numeral drawn from data-rank by CSS: decoration only (the list order and the sr-only number
+          already say it), kept out of the text so it is never read twice. */}
+      <span
+        aria-hidden
+        data-rank={String(index + 1).padStart(2, "0")}
+        className="pointer-events-none absolute end-6 top-4 hidden font-heading text-[3.5rem] leading-none font-extrabold text-foreground/[0.08] [font-stretch:60%] before:content-[attr(data-rank)] sm:block"
+      />
+      <div className="flex flex-wrap items-center gap-2 sm:pe-16">
         {trial.scores.fit && <FitBadge level={trial.scores.fit} />}
         <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
         {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
         <span className="text-sm text-muted-foreground">{card.id}</span>
       </div>
 
-      <h3 id={titleId} className="mt-3 text-xl font-semibold sm:text-2xl">
+      <h3 id={titleId} className="mt-4 text-[1.5rem] leading-[1.08] font-bold text-balance [font-stretch:74%] sm:pe-10 sm:text-[1.875rem]">
         <span className="sr-only">{index + 1}. </span>
-        <Link href={trialHref(card.id)} className="underline-offset-4 hover:underline">
+        <Link href={trialHref(card.id)} className="decoration-primary/50 decoration-2 underline-offset-[5px] transition-colors hover:text-primary hover:underline">
           {card.title}
         </Link>
       </h3>
@@ -158,7 +165,7 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
         </section>
       </div>
 
-      <div className="no-print mt-5 flex flex-wrap gap-3 border-t border-border pt-4">
+      <div className="no-print mt-6 flex flex-wrap gap-3 border-t border-border pt-5">
         <Link href={`${trialHref(card.id)}#ask`} className={buttonVariants({ variant: "default" })}>
           <MessageCircleQuestion aria-hidden />
           {m.ask.button}

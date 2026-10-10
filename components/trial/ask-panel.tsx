@@ -38,7 +38,7 @@ function busyResponse(): AskResponse {
 function CrisisBox() {
   const m = useMessages();
   return (
-    <div role="alert" className="rounded-xl border-2 border-primary bg-secondary p-4 text-secondary-foreground">
+    <div role="alert" className="rounded-2xl border-2 border-primary bg-secondary p-4 text-secondary-foreground sm:p-5">
       <p className="flex items-center gap-2 text-lg font-semibold">
         <HeartHandshake className="size-5" aria-hidden />
         {m.ask.crisisTitle}
@@ -198,9 +198,11 @@ export function AskPanel({ nctId }: { nctId: string }) {
   const limitReached = remaining <= 0;
 
   return (
-    <section id="ask" aria-labelledby="ask-title" className="no-print scroll-mt-24 border-t border-border pt-8">
-      <h2 id="ask-title" className="flex items-center gap-2 text-2xl font-semibold">
-        <MessageCircleQuestion className="size-6 text-primary" aria-hidden />
+    <section id="ask" aria-labelledby="ask-title" className="no-print scroll-mt-28 border-t border-foreground/12 pt-8">
+      <h2 id="ask-title" className="flex items-center gap-3 text-[clamp(1.75rem,3vw,2.35rem)] leading-[1.02] font-bold [font-stretch:70%]">
+        <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.5),0_6px_14px_-8px_var(--iris)]">
+          <MessageCircleQuestion className="size-5" />
+        </span>
         {m.ask.title}
       </h2>
       <p className="mt-2 max-w-prose text-muted-foreground">{m.ask.intro}</p>
@@ -212,11 +214,11 @@ export function AskPanel({ nctId }: { nctId: string }) {
         <ol className="mt-6 space-y-5" aria-live="polite">
           {turns.map((t) => (
             <li key={t.id} className="space-y-3">
-              <div className="ms-auto max-w-[85%] rounded-2xl rounded-ee-md bg-primary px-4 py-3 text-primary-foreground">
+              <div className="animate-enter ms-auto max-w-[85%] rounded-3xl rounded-ee-md bg-primary bg-[linear-gradient(180deg,color-mix(in_oklch,var(--primary),white_12%),var(--primary)_70%)] px-4 py-3 text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_10px_20px_-12px_var(--iris)]">
                 <span className="sr-only">{m.ask.you}: </span>
                 {t.question}
               </div>
-              <div className="max-w-[95%] rounded-2xl rounded-es-md border border-border bg-card px-4 py-3">
+              <div className="tb-surface-flat animate-enter max-w-[95%] rounded-3xl rounded-es-md px-4 py-3 sm:px-5 sm:py-4">
                 <span className="sr-only">{m.ask.answerLabel}: </span>
                 {t.response ? <ResponseView r={t.response} /> : <TypingDots label={m.ask.thinking} className="text-primary" />}
               </div>
@@ -225,11 +227,11 @@ export function AskPanel({ nctId }: { nctId: string }) {
         </ol>
       )}
 
-      <form onSubmit={submit} noValidate className="mt-6 space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <form onSubmit={submit} noValidate className="tb-surface mt-6 space-y-3 rounded-3xl p-4 transition-shadow focus-within:shadow-[var(--rim),var(--shadow-3)] sm:p-6">
         <label htmlFor={inputId} className="block font-medium">
           {m.ask.label}
         </label>
-        <p id={hintId} className="flex items-start gap-2 rounded-lg bg-warn px-3 py-2 text-sm text-warn-foreground">
+        <p id={hintId} className="flex items-start gap-2 rounded-2xl bg-warn px-3 py-2 text-sm text-warn-foreground">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           {m.ask.piiNotice}
         </p>
@@ -247,7 +249,7 @@ export function AskPanel({ nctId }: { nctId: string }) {
           placeholder={m.ask.placeholder}
           aria-describedby={`${hintId} ${errId}`}
           aria-invalid={error ? true : undefined}
-          className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground disabled:opacity-60"
+          className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.08)] transition-[border-color,box-shadow] placeholder:text-muted-foreground hover:border-primary/40 focus-visible:border-ring focus-visible:shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.08),0_0_0_4px_color-mix(in_oklch,var(--ring)_18%,transparent)] disabled:opacity-60"
         />
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
           <span className="tabular-nums">{format(m.ask.chars, { count: question.length, max: MAX_QUESTION_CHARS })}</span>
@@ -258,7 +260,7 @@ export function AskPanel({ nctId }: { nctId: string }) {
         <p id={errId} aria-live="polite" className="min-h-5 text-sm text-destructive">
           {error}
         </p>
-        <Button type="submit" disabled={pending || limitReached}>
+        <Button type="submit" size="lg" className="min-w-32" disabled={pending || limitReached}>
           {m.ask.submit}
         </Button>
         <div ref={turnstileRef} role="region" aria-label={m.ask.verification} />

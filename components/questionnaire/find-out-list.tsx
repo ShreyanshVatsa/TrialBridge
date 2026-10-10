@@ -26,8 +26,8 @@ export function FindOutList({
   if (entries.length === 0) return null;
   const H = headingLevel === 2 ? "h2" : "h3";
   return (
-    <section aria-labelledby="find-out-title" className={cn("find-out rounded-2xl border border-border bg-card p-5 sm:p-6", className)}>
-      <H id="find-out-title" className="flex items-center gap-2 text-xl font-semibold sm:text-2xl">
+    <section aria-labelledby="find-out-title" className={cn("find-out tb-surface rounded-3xl p-5 sm:p-7", className)}>
+      <H id="find-out-title" className="flex items-center gap-2 text-[1.75rem] leading-[1.05] font-bold [font-stretch:72%]">
         <ClipboardList aria-hidden className="size-5 shrink-0 text-primary" />
         <span className="no-print">{t("results.findOutTitle")}</span>
         <span className="print-only">{t("results.findOutPrintTitle")}</span>

@@ -22,7 +22,7 @@ function Notice({ children, tone = "info", icon }: { children: ReactNode; tone?:
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3",
+        "animate-enter flex items-start gap-3 rounded-2xl border px-4 py-3",
         tone === "warn" ? "border-warn-border bg-warn text-warn-foreground" : "border-border bg-secondary/60 text-foreground",
       )}
     >
@@ -32,15 +32,25 @@ function Notice({ children, tone = "info", icon }: { children: ReactNode; tone?:
   );
 }
 
+/**
+ * Search in progress: a glass lens with a slow arc of light turning around it (the landing's lens, now
+ * looking through the national dataset), the stage in words, and a liquid progress bar.
+ */
 export function SearchProgressView({ progress }: { progress: SearchProgress }) {
   const m = useMessages();
   const pct = progress.fraction === undefined ? null : Math.round(Math.min(1, Math.max(0, progress.fraction)) * 100);
   return (
-    <div role="status" className="mx-auto max-w-lg rounded-2xl border border-border bg-card p-6 text-center">
-      <TypingDots label="" className="text-primary" />
-      <p className="mt-3 text-lg font-medium">{m.search.stage[progress.stage]}</p>
+    <div role="status" className="tb-surface animate-enter mx-auto max-w-lg rounded-3xl p-7 text-center sm:p-9">
+      <div aria-hidden className="relative mx-auto size-28">
+        <span className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,var(--lavender)_70deg,var(--primary)_110deg,transparent_160deg)] motion-safe:animate-[tb-spin_1.6s_linear_infinite]" />
+        <span className="absolute inset-[5px] rounded-full bg-card shadow-[inset_0_1.5px_0_oklch(1_0_0/0.6),inset_0_-1px_0_oklch(0.2_0.06_295/0.15),0_10px_24px_-10px_var(--iris)]" />
+        <span className="absolute inset-0 flex items-center justify-center font-heading text-3xl font-extrabold text-primary tabular-nums [font-stretch:66%]">
+          {pct === null ? <TypingDots label="" className="text-primary" /> : `${pct}%`}
+        </span>
+      </div>
+      <p className="mt-6 text-lg font-medium">{m.search.stage[progress.stage]}</p>
       <div
-        className="mt-4 h-2 overflow-hidden rounded-full bg-muted"
+        className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.18)]"
         role="progressbar"
         aria-label={m.search.progressLabel}
         aria-valuemin={0}
@@ -48,7 +58,10 @@ export function SearchProgressView({ progress }: { progress: SearchProgress }) {
         aria-valuenow={pct ?? undefined}
       >
         <div
-          className={cn("h-full rounded-full bg-primary transition-[width] duration-300", pct === null && "w-1/3 animate-pulse")}
+          className={cn(
+            "h-full rounded-full bg-[linear-gradient(90deg,var(--lavender),var(--primary))] transition-[width] duration-500 ease-out rtl:bg-[linear-gradient(270deg,var(--lavender),var(--primary))]",
+            pct === null && "tb-shimmer w-1/3",
+          )}
           style={pct === null ? undefined : { width: `${pct}%` }}
         />
       </div>
@@ -94,9 +107,10 @@ export function ResultsView({
         <p className="mt-1">{format(m.results.printIntro, { date: today })}</p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="relative flex flex-col gap-5">
+        <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[26rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
         <div>
-          <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-semibold outline-none sm:text-4xl">
+          <h1 ref={headingRef} tabIndex={-1} className="tb-display text-[clamp(2.25rem,5vw,3.75rem)] outline-none">
             {m.results.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -152,8 +166,8 @@ export function ResultsView({
       )}
 
       {results.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-          <h2 className="text-2xl font-semibold">{m.results.emptyTitle}</h2>
+        <div className="tb-surface rounded-3xl p-8 text-center sm:p-10">
+          <h2 className="text-[2rem] leading-[1.02] font-bold [font-stretch:70%]">{m.results.emptyTitle}</h2>
           <p className="mx-auto mt-2 max-w-prose text-muted-foreground">{m.results.emptyBody}</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             {session.answers.travelMiles !== null && <Button onClick={onWiden}>{m.results.emptyWiden}</Button>}
@@ -164,9 +178,9 @@ export function ResultsView({
         </div>
       ) : (
         <>
-          <ol className="space-y-5">
+          <ol className="space-y-6">
             {shown.map((t, i) => (
-              <li key={t.card.id}>
+              <li key={t.card.id} className="animate-enter" style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}>
                 <ResultCard trial={t} index={i} />
               </li>
             ))}

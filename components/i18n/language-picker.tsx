@@ -78,13 +78,13 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
           setActive(Math.max(LOCALES.findIndex((l) => l.tag === lang), 0));
           setOpen((o) => !o);
         }}
-        className="flex h-11 items-center gap-2 rounded-lg px-2.5 text-sm text-foreground hover:bg-muted sm:text-base"
+        className="flex h-11 items-center gap-2 rounded-full px-3 text-sm text-foreground transition-colors hover:bg-muted sm:text-base"
       >
         <Globe className="size-4 text-muted-foreground" aria-hidden />
         <span lang={current.tag}>{current.nativeName}</span>
       </button>
       {open && (
-        <div role="dialog" aria-label={t("i18n.pickerLabel")} className="absolute end-0 z-40 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-2 shadow-lg" onKeyDown={onKeyDown}>
+        <div role="dialog" aria-label={t("i18n.pickerLabel")} className="tb-glass-panel tb-pop-in absolute end-0 z-40 mt-3 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-3xl p-2 rtl:origin-top-left" onKeyDown={onKeyDown}>
           <input
             ref={inputRef}
             role="combobox"
@@ -101,7 +101,7 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
             }}
             autoComplete="off"
             spellCheck={false}
-            className="h-11 w-full rounded-lg border border-border bg-background px-3 text-base"
+            className="h-11 w-full rounded-2xl border border-input bg-background/80 px-4 text-base shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.08)]"
           />
           <ul id={listId} role="listbox" aria-label={t("i18n.pickerLabel")} className="mt-2 max-h-[min(22rem,60vh)] overflow-y-auto">
             {results.map((l, i) => {
@@ -115,7 +115,7 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
                   data-locale={l.tag}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => choose(l.tag)}
-                  className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 ${i === active ? "bg-muted" : ""}`}
+                  className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl px-3 py-2 transition-colors ${i === active ? "bg-muted" : ""}`}
                 >
                   <span className="min-w-0 flex-1">
                     <span lang={l.tag} dir={l.dir} className="font-medium">
@@ -124,7 +124,7 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
                     <span className="text-muted-foreground"> · {l.englishName}</span>
                     <span className="block text-xs text-muted-foreground">{l.baseStatus === "reviewed" ? t("i18n.statusReviewed") : t("i18n.statusMachine")}</span>
                   </span>
-                  {selected && <Check className="size-4 shrink-0" aria-hidden />}
+                  {selected && <Check className="size-4 shrink-0 text-primary" aria-hidden />}
                 </li>
               );
             })}

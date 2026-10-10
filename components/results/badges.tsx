@@ -6,14 +6,14 @@ import { format, useMessages } from "@/components/i18n";
 import type { Barrier, CriterionRef, FitLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const badgeBase = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium leading-none";
+const badgeBase = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium leading-none shadow-[var(--rim)]";
 
 export function Badge({ className, children }: { className?: string; children: ReactNode }) {
   return <span className={cn(badgeBase, "border-border bg-muted text-foreground", className)}>{children}</span>;
 }
 
 const fitStyle: Record<FitLevel, string> = {
-  strong: "border-success-foreground/30 bg-success text-success-foreground",
+  strong: "border-success-foreground/30 bg-success text-success-foreground shadow-[var(--rim),0_4px_12px_-6px_var(--success-foreground)]",
   possible: "border-primary/30 bg-secondary text-secondary-foreground",
   unlikely: "border-border bg-muted text-muted-foreground",
   unclear: "border-border bg-muted text-foreground",
@@ -43,12 +43,12 @@ export function BarrierBadge({ barrier }: { barrier: Barrier }) {
   const m = useMessages();
   return (
     <details className="group">
-      <summary className={cn(badgeBase, warnBadge, "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
+      <summary className={cn(badgeBase, warnBadge, "min-h-8 cursor-pointer list-none transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-[var(--rim),0_6px_14px_-8px_oklch(0.6_0.12_60)] [&::-webkit-details-marker]:hidden")}>
         <AlertTriangle className="size-4" aria-hidden />
         {m.card.barrier[barrier.type]}
         <span className="sr-only">: {m.card.barrierWhy}</span>
       </summary>
-      <div className="mt-2 max-w-prose rounded-xl border border-warn-border bg-warn/50 p-3 text-sm">
+      <div className="tb-pop-in mt-2 max-w-prose origin-top rounded-2xl border border-warn-border bg-warn/60 p-4 text-sm shadow-[var(--shadow-1)]">
         <p className="font-medium">{m.card.barrierWhy}</p>
         <Quote text={barrier.quote} criterionRef={barrier.ref} />
       </div>
