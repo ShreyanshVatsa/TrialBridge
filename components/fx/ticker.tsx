@@ -36,7 +36,7 @@ export function Ticker({ value, className }: { value: string; className?: string
 
   const chars = Array.from(value);
   return (
-    <span ref={ref} className={cn("inline-flex tabular-nums", className)}>
+    <span ref={ref} dir="ltr" className={cn("inline-flex tabular-nums", className)}>
       <span className="sr-only">{value}</span>
       <span aria-hidden className="inline-flex leading-none">
         {chars.map((ch, i) => {
