@@ -38,7 +38,6 @@ export function IntroPanel({ caregiver, onCaregiver }: { caregiver: boolean; onC
       </ul>
       {/* A real checkbox, drawn as a switch: it only changes wording, nothing is stored about anyone. */}
       <label className="relative mt-4 flex min-h-11 cursor-pointer items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary/40 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring">
-        <input type="checkbox" checked={caregiver} onChange={(e) => onCaregiver(e.target.checked)} className="peer sr-only" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 font-medium">
             <HeartHandshake aria-hidden className="size-4 shrink-0 text-primary" />
@@ -46,11 +45,20 @@ export function IntroPanel({ caregiver, onCaregiver }: { caregiver: boolean; onC
           </span>
           <span className="block text-base text-muted-foreground">{t("questionnaire.ui.caregiverHelp")}</span>
         </span>
-        <span
-          aria-hidden
-          className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-input bg-muted p-0.5 shadow-[inset_0_1px_3px_oklch(0.2_0.06_295/0.2)] transition-colors duration-300 peer-checked:border-primary peer-checked:bg-primary peer-checked:[&>span]:translate-x-5 rtl:peer-checked:[&>span]:-translate-x-5"
-        >
-          <span className="size-[1.375rem] rounded-full bg-card shadow-[inset_0_1px_0_oklch(1_0_0),0_1px_3px_oklch(0.2_0.06_295/0.4)] transition-transform duration-300 ease-[cubic-bezier(0.2,1.4,0.4,1)]" />
+        {/* The real checkbox lies, invisible, exactly over the drawn switch, so pointer, keyboard and tests all hit it. */}
+        <span className="relative inline-flex shrink-0">
+          <input
+            type="checkbox"
+            checked={caregiver}
+            onChange={(e) => onCaregiver(e.target.checked)}
+            className="peer absolute inset-0 z-10 m-0 size-full cursor-pointer opacity-0"
+          />
+          <span
+            aria-hidden
+            className="inline-flex h-7 w-12 items-center rounded-full border border-input bg-muted p-0.5 shadow-[inset_0_1px_3px_oklch(0.2_0.06_295/0.2)] transition-colors duration-300 peer-checked:border-primary peer-checked:bg-primary peer-checked:[&>span]:translate-x-5 rtl:peer-checked:[&>span]:-translate-x-5"
+          >
+            <span className="size-[1.375rem] rounded-full bg-card shadow-[inset_0_1px_0_oklch(1_0_0),0_1px_3px_oklch(0.2_0.06_295/0.4)] transition-transform duration-300 ease-[cubic-bezier(0.2,1.4,0.4,1)]" />
+          </span>
         </span>
       </label>
     </section>
