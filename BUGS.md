@@ -214,7 +214,9 @@ Fixed (commits 4643ebc backend/data, 8046053 UI): H1, H2, H3, M1, M2, M3, M4, M5
 
 Partial: M9 (psychiatric-compliance exclusions stay flagged by design, see DECISIONS.md).
 
-Still open: L6 (service worker never evicts old caches; needs a build id baked in by `scripts/postbuild.ts` and cache cleanup in `public/sw.js`), L13 (eval is weak evidence for the national product; judgement call, `eval:live` deferred).
+Fixed later: L6 (commit 3106673: `scripts/postbuild.ts` stamps a build id into `public/sw.js`, whose activate handler deletes every other `tb-shell-*` cache; v5 adds an e2e check that a stale `tb-shell-*` cache is evicted on activation, re-fetches the manifest once when a shard or bucket returns 404, and removes the stale `/data/lookup.json` header rule).
+
+Still open: L13 (eval is weak evidence for the national product): addressed in v5 by the vignette benchmark, paired-bootstrap CIs, a random baseline and the TREC cancer subset (see eval/RESULTS.md).
 
 Effects on national data after the rule fixes (5,726 trials; 53 non-cancer studies dropped): `metastatic:required` 2,156 to 817; `upper_age_limit` 526 to 185; any barrier 1,603 to 1,270. Seed nDCG@10 moved 0.819 to 0.800 because fewer rule penalties now reorder results; labels are synthetic.
 

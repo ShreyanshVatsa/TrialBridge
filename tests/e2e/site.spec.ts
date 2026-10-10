@@ -84,3 +84,19 @@ test("PWA: valid manifest, service worker, no installability errors", async ({ p
   const sw = await (await page.request.get("/sw.js")).text();
   expect(sw).toContain('"/api/"');
 });
+
+test("PWA: a new service worker evicts stale shell caches on activation", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "service worker test runs on Chromium only");
+  await page.goto("/");
+  await expect.poll(() => page.evaluate(async () => Boolean(await navigator.serviceWorker.getRegistration())), { timeout: 30_000 }).toBe(true);
+  // Plant a cache from an imagined older deploy, drop the registration, and let the page re-register the worker.
+  await page.evaluate(async () => {
+    await caches.open("tb-shell-stale000000");
+    for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+  });
+  await page.reload();
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state ?? null), { timeout: 30_000 }).toBe("activated");
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith("tb-shell-"))), { timeout: 30_000 }).not.toContain("tb-shell-stale000000");
+  const keys = await page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith("tb-shell-")));
+  expect(keys).toHaveLength(1);
+});

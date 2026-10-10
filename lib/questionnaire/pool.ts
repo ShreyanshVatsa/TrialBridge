@@ -6,13 +6,12 @@
  * Client-only; nothing leaves the browser (only static shard files are fetched).
  */
 import type { CancerGroupId } from "@/config/cancer-groups";
-import { loadLiteShard, loadManifest, loadShard, lookupZip } from "@/lib/data/loader";
+import { lookupZip } from "@/lib/data/loader";
 import type { LatLon } from "@/lib/geo/distance";
 import { nearestSite, passesAge, passesDistance, passesGroup } from "@/lib/match/filters";
-import { liteToEntries } from "@/lib/match/lite";
+import { loadGroupShards } from "@/lib/match/group-data";
 import { getShardIndex, keywordScores } from "@/lib/match/keyword";
 import { buildProfileText } from "@/lib/match/query";
-import type { RankEntry } from "@/lib/match/rank";
 import type { QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { getCatalog } from "@/config/questionnaire";
 import type { Site, TrialCard } from "@/lib/types/trial";
@@ -67,25 +66,10 @@ export async function buildCandidatePool(state: QuestionnaireState, opts: { sign
   const group = groupOf(state) as CancerGroupId;
   const zip = state.answers["zip"];
   const signalOpt = opts.signal ? { signal: opts.signal } : {};
-  const manifest = await loadManifest();
-  const ids = group === "other" ? [manifest.allShard] : (manifest.groups[group] ?? []);
-  const infos = manifest.shards.filter((s) => ids.includes(s.id));
-  const [shards, origin] = await Promise.all([
-    Promise.all(
-      infos.map(async (info) => {
-        if (info.kind === "lite") {
-          const lite = await loadLiteShard(info, manifest.shardBase, signalOpt);
-          return { id: info.id, indexJson: lite.indexJson, entries: liteToEntries(lite, manifest.embedding.dims) as PoolEntry[] };
-        }
-        const s = await loadShard(info, manifest.shardBase, signalOpt);
-        return { id: info.id, indexJson: s.indexJson, entries: s.cards.map((card): PoolEntry => ({ card, sites: s.sites[card.id] ?? [] })) };
-      }),
-    ),
-    typeof zip === "string" ? lookupZip(zip, signalOpt).catch(() => null) : Promise.resolve(null),
-  ]);
+  const [{ shards }, origin] = await Promise.all([loadGroupShards(group, signalOpt), typeof zip === "string" ? lookupZip(zip, signalOpt).catch(() => null) : Promise.resolve(null)]);
   if (opts.signal?.aborted) throw opts.signal.reason;
   const text = buildProfileText({ cancerType: group, spread: "not_sure", treatments: ["not_sure"], biomarkers: {}, questionnaire: state }, opts.catalog ?? getCatalog("cancer", group));
-  const indexes = shards.map((s) => getShardIndex(s));
+  const indexes = shards.map((s) => getShardIndex({ id: s.info.id, indexJson: s.indexJson }));
   const bm25 = (candidates: ReadonlySet<string>) => keywordScores(indexes, text, candidates);
-  return poolFromEntries({ entries: shards.flatMap((s) => s.entries as RankEntry[] | PoolEntry[]), state, origin, bm25 });
+  return poolFromEntries({ entries: shards.flatMap((s) => s.entries), state, origin, bm25 });
 }

@@ -46,6 +46,8 @@ export interface FetchOptions {
   signal?: AbortSignal;
   /** Called with 0..1 as bytes arrive (when Content-Length is known). */
   onProgress?: (fraction: number) => void;
+  /** HTTP cache mode ("reload" bypasses a stale cached manifest). */
+  cache?: RequestCache;
 }
 
 /** Overridable fetch for tests. */
@@ -63,7 +65,7 @@ async function fetchBytes(url: string, opts: FetchOptions = {}): Promise<Uint8Ar
     const timeout = AbortSignal.timeout(TIMEOUT_MS);
     const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
     try {
-      const res = await fetchImpl(url, { signal });
+      const res = await fetchImpl(url, { signal, ...(opts.cache ? { cache: opts.cache } : {}) });
       if (res.status === 404) throw new DataLoadError("not_found", `Not found: ${url}`);
       if (!res.ok) throw new DataLoadError("network", `HTTP ${res.status}`);
       const total = Number(res.headers.get("content-length") ?? 0);
@@ -162,6 +164,15 @@ export function loadManifest(): Promise<Manifest> {
   return memo("manifest", () => fetchJson(`${DATA_BASE}/manifest.json`, ManifestSchema));
 }
 
+/**
+ * Re-fetch the manifest past the HTTP cache (after a shard or bucket 404: a deploy replaced the data version while
+ * the browser still held the old manifest). Later `loadManifest` calls return the fresh copy.
+ */
+export function refreshManifest(): Promise<Manifest> {
+  cache.delete("manifest");
+  return memo("manifest", () => fetchJson(`${DATA_BASE}/manifest.json`, ManifestSchema, { cache: "reload" }));
+}
+
 /** A loaded shard: cards, sites, serialized MiniSearch index, int8 embeddings (row-major, cards order). */
 export interface LoadedShard {
   info: ShardInfo;
@@ -247,20 +258,27 @@ function loadBucket(trialBase: string, key: string, opts: FetchOptions = {}) {
 
 /** Load several trials (card + sites) by NCT ID from per-trial buckets. Unknown IDs are omitted. */
 export async function loadTrials(nctIds: readonly string[], opts: FetchOptions = {}): Promise<Map<string, { card: TrialCard; sites: Site[] }>> {
-  const manifest = await loadManifest();
   const keys = [...new Set(nctIds.map(trialBucketKey))];
-  const buckets = await Promise.all(
-    keys.map((k) =>
-      loadBucket(manifest.trialBase, k, opts).catch((err: unknown) => {
-        if (err instanceof DataLoadError && err.code === "not_found") return {} as TrialBucket;
-        throw err;
-      }),
-    ),
-  );
+  const fetchBuckets = (trialBase: string) =>
+    Promise.all(
+      keys.map((k) =>
+        loadBucket(trialBase, k, opts).catch((err: unknown) => {
+          if (err instanceof DataLoadError && err.code === "not_found") return null;
+          throw err;
+        }),
+      ),
+    );
+  const manifest = await loadManifest();
+  let buckets = await fetchBuckets(manifest.trialBase);
+  if (buckets.some((b) => b === null)) {
+    // A missing bucket usually means the browser held a stale manifest: refresh it once and retry the misses.
+    const fresh = await refreshManifest();
+    if (fresh.trialBase !== manifest.trialBase) buckets = await fetchBuckets(fresh.trialBase);
+  }
   const out = new Map<string, { card: TrialCard; sites: Site[] }>();
   for (const id of nctIds) {
     for (const b of buckets) {
-      const hit = b[id];
+      const hit = b?.[id];
       if (hit) {
         out.set(id, hit);
         break;

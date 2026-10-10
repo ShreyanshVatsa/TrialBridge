@@ -192,3 +192,37 @@ describe("prefetchSearch", () => {
     expect(() => prefetchSearch("lung")).not.toThrow();
   });
 });
+
+describe("stale manifest recovery", () => {
+  it("re-fetches the manifest once when a shard or bucket is gone, then loads the new version", async () => {
+    const V2 = "/data/shards/v2";
+    const fresh: Manifest = { ...manifest, dataVersion: "v2", shardBase: V2, trialBase: `${V2}/trials` };
+    let manifestFetches = 0;
+    const flipping = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/data/manifest.json") {
+        manifestFetches++;
+        // The first copy is the browser's stale cached manifest; a reload gets the live one.
+        return new Response(JSON.stringify(init?.cache === "reload" ? fresh : manifest));
+      }
+      return server(url);
+    }) as unknown as typeof fetch;
+    // Only the v2 files exist on the server now.
+    for (const k of Object.keys(files)) if (k.startsWith(V)) {
+      files[k.replace(V, V2)] = files[k] as string | Uint8Array;
+      delete files[k];
+    }
+    setFetchForTests(flipping);
+    const { loadGroupShards } = await import("@/lib/match/group-data");
+    const data = await loadGroupShards("breast");
+    expect(data.manifest.dataVersion).toBe("v2");
+    expect(data.shards[0]?.entries).toHaveLength(2);
+    expect(manifestFetches).toBe(2);
+    expect((await loadTrial("NCT00000001"))?.card.id).toBe("NCT00000001");
+    // When the live manifest is unchanged, the 404 is a real missing file.
+    setFetchForTests(server);
+    delete files[`${V2}/breast/cards.json`];
+    files["/data/manifest.json"] = JSON.stringify(fresh);
+    await expect(loadGroupShards("breast")).rejects.toMatchObject({ code: "not_found" });
+  });
+});
