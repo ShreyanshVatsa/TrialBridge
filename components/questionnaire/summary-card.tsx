@@ -83,7 +83,7 @@ export function SummaryCard({
       {groups.map((g) =>
         g.rows.length === 0 ? null : (
           <section key={g.key} aria-labelledby={`sum-${g.key}`}>
-            <h3 id={`sum-${g.key}`} className="flex items-center gap-2 border-b border-border pb-2 font-sans text-sm font-semibold tracking-[0.06em] text-muted-foreground uppercase [font-stretch:100%]">
+            <h3 id={`sum-${g.key}`} className="flex items-center gap-2 border-b border-border pb-2 font-sans text-base font-semibold tracking-[0.05em] text-muted-foreground uppercase [font-stretch:100%]">
               {g.key === "later" && <ClipboardList aria-hidden className="size-4 text-primary" />}
               {t(`questionnaire.ui.summaryGroup.${g.key}`)}
             </h3>
