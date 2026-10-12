@@ -58,7 +58,7 @@ export function hydrateResults(
   const results = outcome.results.flatMap((r) => {
     const f = full.get(r.card.id);
     if (!f) return [];
-    const { notes, phase, subtype } = trialPrecheck(answers as RankAnswers, f.card, ctx);
+    const { notes, phase, subtype, unknowns } = trialPrecheck(answers as RankAnswers, f.card, ctx);
     const features = featuresOf({ ...(r.scores.features ? { kw: r.scores.features.kw, vec: r.scores.features.vec, cosine: r.scores.features.cosine, bm25: r.scores.features.bm25 } : {}), retrieval: r.scores.retrieval, notes, phase, subtype, viaBasket: reachesViaBasket(f.card, (answers as RankAnswers).cancerType), weakGroup: !groupNamed(f.card, (answers as RankAnswers).cancerType) });
     return [
       {
@@ -68,7 +68,7 @@ export function hydrateResults(
         nearest: nearestSite(f.sites, origin),
         languageWarning: answers.language !== "en" && f.card.barriers.some((b) => b.type === "english_required"),
         precheck: notes,
-        scores: { ...r.scores, precheckPenalty: features.penalty, phaseBonus: phase, features, final: fusedScore(features, r.scores.fit) },
+        scores: { ...r.scores, precheckPenalty: features.penalty, phaseBonus: phase, features, ...(unknowns !== undefined ? { unknowns } : {}), final: fusedScore(features, r.scores.fit) },
       },
     ];
   });

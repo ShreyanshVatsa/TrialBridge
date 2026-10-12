@@ -8,7 +8,7 @@ import type { PrecheckNote } from "@/lib/types/match";
 import { compileState, hardFilters } from "@/lib/questionnaire/rules";
 import { nearestSite, passesAge, passesDistance, passesGroup, passesSex } from "./filters";
 import { reciprocalRankFusion, RRF_K } from "./rrf";
-import { answerEvaluator, precheck } from "./precheck";
+import { answerEvaluator, precheck, unknownCounter } from "./precheck";
 import { normalizeRrf, phaseBonus, precheckBonus, precheckPenalty } from "./score";
 import { fusedScore, type Features, type FusionWeights } from "./fusion";
 import { subtypeMatch, subtypeProfile, type SubtypeProfile } from "./subtype";
@@ -44,6 +44,8 @@ export interface PrecheckResult {
   phase: number;
   /** Structured subtype match against the trial's registered conditions: 1 match, -1 conflict, 0 neutral. */
   subtype: -1 | 0 | 1;
+  /** Directional criteria the answers say nothing about (see unknownCounter); undefined for the v1 intake. */
+  unknowns?: number;
 }
 
 export function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { precheck: (card: MatchCard) => PrecheckResult; sex: "FEMALE" | "MALE" | null } {
@@ -51,11 +53,12 @@ export function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): {
   if (state && ctx.catalog) {
     const compiled = compileState(state, ctx.catalog);
     const check = answerEvaluator(compiled, ctx.policy);
+    const unknown = unknownCounter(compiled);
     const pref = state.answers["phase_pref"];
     const prefId = typeof pref === "string" ? pref : null;
     const profile: SubtypeProfile | null = subtypeProfile(compiled);
     const group = answers.cancerType;
-    return { precheck: (card) => ({ notes: check(card.facts), phase: phaseBonus(prefId, card.phases), subtype: subtypeMatch(profile, card, group) }), sex: hardFilters(compiled).sex ?? null };
+    return { precheck: (card) => ({ notes: check(card.facts), phase: phaseBonus(prefId, card.phases), subtype: subtypeMatch(profile, card, group), unknowns: unknown(card.facts) }), sex: hardFilters(compiled).sex ?? null };
   }
   return { precheck: (card) => ({ notes: precheck(answers, card.facts), phase: 0, subtype: 0 }), sex: null };
 }
@@ -164,7 +167,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
   // 4. Pre-check (v1 rules or the v2 catalog) + final score.
   const ranked: RankedTrial[] = fused.map((f) => {
     const c = candidates.get(f.id) as RankEntry & { nearest: ReturnType<typeof nearestSite> };
-    const { notes, phase, subtype } = matching.precheck(c.card);
+    const { notes, phase, subtype, unknowns } = matching.precheck(c.card);
     const retrieval = normalizeRrf(f.score, rankings.length);
     const features = featuresOf({
       retrieval,
@@ -193,6 +196,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
         fit: null,
         phaseBonus: phase,
         features,
+        ...(unknowns !== undefined ? { unknowns } : {}),
         final: fusedScore(features, null, input.weights),
       },
       analysis: null,

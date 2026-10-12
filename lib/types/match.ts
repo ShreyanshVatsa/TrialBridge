@@ -43,6 +43,8 @@ export interface RankedTrial {
     fit: FitLevel | null;
     /** The fusion features the final score is computed from (lib/match/fusion.ts); re-fused when the AI fit arrives. */
     features?: Features;
+    /** Directional criteria the patient's answers say nothing about (questionnaire intake only). */
+    unknowns?: number;
     final: number;
   };
   analysis: TrialAnalysis | null;

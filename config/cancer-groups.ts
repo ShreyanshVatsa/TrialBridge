@@ -44,7 +44,7 @@ export interface CancerGroup {
 
 export const CANCER_GROUPS: readonly CancerGroup[] = [
   { id: "breast", label: "Breast cancer", synonyms: ["breast", "ductal", "lobular", "TNBC", "triple negative"], mesh: [/^breast neoplasms/i, /breast carcinoma/i], text: [/breast/i] },
-  { id: "lung", label: "Lung cancer", synonyms: ["NSCLC", "SCLC", "non-small cell", "small cell", "mesothelioma"], mesh: [/^lung neoplasms/i, /carcinoma, non-small-cell lung/i, /small cell lung carcinoma/i, /mesothelioma/i], text: [/lung|nsclc|sclc|mesothelioma/i] },
+  { id: "lung", label: "Lung cancer", synonyms: ["NSCLC", "SCLC", "non-small cell", "small cell", "mesothelioma"], mesh: [/^lung neoplasms/i, /carcinoma, non-small-cell lung/i, /small cell lung carcinoma/i, /mesothelioma/i], text: [/lung|nsclc|sclc|mesothelioma|pleura(l|e)? (effusion|disease|cancer|tumou?r|malignan)/i] },
   { id: "colorectal", label: "Colorectal cancer", synonyms: ["colon", "rectal", "bowel", "anal"], mesh: [/^colorectal neoplasms/i, /^colonic neoplasms/i, /^rectal neoplasms/i, /^anus neoplasms/i], text: [/colorectal|colon|rectal|rectum|anal (cancer|carcinoma)/i] },
   { id: "prostate", label: "Prostate cancer", synonyms: ["prostate", "mCRPC", "castration"], mesh: [/^prostatic neoplasms/i], text: [/prostat/i] },
   { id: "leukemia", label: "Leukemia", synonyms: ["AML", "ALL", "CLL", "CML", "myelodysplastic", "MDS"], mesh: [/^leukemia/i, /myelodysplastic/i], text: [/leuk(a)?emia|\bAML\b|\bCLL\b|\bCML\b|myelodysplastic|\bMDS\b|hematologic(al)? malignanc|myeloid malignanc/i] },

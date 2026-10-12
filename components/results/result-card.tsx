@@ -109,6 +109,7 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
         <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
         {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
         <span className="text-sm text-muted-foreground">{card.id}</span>
+        {trial.scores.unknowns !== undefined && trial.scores.unknowns > 0 && <span className="text-sm text-muted-foreground">{format(m.card.unknowns, { n: String(trial.scores.unknowns) })}</span>}
       </div>
 
       <h3 id={titleId} className="mt-4 text-[1.5rem] leading-[1.08] font-bold text-balance [font-stretch:74%] sm:pe-10 sm:text-[1.875rem]">
