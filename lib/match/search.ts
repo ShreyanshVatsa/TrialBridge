@@ -6,7 +6,7 @@ import { IntakeAnswersSchema, type IntakeAnswers } from "@/lib/types/intake";
 import type { SearchOutcome, SearchProgress } from "@/lib/types/match";
 import { loadTrials, lookupZip } from "@/lib/data/loader";
 import { hydrateResults } from "./lite";
-import { getShardIndex, keywordRanking } from "./keyword";
+import { getShardIndex, keywordRanking, keywordScores } from "./keyword";
 import { buildProfileText } from "./query";
 import { embedProfile } from "./embedder";
 import { loadGroupShards } from "./group-data";
@@ -57,7 +57,8 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   const indexes = shards.map((s) => getShardIndex({ id: s.info.id, indexJson: s.indexJson }));
   const keywordSearch = (ids: ReadonlySet<string>) => keywordRanking(indexes, queryText, ids);
 
-  let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, queryVector: vector, ...ctx });
+  const scoresOf = (ids: ReadonlySet<string>) => keywordScores(indexes, queryText, ids);
+  let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, keywordScores: scoresOf, queryVector: vector, ...ctx });
   if (shards.some((s) => s.info.kind === "lite")) {
     // Lite index: load full cards for just the top results from per-trial buckets.
     const full = await loadTrials(outcome.results.map((r) => r.card.id), signalOpt);
