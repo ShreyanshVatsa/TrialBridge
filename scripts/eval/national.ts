@@ -8,7 +8,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import MiniSearch from "minisearch";
 import { z } from "zod";
-import { ManifestSchema, ShardSitesSchema, TrialCardSchema, type Manifest, type Site, type TrialCard } from "../../lib/types/trial";
+import { LiteCardSchema, LiteSitesSchema, ManifestSchema, ShardSitesSchema, TrialBucketSchema, TrialCardSchema, trialBucketKey, type Manifest, type Site, type TrialCard } from "../../lib/types/trial";
+import { liteToCard } from "../../lib/match/lite";
 import type { RankEntry } from "../../lib/match/rank";
 import { MINISEARCH_OPTIONS, type SearchDoc } from "../../lib/match/minisearch-config";
 import type { CancerGroupId } from "../../config/cancer-groups";
@@ -32,6 +33,8 @@ export interface National {
   shardIds(group: CancerGroupId): string[];
   /** One MiniSearch index per shard of the group, in manifest order (as the browser builds them). */
   indexes(group: CancerGroupId): MiniSearch<SearchDoc>[];
+  /** The full card + sites of any trial, from the per-trial bucket files (the lite "_all" shard has no criteria). */
+  trial(id: string): { card: TrialCard; sites: Site[] } | null;
 }
 
 /** The folder with manifest.json (`NATIONAL_DIR` or public/data); null when no national data is present. */
@@ -58,19 +61,36 @@ export function loadNational(): National | null {
       const read = (f: string) => readFileSync(path.join(dir, f));
       const text = (f: string) => new TextDecoder().decode(read(f));
       const emb = read(info.files.embeddings);
-      s = {
-        id,
-        cards: z.array(TrialCardSchema).parse(JSON.parse(text(info.files.cards))),
-        sites: ShardSitesSchema.parse(JSON.parse(text(info.files.sites))),
-        emb: new Int8Array(emb.buffer, emb.byteOffset, emb.byteLength),
-        indexJson: text(info.files.index),
-      };
+      let cards: TrialCard[];
+      let sites: Record<string, Site[]>;
+      if (info.kind === "lite") {
+        // The cross-group index: lite cards (no criteria text) and [lat, lon] sites, as the browser expands them.
+        cards = z.array(LiteCardSchema).parse(JSON.parse(text(info.files.cards))).map(liteToCard);
+        const pts = LiteSitesSchema.parse(JSON.parse(text(info.files.sites)));
+        sites = Object.fromEntries(Object.entries(pts).map(([k, v]) => [k, v.map(([lat, lon]): Site => ({ facility: "", city: "", state: "", zip: "", lat, lon }))]));
+      } else {
+        cards = z.array(TrialCardSchema).parse(JSON.parse(text(info.files.cards)));
+        sites = ShardSitesSchema.parse(JSON.parse(text(info.files.sites)));
+      }
+      s = { id, cards, sites, emb: new Int8Array(emb.buffer, emb.byteOffset, emb.byteLength), indexJson: text(info.files.index) };
       loaded.set(id, s);
     }
     return s;
   };
   const shardIds = (group: CancerGroupId) => (group === "other" ? [manifest.allShard] : (manifest.groups[group] ?? []));
+  const buckets = new Map<string, Record<string, { card: TrialCard; sites: Site[] }>>();
+  const trial = (id: string) => {
+    const key = trialBucketKey(id);
+    let b = buckets.get(key);
+    if (!b) {
+      const file = path.join(base, "trials", `${key}.json`);
+      b = existsSync(file) ? TrialBucketSchema.parse(JSON.parse(readFileSync(file, "utf8"))) : {};
+      buckets.set(key, b);
+    }
+    return b[id] ?? null;
+  };
   return {
+    trial,
     manifest,
     dims,
     shard,

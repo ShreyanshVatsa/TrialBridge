@@ -19,8 +19,17 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function queryFor(ctx: VignetteContext): Record<string, string> {
   const v = ctx.vignette;
   const cond = v.group === "other" ? "cancer" : getCancerGroup(v.group).label.replace(/ and .*$/, "");
-  // Profile terms minus the group sentence (the first sentence); keep it short so Essie does not over-constrain.
-  const term = ctx.queryText.split(/(?<=\.)\s+/).slice(1).join(" ").replace(/\./g, "").trim();
+  // Profile terms minus the group label and synonym sentences; plain words only (Essie rejects some punctuation),
+  // capped so the site's search is not over-constrained.
+  const sentences = ctx.queryText.split(/(?<=\.)\s+/);
+  const term = sentences
+    .slice(v.group === "other" ? 1 : 2)
+    .join(" ")
+    .replace(/[^A-Za-z0-9+\- ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200)
+    .replace(/\s\S*$/, "");
   return { ...SCOPE_PARAMS, "query.cond": cond, ...(term ? { "query.term": term } : {}), pageSize: "50", fields: "protocolSection.identificationModule.nctId", format: "json" };
 }
 
