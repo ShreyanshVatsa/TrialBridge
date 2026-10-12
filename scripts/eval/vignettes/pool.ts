@@ -11,7 +11,7 @@ import { readVignettes } from "./files";
 import { bm25Ranking, pipelineRanking, queryVectors, vectorRanking, vignetteContexts } from "./systems";
 
 export const POOL_FILE = "eval/gold/vignettes-pool-v1.json";
-export const POOL_K = 10;
+export const POOL_K = 20;
 export const STORED_K = 50;
 
 export interface PoolFile {
