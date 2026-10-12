@@ -114,5 +114,5 @@ export async function runHeadline(opts: { national: National; zips: Map<string, 
       }
     }
   }
-  return { trials: new Set([...entriesCache.values()].flatMap((e) => e.map((x) => x.card.id))).size, rows, oracle: { raw: rawNational?.size ?? 0, returned, candidates: candidatesTally, missed, missedByGroup, missedByDistance, oracleEligible } };
+  return { trials: allIds.size, rows, oracle: { raw: rawNational?.size ?? 0, returned, candidates: candidatesTally, missed, missedByGroup, missedByDistance, oracleEligible } };
 }
