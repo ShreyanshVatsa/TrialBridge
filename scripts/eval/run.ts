@@ -98,12 +98,18 @@ async function main(): Promise<void> {
     return { recall: recallAt(r, rel), ndcg: ndcgAt(r, rel), randNdcg: randomBaseline([...ids], (x) => ndcgAt(x, rel), rand), randRecall: randomBaseline([...ids], (x) => recallAt(x, rel), rand), randExcluded: randomBaseline([...ids], (x) => { const e = new Set(p.excluded); return e.size ? x.slice(0, 10).filter((id) => e.has(id)).length / Math.min(10, x.length || 1) : NaN; }, rand), candidates: ids.size };
   });
   // Where the app's candidate set and the oracle's eligible set disagree (all raw seed studies, not only returned ones).
-  let seedMissed = 0, seedOracleEligible = 0, seedCandidateRejected = 0, seedCandidates = 0;
+  let seedMissed = 0, seedMissedByGroup = 0, seedMissedByDistance = 0, seedOracleEligible = 0, seedCandidateRejected = 0, seedCandidates = 0;
   for (const p of profiles) {
     const eligible = new Set(oracleEligibleIds(rawSeed, patientOf(p)).filter((id) => byId.has(id)));
     const cand = candidatesFor(p);
     seedOracleEligible += eligible.size;
-    seedMissed += [...eligible].filter((id) => !cand.has(id)).length;
+    for (const id of eligible) {
+      if (cand.has(id)) continue;
+      seedMissed++;
+      const c = byId.get(id) as TrialCard;
+      if (!passesGroup(c, p.answers.cancerType)) seedMissedByGroup++;
+      else if (!passesDistance(nearestSite(sites.get(id) ?? [], p.origin), p.origin ? p.answers.travelMiles : null)) seedMissedByDistance++;
+    }
     seedCandidates += cand.size;
     seedCandidateRejected += [...cand].filter((id) => !eligible.has(id)).length;
   }
@@ -297,7 +303,7 @@ async function main(): Promise<void> {
         };
       })()
     : null;
-  const oracleLine = (t: OracleTally) => `${t.any} of ${t.results} results (${pc(t.any / Math.max(1, t.results))}): group ${t.group}, age ${t.age}, sex ${t.sex}, distance ${t.distance} (strict, no slack: ${t.distanceStrict}); ${t.unverifiable} had no raw record`;
+  const oracleLine = (t: OracleTally) => `${t.any} of ${t.results} results (${pc(t.any / Math.max(1, t.results))}): group ${t.group}, age ${t.age}, sex ${t.sex}, distance ${t.distance} (strict, no slack: ${t.distanceStrict}); distance not checkable for ${t.distanceUnverifiable} (raw record has no coordinates); ${t.unverifiable} had no raw record`;
   const results = {
     date: new Date().toISOString().slice(0, 10),
     profiles: profiles.length,
@@ -325,7 +331,7 @@ async function main(): Promise<void> {
   const natRows = headline?.rows ?? [];
   const natMeanCand = mean(natRows.map((r) => r.candidates)), natMeanRel = mean(natRows.map((r) => r.relevant));
   const natSection = headline && natStats
-    ? `Data: ${headline.trials} real recruiting U.S. cancer trials from the national build (\`public/data\`, data version ${national?.manifest.dataVersion}). ${natStats.n} of the ${profiles.length} synthetic profiles have at least one relevant label there (the "other / not sure" profiles are skipped). Every system ranks the **same hard-filtered candidates** (cancer group, age, distance, definite sex): on average ${natMeanCand.toFixed(0)} candidates per profile, of which ${natMeanRel.toFixed(0)} carry a "relevant" label.
+    ? `Data: ${headline.trials} real recruiting U.S. cancer trials from the national build (\`public/data\`, data version ${national?.manifest.dataVersion}). ${natStats.n} of the ${profiles.length} synthetic profiles have at least one relevant label there (profiles with an empty label set are dropped from the means). Every system ranks the **same hard-filtered candidates** (cancer group, age, distance, definite sex): on average ${natMeanCand.toFixed(0)} candidates per profile, of which ${natMeanRel.toFixed(0)} carry a "relevant" label.
 
 | System | nDCG@10, mean [95% CI] | Excluded-label share of top 10 [95% CI] |
 |---|---|---|
@@ -338,12 +344,12 @@ Paired bootstrap over profiles (4000 resamples, seed 20261012; the interval is f
 - Pipeline minus BM25: **${fmtDiff(natStats.pipeMinusBm25)}**
 - BM25 minus random: ${fmtDiff(natStats.bm25MinusRandom)}
 
-Plan gate "random baseline <= 0.45 on the headline set": **${natStats.random.mean <= 0.45 ? "met" : "NOT met"}** (random scores ${f3(natStats.random.mean)}). A random baseline this high means the labels are easy: when most candidates are labelled relevant, any ranking looks good, and only the gap to random and to BM25 carries information.`
+Plan gate "random baseline <= 0.45 on the headline set": **${natStats.random.mean <= 0.45 ? "met" : "NOT met"}** (random scores ${f3(natStats.random.mean)}). ${natStats.pipelineExcluded.mean > natStats.randomExcluded.mean ? "Caution: the pipeline's excluded-label share is **not better than random**. The \"excluded\" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. " : ""}When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.`
     : "National shards are not present in `public/data` (seed-only build), so no national headline was computed. Run `npm run local:national` (or restore `public/data`) and re-run `npm run eval`.";
 
   const natOracle = headline && rawNational
     ? `- **National** (${rawNational.size} raw CT.gov records from \`data/cache/national\`; ${headline.trials} in the build): top 15 returned for each profile: **${oracleLine(headline.oracle.returned)}**. Over **all** candidates the app's filters let through: ${oracleLine(headline.oracle.candidates)}.
-  - Missed-trial direction: the oracle finds ${headline.oracle.oracleEligible} (profile, trial) pairs eligible on group, age, sex and distance among trials in the build; the app's filters drop **${headline.oracle.missed}** of them (${pc(headline.oracle.missed / Math.max(1, headline.oracle.oracleEligible))}). Many are trials whose group tag differs from the oracle's raw-text reading (for example mixed baskets), not necessarily bugs.
+  - Missed-trial direction: the oracle finds ${headline.oracle.oracleEligible} (profile, trial) pairs eligible on group, age, sex and distance among trials in the build; the app's filters drop **${headline.oracle.missed}** of them (${pc(headline.oracle.missed / Math.max(1, headline.oracle.oracleEligible))}): ${headline.oracle.missedByGroup} because the app does not tag the trial with the profile's group (the oracle reads any generic "cancer" or "solid tumor" record as a basket, and a person should look at these before calling them recall losses), ${headline.oracle.missedByDistance} because the app finds no site in range.
   - Samples of flagged candidates: ${headline.oracle.candidates.samples.length ? headline.oracle.candidates.samples.join("; ") : "none"}.`
     : "- **National**: raw pages (`data/cache/national`) or national shards are not present here, so the oracle was not run at national scale.";
 
@@ -359,7 +365,7 @@ ${natSection}
 ## 2. Safety: hard filters checked by an independent oracle
 The app's filters (cancer group, age, distance, definite sex) read derived card fields. Checking a result with the same filter functions can never fail, so the old "0 violations" line (reproduced in the last bullet) is true by construction and is not evidence. \`scripts/eval/oracle.ts\` instead re-derives each decision from the **raw CT.gov record** with separate code: its own cancer-group term lists over conditions, keywords and titles; its own parser of the raw minimum/maximum age strings; and its own haversine over the registry's facility coordinates of recruiting U.S. sites. Distance is counted with 25 miles of slack, because the app measures to ZIP centroids and the registry gives facility coordinates (the strict count is shown too). A "group" flag means the raw text names a different cancer than the profile's; it can also be the oracle's term list being narrower than the registry's wording, so read flagged samples before concluding anything.
 - **Seed** (${rawSeed.size} raw records), over all variants and the v2 pipeline: **${oracleLine(oracleSeed)}**. Samples: ${oracleSeed.samples.length ? oracleSeed.samples.join("; ") : "none"}.
-  - Missed-trial direction: ${seedOracleEligible} (profile, trial) pairs are oracle-eligible; the app's candidate sets omit **${seedMissed}** (${pc(seedMissed / Math.max(1, seedOracleEligible))}); of ${seedCandidates} app candidates the oracle rejects ${seedCandidateRejected} (${pc(seedCandidateRejected / Math.max(1, seedCandidates))}).
+  - Missed-trial direction: ${seedOracleEligible} (profile, trial) pairs are oracle-eligible; the app's candidate sets omit **${seedMissed}** (${pc(seedMissed / Math.max(1, seedOracleEligible))}; ${seedMissedByGroup} because the app does not tag the trial with the profile's group, ${seedMissedByDistance} because the app finds no site in range); of ${seedCandidates} app candidates the oracle rejects ${seedCandidateRejected} (${pc(seedCandidateRejected / Math.max(1, seedCandidates))}).
 ${natOracle}
 - Circular check, kept only as a regression test (same filter functions as the app): ${totalViolations} violations in ${variantRows.reduce((s, r) => s + r.results, 0) + v2Results} results.
 
@@ -444,6 +450,11 @@ See DECISIONS.md. Production uses the variant in the first row unless another va
   console.log(`seed nDCG@10 (p01-p30): random ${fmtCI(seedStats.random)} bm25 ${fmtCI(seedStats.bm25)} pipeline ${fmtCI(seedStats.pipeline)}`);
   const failures: string[] = [];
   if (totalViolations > 0) failures.push("hard-filter violations found");
+  // Independent oracle: age, sex and distance are exact checks on raw fields and must be clean. Group flags are reported, not gated:
+  // they mix real mis-tags with the oracle\'s own narrower term lists (see RESULTS.md section 2).
+  for (const [name, t] of [["seed", oracleSeed], ["national top 15", headline?.oracle.returned ?? emptyTally()]] as const) {
+    if (t.age > 0 || t.sex > 0 || t.distance > 0) failures.push(`independent oracle found age/sex/distance violations (${name}: age ${t.age}, sex ${t.sex}, distance ${t.distance})`);
+  }
   if (v1First30 < 0.8) failures.push(`v1 full-pipeline nDCG@10 ${f3(v1First30)} < 0.800`);
   if (v2Cmp < v1Cmp - 1e-9) failures.push(`v2 nDCG@10 ${f3(v2Cmp)} < v1 ${f3(v1Cmp)} (profiles without ECOG 2)`);
   if ((variantRows[0]?.excludedAt10 ?? 1) > 0.2715 || v2Excl30 > 0.2715) failures.push("excluded-label share above 0.271");

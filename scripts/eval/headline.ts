@@ -22,6 +22,7 @@ import type { National } from "./national";
 import { emptyTally, oracleEligibleIds, tallyResults, type OracleStudy, type OracleTally } from "./oracle";
 import { randomBaseline, rng } from "./stats";
 import type { LatLon } from "../../lib/geo/distance";
+import { nearestSite, passesDistance, passesGroup } from "../../lib/match/filters";
 
 export interface HeadlineRow {
   id: string;
@@ -37,7 +38,7 @@ export interface HeadlineRow {
 export interface HeadlineResult {
   trials: number;
   rows: HeadlineRow[];
-  oracle: { raw: number; returned: OracleTally; candidates: OracleTally; missed: number; oracleEligible: number };
+  oracle: { raw: number; returned: OracleTally; candidates: OracleTally; missed: number; missedByGroup: number; missedByDistance: number; oracleEligible: number };
 }
 
 function ndcg10(ranked: readonly string[], rel: ReadonlySet<string>): number {
@@ -62,8 +63,9 @@ export async function runHeadline(opts: { national: National; zips: Map<string, 
   const rows: HeadlineRow[] = [];
   const returned = emptyTally();
   const candidatesTally = emptyTally();
-  let missed = 0, oracleEligible = 0;
-  const allIds = new Set(national.entries("other").map((e) => e.card.id)); // every trial the national build contains
+  let missed = 0, missedByGroup = 0, missedByDistance = 0, oracleEligible = 0;
+  const allEntries = new Map(national.entries("other").map((e) => [e.card.id, e])); // every trial the national build contains
+  const allIds = new Set(allEntries.keys());
 
   for (const p of profiles) {
     const g = p.a.cancerType as CancerGroupId;
@@ -103,8 +105,14 @@ export async function runHeadline(opts: { national: National; zips: Map<string, 
       const cand = new Set(candidateIds);
       const inBuild = [...eligible].filter((id) => allIds.has(id)); // raw records outside the build (no recruiting U.S. site, not a cancer trial) cannot be ranked
       oracleEligible += inBuild.length;
-      missed += inBuild.filter((id) => !cand.has(id)).length;
+      for (const id of inBuild) {
+        if (cand.has(id)) continue;
+        missed++;
+        const e = allEntries.get(id);
+        if (e && !passesGroup(e.card, g)) missedByGroup++; // the app does not tag the trial with this group
+        else if (e && !passesDistance(nearestSite(e.sites, p.origin), p.origin ? p.a.travelMiles : null)) missedByDistance++; // the app finds no site in range
+      }
     }
   }
-  return { trials: new Set([...entriesCache.values()].flatMap((e) => e.map((x) => x.card.id))).size, rows, oracle: { raw: rawNational?.size ?? 0, returned, candidates: candidatesTally, missed, oracleEligible } };
+  return { trials: new Set([...entriesCache.values()].flatMap((e) => e.map((x) => x.card.id))).size, rows, oracle: { raw: rawNational?.size ?? 0, returned, candidates: candidatesTally, missed, missedByGroup, missedByDistance, oracleEligible } };
 }

@@ -52,6 +52,11 @@ describe("independent oracle", () => {
     expect(oracleGroupOk("acute myeloid leukemia", "leukemia")).toBe(true);
     expect(oracleGroupOk("anything", "other")).toBe(true);
   });
+  it("a record with no registry coordinates is unverifiable on distance, not a violation", () => {
+    const noGeo = study({ locations: [{ status: "RECRUITING", country: "United States" }] });
+    const v = oracleVerdict(noGeo, { group: "breast", age: 50, origin: { lat: 34.05, lon: -118.24 }, travelMiles: 10 });
+    expect(v).toMatchObject({ distance: true, distanceUnverifiable: true });
+  });
   it("verdict and tally flag a distance violation and an unverifiable id", () => {
     const raw = new Map([["NCT00000001", study()]]);
     const near = { group: "breast", age: 50, origin: { lat: 42.4, lon: -71.1 }, travelMiles: 50 };

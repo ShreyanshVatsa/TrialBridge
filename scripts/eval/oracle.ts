@@ -125,17 +125,23 @@ export interface Verdict {
   distanceStrict: boolean;
   /** Tolerant: no raw location inside limit + DISTANCE_SLACK_MILES. */
   distance: boolean;
+  /** The raw record has no recruiting U.S. location with registry coordinates, so distance could not be checked (counted as pass). */
+  distanceUnverifiable: boolean;
 }
 export function oracleVerdict(s: OracleStudy, p: OraclePatient): Verdict {
   let distanceStrict = true;
   let distance = true;
+  let distanceUnverifiable = false;
   if (p.travelMiles !== null && p.origin) {
     const d = oracleNearestMiles(s, p.origin);
-    distanceStrict = d !== null && d <= p.travelMiles;
-    distance = d !== null && d <= p.travelMiles + DISTANCE_SLACK_MILES;
+    if (d === null) distanceUnverifiable = true; // no registry coordinates: cannot judge, do not flag
+    else {
+      distanceStrict = d <= p.travelMiles;
+      distance = d <= p.travelMiles + DISTANCE_SLACK_MILES;
+    }
   }
   const sexOk = !p.sex || s.sex === "ALL" || s.sex === "" || (p.sex === "female" ? s.sex === "FEMALE" : s.sex === "MALE");
-  return { group: oracleGroupOk(s.text, p.group), age: oracleAgeOk(s, p.age), sex: sexOk, distanceStrict, distance };
+  return { group: oracleGroupOk(s.text, p.group), age: oracleAgeOk(s, p.age), sex: sexOk, distanceStrict, distance, distanceUnverifiable };
 }
 
 // ---- loading raw records ----------------------------------------------------------------------------------------
@@ -197,10 +203,11 @@ export interface OracleTally {
   sex: number;
   distance: number; // tolerant
   distanceStrict: number;
+  distanceUnverifiable: number; // results whose raw record has no coordinates (not counted as violations)
   any: number; // results failing at least one (tolerant) check
   samples: string[]; // up to a handful of "NCT... (check)" for the report
 }
-export const emptyTally = (): OracleTally => ({ results: 0, unverifiable: 0, group: 0, age: 0, sex: 0, distance: 0, distanceStrict: 0, any: 0, samples: [] });
+export const emptyTally = (): OracleTally => ({ results: 0, unverifiable: 0, group: 0, age: 0, sex: 0, distance: 0, distanceStrict: 0, distanceUnverifiable: 0, any: 0, samples: [] });
 
 export function tallyResults(t: OracleTally, raw: ReadonlyMap<string, OracleStudy>, ids: readonly string[], p: OraclePatient, label = ""): void {
   for (const id of ids) {
@@ -229,6 +236,7 @@ export function tallyResults(t: OracleTally, raw: ReadonlyMap<string, OracleStud
       failed.push("distance");
     }
     if (!v.distanceStrict) t.distanceStrict++;
+    if (v.distanceUnverifiable) t.distanceUnverifiable++;
     if (failed.length) {
       t.any++;
       if (t.samples.length < 8) t.samples.push(`${id} for ${label || p.group} (${failed.join("+")})`);
