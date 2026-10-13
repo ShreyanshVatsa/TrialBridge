@@ -13,6 +13,7 @@ import { ErrorView } from "@/components/site/error-view";
 import { Skeleton } from "@/components/site/skeleton";
 import { SectionRail } from "@/components/site/section-rail";
 import { AskPanel } from "./ask-panel";
+import { CriteriaChecklist, HardFailureNote, type TrialMatchView } from "@/components/results/match-checklist";
 import { buttonVariants } from "@/components/ui/button";
 import { loadTrial } from "@/lib/data/loader";
 import { sortSitesByDistance } from "@/lib/match/filters";
@@ -79,7 +80,7 @@ function ageText(card: TrialCard, m: ReturnType<typeof useMessages>): string {
   return m.trial.ageAny;
 }
 
-function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
+function TrialBody({ card, sites, match }: { card: TrialCard; sites: Site[]; match?: TrialMatchView }) {
   const m = useMessages();
   const locale = localeFor(useLanguage());
   const { session } = useSession();
@@ -170,6 +171,8 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
           </li>
         </ul>
         <div className="space-y-6">
+          {match && match.score.tier === "B" && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} />}
+          {match && <CriteriaChecklist labels={match.labels} criteria={card.criteria} defaultOpen />}
           <CriteriaDocument title={m.trial.inclusion} items={card.inclusion} empty={m.trial.inclusionNone} tone="in" />
           <CriteriaDocument title={m.trial.exclusion} items={card.exclusion} empty={m.trial.exclusionNone} tone="out" />
         </div>
@@ -252,7 +255,8 @@ function TrialBody({ card, sites }: { card: TrialCard; sites: Site[] }) {
 }
 
 /** Single dynamic trial page: reads ?id=NCT… and loads the trial from the static shards on the client. */
-export function TrialDetail() {
+/** `getMatch` (v6 step 5) looks up the score + labels for this trial from the current search; optional. */
+export function TrialDetail({ getMatch }: { getMatch?: (nctId: string) => TrialMatchView | undefined } = {}) {
   const m = useMessages();
   const params = useSearchParams();
   const rawId = (params.get("id") ?? "").trim().toUpperCase();
@@ -294,7 +298,7 @@ export function TrialDetail() {
       {current.kind === "error" && (
         <ErrorView body={typeof navigator !== "undefined" && !navigator.onLine ? m.common.offline : m.trial.errorBody} onRetry={retry} />
       )}
-      {current.kind === "ok" && <TrialBody card={current.card} sites={current.sites} />}
+      {current.kind === "ok" && <TrialBody card={current.card} sites={current.sites} match={getMatch?.(current.card.id)} />}
     </main>
   );
 }

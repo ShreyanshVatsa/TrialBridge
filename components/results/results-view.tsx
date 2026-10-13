@@ -15,6 +15,7 @@ import { FindOutList } from "@/components/questionnaire/find-out-list";
 import { isEssential, isNonResponse } from "@/components/questionnaire/contract";
 import { useKeyT } from "@/components/questionnaire/t";
 import { ResultCard } from "./result-card";
+import { DegradedMatchBanner, TierBHeader, type TrialMatchView } from "./match-checklist";
 
 const INITIAL_VISIBLE = 10;
 
@@ -76,8 +77,14 @@ export function ResultsView({
   onFill,
   onNewSearch,
   onWiden,
+  matches,
+  matchDegraded = false,
 }: {
   session: SearchSession;
+  /** v6 step 5: per-trial score + labels keyed by NCT id. Optional; without it the list renders as before. */
+  matches?: Readonly<Record<string, TrialMatchView>>;
+  /** True when no real LLM answered (resolver-only labels): shows the degraded-mode banner. */
+  matchDegraded?: boolean;
   onEdit: () => void;
   /** Reopen the questions on the Find-out list ("Fill in what you found out"). */
   onFill?: (questionIds: string[]) => void;
@@ -93,6 +100,9 @@ export function ResultsView({
 
   const { results, outcome, analysis } = session;
   const shown = results.slice(0, visible);
+  // Tier B (a requirement may rule the person out) goes below the rest under its own heading; order within each tier is the ranker's.
+  const tierA = matches ? shown.filter((r) => matches[r.card.id]?.score.tier !== "B") : shown;
+  const tierB = matches ? shown.filter((r) => matches[r.card.id]?.score.tier === "B") : [];
   const today = formatDate(new Date(session.searchedAt).toISOString(), locale);
   // Find-out list and unknown-answer note (browser-only; built from the questionnaire state).
   const qState = session.answers.questionnaire;
@@ -149,6 +159,7 @@ export function ResultsView({
           </Notice>
         )}
         {analysis.status === "degraded" && <Notice tone="warn">{m.results.degraded}</Notice>}
+        {matchDegraded && <DegradedMatchBanner />}
         {outcome.distanceUnavailable && <Notice tone="warn">{m.results.distanceUnavailable}</Notice>}
         {outcome.zipApproximate && <Notice>{m.results.zipApproximate}</Notice>}
         {outcome.keywordOnly && <Notice tone="warn">{m.results.keywordOnly}</Notice>}
@@ -179,12 +190,24 @@ export function ResultsView({
       ) : (
         <>
           <ol className="space-y-6">
-            {shown.map((t, i) => (
+            {tierA.map((t, i) => (
               <li key={t.card.id} className="animate-enter" style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}>
-                <ResultCard trial={t} index={i} />
+                <ResultCard trial={t} index={i} match={matches?.[t.card.id]} />
               </li>
             ))}
           </ol>
+          {tierB.length > 0 && (
+            <section aria-labelledby="tier-b" className="space-y-6">
+              <TierBHeader id="tier-b" />
+              <ol start={tierA.length + 1} className="space-y-6">
+                {tierB.map((t, i) => (
+                  <li key={t.card.id}>
+                    <ResultCard trial={t} index={tierA.length + i} match={matches?.[t.card.id]} />
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
           {results.length > visible && (
             <div className="no-print flex justify-center">
               <Button variant="outline" onClick={() => setVisible(results.length)}>

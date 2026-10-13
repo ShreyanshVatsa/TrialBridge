@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { CriterionAssessment, RankedTrial } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BarrierBadge, Badge, FitBadge, LanguageWarning, Quote } from "./badges";
+import { CriteriaChecklist, HardFailureNote, WhyRankedLine, type TrialMatchView } from "./match-checklist";
 
 interface Point {
   key: string;
@@ -75,7 +76,8 @@ function ContactLine({ trial }: { trial: RankedTrial }) {
   );
 }
 
-export function ResultCard({ trial, index }: { trial: RankedTrial; index: number }) {
+/** `match` (v6 step 5 per-criterion score + labels) is optional: without it the card renders as before. */
+export function ResultCard({ trial, index, match }: { trial: RankedTrial; index: number; match?: TrialMatchView }) {
   const m = useMessages();
   const { card, analysis, nearest, precheck } = trial;
   const phase = formatPhases(card.phases);
@@ -145,6 +147,9 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
         </div>
       )}
 
+      {match && <WhyRankedLine score={match.score} position={index + 1} className="mt-3" />}
+      {match && match.score.tier === "B" && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} className="mt-4" />}
+
       {analysis?.summary && <p className="mt-4 text-lg leading-relaxed">{analysis.summary}</p>}
 
       <div className="mt-4 space-y-5">
@@ -152,6 +157,7 @@ export function ResultCard({ trial, index }: { trial: RankedTrial; index: number
         <PointList title={m.card.ruleOut} points={ruleOut} tone="risk" />
         <PointList title={m.card.needsDoctor} points={needsDoctor} tone="ask" />
         {section}
+        {match && <CriteriaChecklist labels={match.labels} criteria={card.criteria} />}
         <section>
           <h4 className="font-sans text-base font-semibold">{m.card.askDoctor}</h4>
           <ul className="mt-1 list-disc space-y-1 ps-5">
