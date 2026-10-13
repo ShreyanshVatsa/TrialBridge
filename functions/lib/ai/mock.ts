@@ -6,6 +6,7 @@ import { precheck } from "@/lib/match/precheck";
 import type { ServerTrial } from "../trials";
 import type { AiProvider, CompletionRequest } from "./types";
 import { mockAsk } from "./mock-ask";
+import { mockMatch } from "./mock-match";
 
 /**
  * Deterministic mock AI provider. Builds realistic structured analyses from the trial's REAL
@@ -130,6 +131,7 @@ export const mockProvider: AiProvider = {
   isMock: true,
   maxInputChars: Number.POSITIVE_INFINITY,
   async complete(req: CompletionRequest): Promise<string> {
+    if (req.match) return JSON.stringify(mockMatch(req.match.trials));
     const trial = req.trials[0];
     if (req.ask && trial) return JSON.stringify(mockAsk(trial, req.ask.question, req.ask.language));
     const profile = req.profile;

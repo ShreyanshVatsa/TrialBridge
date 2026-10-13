@@ -2,7 +2,7 @@ import type { KvStore } from "./store";
 import { sha256Hex, utcDay } from "./crypto";
 
 /** Per-route hourly limits (per salted, daily-rotating IP hash). */
-export const RATE_LIMITS = { analyze: 10, ask: 30 } as const;
+export const RATE_LIMITS = { analyze: 10, ask: 30, match: 10 } as const;
 export type RateLimitedRoute = keyof typeof RATE_LIMITS;
 
 const HOUR_SECONDS = 3600;

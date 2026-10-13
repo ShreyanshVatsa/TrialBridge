@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BarrierSchema, CancerGroupIdSchema, CriterionSchema, FactSchema } from "@/lib/types/trial";
+import { BarrierSchema, CancerGroupIdSchema, CriterionSchema, FactSchema, SplitCriterionSchema } from "@/lib/types/trial";
 
 /** The backend's own copy of a trial's official text (from ingestion; never from the browser). */
 export const ServerTrialSchema = z.object({
@@ -13,6 +13,9 @@ export const ServerTrialSchema = z.object({
   groups: z.array(CancerGroupIdSchema),
   facts: z.array(FactSchema),
   barriers: z.array(BarrierSchema),
+  /** v6 split criteria (optional: rows ingested before v6 have none, and the criterion judge then skips the trial). */
+  criteria: z.array(SplitCriterionSchema).optional(),
+  criteriaVersion: z.number().int().positive().optional(),
 });
 export type ServerTrial = z.infer<typeof ServerTrialSchema>;
 

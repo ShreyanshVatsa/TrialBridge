@@ -22,4 +22,8 @@ export interface TrialCriteriaLabels {
   labels: CriterionLabel[];
   /** Provider that answered the LLM part, or null when resolver-only. */
   provider: string | null;
+  /** LLM judge only: share of the criteria sent to the model that came back with a valid label (judged / sent). */
+  coverage?: number;
+  /** LLM judge only: prompt version that produced the labels. */
+  promptVersion?: string;
 }

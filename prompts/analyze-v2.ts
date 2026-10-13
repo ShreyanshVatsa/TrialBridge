@@ -19,27 +19,27 @@ export const ANALYZE_PROMPT_VERSION = "analyze-v2";
 export const ANALYZE_SYSTEM_PROMPT = `${V1_SYSTEM}
 8. The profile lists only what the patient answered. Anything not listed is unknown: treat it as "needs_doctor", never as a yes or a no.`;
 
-const SPREAD = { yes: "yes, to distant organs", no: "no", not_sure: "not sure" } as const;
-const PREGNANT = { yes: "yes", no: "no", not_sure: "not sure", prefer_not: "prefers not to say" } as const;
-const YES_NO = { yes: "yes", no: "no", not_sure: "not sure" } as const;
-const BIOMARKER_STATUS = { positive: "positive", negative: "negative", dont_know: "does not know" } as const;
-const STAGE = {
+export const SPREAD = { yes: "yes, to distant organs", no: "no", not_sure: "not sure" } as const;
+export const PREGNANT = { yes: "yes", no: "no", not_sure: "not sure", prefer_not: "prefers not to say" } as const;
+export const YES_NO = { yes: "yes", no: "no", not_sure: "not sure" } as const;
+export const BIOMARKER_STATUS = { positive: "positive", negative: "negative", dont_know: "does not know" } as const;
+export const STAGE = {
   early: "early stage, not spread",
   locally_advanced: "spread nearby only (locally advanced)",
   metastatic: "spread to distant organs (metastatic)",
   no_evidence_after_surgery: "removed by surgery, no cancer seen now",
   not_sure: "not sure",
 } as const;
-const STATUS = { new: "newly diagnosed, not treated yet", recurrent_or_progressing: "treated, and it came back or grew", on_treatment: "currently being treated", not_sure: "not sure" } as const;
-const LINES = { "0": "none", "1": "1", "2": "2", "3+": "3 or more", not_sure: "not sure" } as const;
-const ACTIVITY = {
+export const STATUS = { new: "newly diagnosed, not treated yet", recurrent_or_progressing: "treated, and it came back or grew", on_treatment: "currently being treated", not_sure: "not sure" } as const;
+export const LINES = { "0": "none", "1": "1", "2": "2", "3+": "3 or more", not_sure: "not sure" } as const;
+export const ACTIVITY = {
   "0-1": "usual activities with little or no limits (ECOG 0-1)",
   "2": "can take care of self but rests during the day (ECOG 2)",
   "3-4": "needs help with self-care, mostly in bed or chair (ECOG 3-4)",
   not_sure: "not sure",
 } as const;
-const BRAIN = { none: "no brain metastases", treated_stable: "brain metastases, treated and stable", active: "brain metastases, active or not yet treated", not_sure: "not sure" } as const;
-const TREATMENT: Record<string, string> = {
+export const BRAIN = { none: "no brain metastases", treated_stable: "brain metastases, treated and stable", active: "brain metastases, active or not yet treated", not_sure: "not sure" } as const;
+export const TREATMENT: Record<string, string> = {
   chemotherapy: "chemotherapy",
   radiation: "radiation",
   surgery: "surgery",
@@ -101,8 +101,8 @@ const ID_LABELS: Record<string, string> = {
   bcg: "BCG",
   auto_sct: "stem cell transplant from own cells",
 };
-const word = (id: string) => ID_LABELS[id] ?? id.replace(/_/g, " ");
-const BIOMARKER_LABEL = new Map<string, string>(BIOMARKERS.map((b) => [b.id, b.label]));
+export const word = (id: string) => ID_LABELS[id] ?? id.replace(/_/g, " ");
+export const BIOMARKER_LABEL = new Map<string, string>(BIOMARKERS.map((b) => [b.id, b.label]));
 
 /** The minimized profile as fixed English lines. Only fields present in the (validated) profile appear. */
 export function renderProfile(p: MinimizedProfile): string {

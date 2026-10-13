@@ -367,7 +367,7 @@ async function main(): Promise<void> {
   // 8. Backend copy of trial criteria (the API never trusts trial text from the browser).
   await mkdir(BUILD, { recursive: true });
   const serverTrials = Object.fromEntries(
-    cards.map((c) => [c.id, { id: c.id, title: c.title, summary: c.summary, inclusion: c.inclusion, exclusion: c.exclusion, minAge: c.minAge, maxAge: c.maxAge, groups: c.groups, facts: c.facts, barriers: c.barriers, lastUpdated: c.lastUpdated }]),
+    cards.map((c) => [c.id, { id: c.id, title: c.title, summary: c.summary, inclusion: c.inclusion, exclusion: c.exclusion, minAge: c.minAge, maxAge: c.maxAge, groups: c.groups, facts: c.facts, barriers: c.barriers, lastUpdated: c.lastUpdated, criteria: c.criteria, criteriaVersion: c.criteriaVersion }]),
   );
   await writeFile(path.join(BUILD, "criteria.json"), JSON.stringify({ dataVersion, trials: serverTrials }));
   const esc = (s: string) => s.replaceAll("'", "''");
