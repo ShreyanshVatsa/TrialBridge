@@ -18,6 +18,7 @@
     "seed:fetch": "tsx scripts/fetch-seed.ts",
     "zip:fetch": "tsx scripts/fetch-zip.ts",
     "ingest": "tsx scripts/ingest/index.ts",
+    "synonyms": "tsx scripts/ingest/synonyms.ts",
     "ingest:seed": "tsx scripts/ingest/index.ts --source=seed",
     "db:seed:local": "wrangler d1 execute trialbridge --local --file=data/build/criteria.sql",
     "prebuild": "tsx scripts/ensure-data.ts",

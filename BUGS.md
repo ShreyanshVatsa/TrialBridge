@@ -223,3 +223,5 @@ Effects on national data after the rule fixes (5,726 trials; 53 non-cancer studi
 Verified after fixes: lint, typecheck, 219 unit tests, `npm audit` (0), build, eval (0% hard-filter violations). Agents report 40/40 e2e passing; not re-run by the coordinator.
 - tests/unit/backend.test.ts "ships with every provider disabled until data terms are verified" fails: stale vs Groq dataTermsVerified=true (pre-existing at b0914f5). Not edited; needs test update.
 - npm run eval:vignettes fails after merge: eval/gold/vignettes-gold-v1.json missing (not on any merged branch). No vignette metrics baseline.
+
+- step 3a: `npm run build` fails on another agent in-flight type error (lib/ingest/gold-v3.ts imports missing isScopedParam from lib/types/trial), so `npm run budgets` could not re-measure route JS with the synonym tables. Estimated +13.7 KB gz on routes importing lib/match/keyword.ts (esbuild-measured); /find/ 314 -> ~328 of 337, /trial/ 283 -> ~297 of 304. Re-run build + budgets once the type error is fixed.
