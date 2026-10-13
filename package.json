@@ -41,7 +41,8 @@
     "data:verify": "tsx scripts/data-verify.ts",
     "budgets": "tsx scripts/budgets.ts",
     "ci": "npm run lint && npm run typecheck && npm test && npm run build && npm run budgets && npm run data:verify",
-    "eval:vignettes": "tsx scripts/eval/vignettes/run.ts"
+    "eval:vignettes": "tsx scripts/eval/vignettes/run.ts",
+    "eval:split": "tsx scripts/eval/trialgpt/run.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
