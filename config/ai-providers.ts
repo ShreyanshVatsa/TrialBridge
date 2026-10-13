@@ -23,7 +23,7 @@ export interface AiProviderConfig {
 }
 
 export const AI_PROVIDERS: readonly AiProviderConfig[] = [
-  { name: "groq", baseUrl: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b", keyEnv: "GROQ_API_KEY", budgetEnv: "DAILY_BUDGET_GROQ", dataTermsVerified: false, maxInputChars: 60_000 },
+  { name: "groq", baseUrl: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b", keyEnv: "GROQ_API_KEY", budgetEnv: "DAILY_BUDGET_GROQ", dataTermsVerified: true, maxInputChars: 60_000 },
   { name: "cerebras", baseUrl: "https://api.cerebras.ai/v1", model: "gpt-oss-120b", keyEnv: "CEREBRAS_API_KEY", budgetEnv: "DAILY_BUDGET_CEREBRAS", dataTermsVerified: false, maxInputChars: 60_000 },
   { name: "openrouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free", keyEnv: "OPENROUTER_API_KEY", budgetEnv: "DAILY_BUDGET_OPENROUTER", dataTermsVerified: false, maxInputChars: 40_000 },
 ];
