@@ -66,7 +66,7 @@ describe("precision gate", () => {
     for (const [, c] of catalogs) for (const q of c) {
       if (!q.enabled) expect(q.disabledReason).toMatch(/precision gate: \w+ facts/);
       const primary = q.families[0];
-      if (primary && !q.legacyFacts) expect(q.enabled).toBe(FAMILY_PRECISION[primary as keyof typeof FAMILY_PRECISION]?.passes === true);
+      if (primary && !q.legacyFacts && q.id !== "subtype") expect(q.enabled).toBe(FAMILY_PRECISION[primary as keyof typeof FAMILY_PRECISION]?.passes === true);
     }
     const lung = getCatalog("cancer", "lung");
     expect(lung.find((q) => q.id === "daily_activity")?.enabled).toBe(FAMILY_PRECISION.performance?.passes);

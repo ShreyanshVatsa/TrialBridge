@@ -970,6 +970,7 @@ export const en = {
     ruleOut: "What might rule you out",
     askDoctor: "Questions to ask your doctor",
     needsDoctor: "Your doctor can help check",
+    unknowns: "{n} criteria we could not check from your answers",
     noAnalysis: "Read the eligibility criteria with your doctor to decide if this trial is worth asking about.",
     criterionRef: { inclusion: "Inclusion criterion {n}", exclusion: "Exclusion criterion {n}" },
     assessment: { likely_met: "Likely met", likely_not_met: "Likely not met", needs_doctor: "Ask your doctor" },

@@ -37,6 +37,8 @@ export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" 
 
 function groupText(cancerType: IntakeAnswers["cancerType"]): string {
   if (cancerType === "other") return "Cancer.";
-  const g = getCancerGroup(cancerType);
-  return `${g.label}. ${g.synonyms.join(", ")}.`;
+  // The patient's own group label only. The group's picker synonyms are alternatives ("AML, ALL, CLL, CML" for leukemia,
+  // "triple negative" for breast) and would pull in subtypes the patient does not have; subtype and biomarker terms
+  // come from the answers (queryTermsOf).
+  return `${getCancerGroup(cancerType).label}.`;
 }

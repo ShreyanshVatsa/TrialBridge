@@ -97,6 +97,21 @@ export function evaluateAnswers(state: QuestionnaireState, catalog: readonly Que
 }
 
 /**
+ * How many of a trial's directional criteria (required/excluded facts) the patient's answers say nothing about:
+ * no answered question carries a rule for that fact key. Non-responses compile to no rules, so every "don't know"
+ * adds to this count and to nothing else. Shown as "N criteria we could not check", never used to rank.
+ */
+export function unknownCounter(compiled: readonly CompiledAnswer[]): (facts: readonly Fact[]) => number {
+  const covered = new Set<string>();
+  for (const c of compiled) for (const k of c.rules.keys()) covered.add(k);
+  return (facts) => {
+    const seen = new Set<string>();
+    for (const f of facts) if (f.value !== "mentioned" && !f.needsReview && !covered.has(f.key)) seen.add(f.key);
+    return seen.size;
+  };
+}
+
+/**
  * Same as `evaluateAnswers`, but the answers are compiled once and reused for many trials. Ranking checks hundreds
  * of trials against the SAME answers, and compiling them per trial (walking the catalog, prerequisites and
  * option effects each time) was most of the pre-check's cost.
