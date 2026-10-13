@@ -66,16 +66,21 @@ export function FindFlow() {
 
   async function runAnalysis(answers: IntakeAnswers, results: RankedTrial[], searchedAt: number) {
     const isCurrent = (prev: typeof session) => prev !== null && prev.searchedAt === searchedAt;
+    let judgeStarted = false;
     try {
       const container = turnstileRef.current;
       if (!container) throw new Error("no turnstile container");
       // Code-split: the AI client and Turnstile loader download only after a search.
-      const [{ getTurnstileToken }, { requestAnalysis }, { applyAnalysis }] = await Promise.all([
+      const [{ getTurnstileToken }, { requestAnalysis }, { applyAnalysis }, { orderResults }] = await Promise.all([
         import("@/lib/api/turnstile"),
         import("@/lib/api/analyze"),
         import("@/lib/match/search"),
+        import("@/lib/match/rank"),
       ]);
       const token = await withTimeout(getTurnstileToken(container), TURNSTILE_TIMEOUT_MS);
+      // The criterion judge needs its own single-use token; it runs alongside the explanations.
+      judgeStarted = true;
+      void runCriteriaJudge(answers, results, searchedAt, getTurnstileToken, container);
       const response = await requestAnalysis(
         answers,
         results.map((r) => r.card.id),
@@ -84,12 +89,59 @@ export function FindFlow() {
       setSession((prev) => {
         if (!prev || !isCurrent(prev)) return prev;
         if (response.status === "ok") {
-          return { ...prev, results: applyAnalysis(prev.results, response), analysis: { status: "ok", experimental: response.experimental } };
+          const applied = applyAnalysis(prev.results, response);
+          // The per-criterion tiers decide the order (step 5); the AI fit level only explains.
+          return { ...prev, results: prev.criteria ? orderResults(applied, prev.criteria.order) : applied, analysis: { status: "ok", experimental: response.experimental } };
         }
         return { ...prev, analysis: { status: "degraded" } };
       });
     } catch {
       setSession((prev) => (prev && isCurrent(prev) ? { ...prev, analysis: { status: "degraded" } } : prev));
+      if (!judgeStarted) void runCriteriaJudge(answers, results, searchedAt, null, null);
+    }
+  }
+
+  /**
+   * Step 5: LLM judge for the criteria the resolver left unknown (top N), then tier A / tier B order. Without a
+   * Turnstile token (or on any failure) the resolver-only ranking stays and is marked degraded.
+   */
+  async function runCriteriaJudge(
+    answers: IntakeAnswers,
+    retrievalOrder: RankedTrial[],
+    searchedAt: number,
+    getToken: ((el: HTMLElement) => Promise<string>) | null,
+    container: HTMLElement | null,
+  ) {
+    const isCurrent = (prev: typeof session) => prev !== null && prev.searchedAt === searchedAt;
+    const signal = abortRef.current?.signal;
+    try {
+      const [{ rankWithCriteria }, { requestCriteriaJudgement }, { matchOptions }] = await Promise.all([
+        import("@/lib/match/criteria-rank"),
+        import("@/lib/api/match"),
+        import("@/components/questionnaire/engine"),
+      ]);
+      const { ranking, results } = await rankWithCriteria(retrievalOrder, answers, {
+        ...(answers.questionnaire ? { catalog: matchOptions(answers.cancerType).catalog } : {}),
+        ...(signal ? { signal } : {}),
+        judge: async (a, trials) => {
+          if (!getToken || !container) throw new Error("no turnstile");
+          const token = await withTimeout(getToken(container), TURNSTILE_TIMEOUT_MS);
+          return requestCriteriaJudgement(a, trials, token, signal ? { signal } : {});
+        },
+        log: (e) => {
+          if (process.env.NODE_ENV !== "production") console.info(`[match] judge provider=${e.provider ?? "none"} status=${e.status}${e.degradedReason ? ` reason=${e.degradedReason}` : ""} trials=${e.judged}`);
+        },
+      });
+      setSession((prev) => {
+        if (!prev || !isCurrent(prev)) return prev;
+        // Keep any AI analysis already attached to the results; only the order and criteria change.
+        const byId = new Map(prev.results.map((r) => [r.card.id, r]));
+        return { ...prev, criteria: ranking, results: results.map((r) => byId.get(r.card.id) ?? r) };
+      });
+    } catch {
+      // Aborted by a newer search (isCurrent then fails), or the engine failed to load: keep the resolver-only
+      // ranking, marked degraded.
+      setSession((prev) => (prev && isCurrent(prev) && prev.criteria?.status === "pending" ? { ...prev, criteria: { ...prev.criteria, status: "degraded", degraded: true } } : prev));
     }
   }
 
@@ -107,7 +159,12 @@ export function FindFlow() {
     window.scrollTo({ top: 0 });
     try {
       // Code-split: the matching engine (search index, embeddings worker) loads only when searching.
-      const [{ searchTrials }, { matchOptions }] = await Promise.all([import("@/lib/match/search"), import("@/components/questionnaire/engine")]);
+      const [{ searchTrials }, { matchOptions }, { resolveRanking }, { orderResults }] = await Promise.all([
+        import("@/lib/match/search"),
+        import("@/components/questionnaire/engine"),
+        import("@/lib/match/criteria-rank"),
+        import("@/lib/match/rank"),
+      ]);
       const [outcome, origin] = await Promise.all([
         searchTrials(answers, {
           ...(answers.questionnaire ? matchOptions(answers.cancerType) : {}),
@@ -119,10 +176,13 @@ export function FindFlow() {
       if (ac.signal.aborted) return;
       const searchedAt = Date.now();
       const hasResults = outcome.results.length > 0;
+      // Resolver-only criteria ranking at once (no I/O); the LLM judge refines it in runAnalysis.
+      const criteria = resolveRanking(outcome.results, answers, answers.questionnaire ? matchOptions(answers.cancerType).catalog : undefined);
       setSession({
         answers,
         outcome,
-        results: outcome.results,
+        results: orderResults(outcome.results, criteria.order),
+        criteria,
         analysis: hasResults ? { status: "pending" } : { status: "idle" },
         origin,
         searchedAt,

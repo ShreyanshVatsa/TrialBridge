@@ -105,3 +105,11 @@ k now lives in config/retrieval.ts. Dev split (TREC 2021, 10 cancer topics), ful
 - Positive labels (met / not_excluded) also need: no directional fact outside the listed set, no drug name (NCIt synonyms), no carve-out wording, and at most 2 unexplained content words (0 when the only evidence is the cancer-type name). Cohort-specific text (extractor's `cohortSpecific`) is treated like a scope.
 - Washout windows (gap fix) are stored as excluded with a scoped param ("within_4_weeks"); `isScopedParam` facts never create conflicts in the pre-check, the catalog rules or the unknown counter, and a blanket rule for the same key wins the per-trial merge. Shard facts change only on the next `npm run ingest` (not re-run in this step).
 - Measured on real trials with SYNTHETIC answer sets (`npx tsx scripts/eval/resolve-share.ts N seed`): every question answered -> 5.4% of 20,850 items settled (1,000 trials, seed 11); age only -> 1.8%. Precision of settled labels not measured against gold; a by-eye read of ~50 random settled labels found 1 doubtful.
+
+## Step 5: score and rank
+- incScore = met / (met + not_met + unknown + 1e-9) over INCLUSION items only (TrialGPT's inclusion score); not_applicable is left out. `counts.unknown` covers both sections. A trial with no split criteria scores 0 and sits at the bottom of tier A.
+- The criteria tiers set the final order (tier A by incScore, then retrieval rank; tier B below). The AI fit level from /api/analyze still explains each trial but no longer reorders results.
+- Per-trial `degraded` = the trial had unknown items and got no real-LLM labels (trials past MATCH_JUDGE.topN are always resolver-only). Ranking-level `degraded` = no real provider answered (status degraded, provider null or "mock"); that drives the banner.
+- LLM labels are used only from a real provider, with a matching criteriaVersion, for ids the resolver left unknown, and only when the label is valid for the item's section.
+- Find-out feed: `findOutPriority` counts, per question already in the Find-out list, the unknown items whose extracted fact keys that question covers; the list is sorted by it (`prioritizeFindOut`). Items no question covers stay as "ask your doctor" unknowns in the per-trial labels.
+- The judge needs its own single-use Turnstile token, fetched right after the analyze token; both requests then run in parallel.

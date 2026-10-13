@@ -43,3 +43,29 @@ export interface TrialMatchScore {
   /** True when no real LLM answered and labels are resolver-only. */
   degraded: boolean;
 }
+
+/** One trial's criterion verdicts and score, as the results UI reads them (step 5). */
+export interface TrialCriteriaResult {
+  score: TrialMatchScore;
+  /** Merged labels in the trial's criterion order (resolver first, LLM fills its unknowns). */
+  labels: CriterionLabel[];
+}
+
+/** Criteria-based ranking of a search's results (step 5). */
+export interface CriteriaRanking {
+  /** "pending": resolver-only labels while the LLM judge runs; "ok": judge answered (or nothing needed judging). */
+  status: "pending" | "ok" | "degraded";
+  /** True when no real LLM answered: labels are resolver-only (show the degraded-mode banner). */
+  degraded: boolean;
+  /** Provider that actually answered the judge, or null. */
+  provider: string | null;
+  degradedReason?: "ai_unavailable" | "rate_limited" | "budget_exhausted" | "invalid_output";
+  /** Trial ids in final order: tier A (incScore, then retrieval rank), then tier B. */
+  order: string[];
+  byTrial: Record<string, TrialCriteriaResult>;
+  /**
+   * Question id -> number of unknown criterion items (across these trials) a definite answer to it could settle.
+   * Only questions the patient answered "not sure", skipped or deferred: use it to sort the Find-out list.
+   */
+  findOutPriority: Record<string, number>;
+}

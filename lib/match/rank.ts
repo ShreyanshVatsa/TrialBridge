@@ -9,7 +9,8 @@ import { compileState, hardFilters } from "@/lib/questionnaire/rules";
 import { nearestSite, passesAge, passesDistance, passesGroup, passesSex } from "./filters";
 import { reciprocalRankFusion, RRF_K } from "./rrf";
 import { answerEvaluator, precheck, unknownCounter } from "./precheck";
-import { normalizeRrf, phaseBonus, precheckBonus, precheckPenalty } from "./score";
+import { mergeLabels, normalizeRrf, phaseBonus, precheckBonus, precheckPenalty, tierOrder, trialMatchScore } from "./score";
+import type { CriterionLabel, TrialCriteriaLabels, TrialCriteriaResult } from "@/lib/types/criteria";
 import { fusedScore, type Features, type FusionWeights } from "./fusion";
 import { subtypeMatch, subtypeProfile, type SubtypeProfile } from "./subtype";
 import { getCancerGroup, type CancerGroupId } from "@/config/cancer-groups";
@@ -213,4 +214,49 @@ export function rankTrials(input: RankInput): SearchOutcome {
     searchedCount: new Set(input.entries.map((e) => e.card.id)).size,
     keywordOnly: !input.queryVector,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// v6 step 5: criteria tiers. Re-ranks results that rankTrials already ordered (that order is the retrieval rank).
+// ---------------------------------------------------------------------------------------------
+
+/** What the LLM judge returned, as rankByCriteria needs it. `real` = a real (non-mock) provider answered. */
+export interface JudgeLabels {
+  results: readonly TrialCriteriaLabels[];
+  real: boolean;
+}
+
+/**
+ * Score and tier results from per-criterion labels. `results` is in retrieval order (rank 1 first). LLM labels are
+ * used only from a real provider and only when their criteriaVersion matches the card's; they fill only ids the
+ * resolver left unknown (mergeLabels). A trial is `degraded` when it had unknown items and no real LLM labels.
+ * Pure.
+ */
+export function rankByCriteria(
+  results: readonly { card: Pick<TrialCard, "id" | "criteriaVersion"> }[],
+  resolver: ReadonlyMap<string, readonly CriterionLabel[]>,
+  judge: JudgeLabels | null,
+): { order: string[]; byTrial: Record<string, TrialCriteriaResult> } {
+  const llm = new Map((judge?.real ? judge.results : []).map((r) => [r.trialId, r]));
+  const byTrial: Record<string, TrialCriteriaResult> = {};
+  const scores = results.map((r, i) => {
+    const own = resolver.get(r.card.id) ?? [];
+    const j = llm.get(r.card.id);
+    const usable = j && j.criteriaVersion === (r.card.criteriaVersion ?? 0) ? j : undefined;
+    const labels = mergeLabels(own, usable?.labels);
+    const degraded = own.some((l) => l.label === "unknown") && !usable;
+    const score = trialMatchScore(r.card.id, labels, i + 1, degraded);
+    byTrial[r.card.id] = { score, labels };
+    return score;
+  });
+  return { order: tierOrder(scores).map((s) => s.trialId), byTrial };
+}
+
+/** Reorder results to `order` (ids missing from it keep their relative order, after the rest). Returns a new array. */
+export function orderResults<T extends { card: { id: string } }>(results: readonly T[], order: readonly string[]): T[] {
+  const pos = new Map(order.map((id, i) => [id, i]));
+  return results
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => (pos.get(a.r.card.id) ?? order.length + a.i) - (pos.get(b.r.card.id) ?? order.length + b.i))
+    .map((x) => x.r);
 }
