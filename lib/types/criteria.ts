@@ -27,3 +27,19 @@ export interface TrialCriteriaLabels {
   /** LLM judge only: prompt version that produced the labels. */
   promptVersion?: string;
 }
+
+/** Per-trial score from per-criterion labels (step 5). */
+export interface TrialMatchScore {
+  trialId: string;
+  /** met / (met + not_met + unknown). */
+  incScore: number;
+  /** "A": no hard failure. "B": an inclusion not_met or an exclusion excluded. */
+  tier: "A" | "B";
+  /** The failing criteria that put the trial in tier B. */
+  hardFailures: CriterionLabel[];
+  counts: { met: number; notMet: number; excluded: number; unknown: number; notApplicable: number };
+  /** Position from retrieval before re-ranking, 1-based. */
+  retrievalRank: number;
+  /** True when no real LLM answered and labels are resolver-only. */
+  degraded: boolean;
+}
