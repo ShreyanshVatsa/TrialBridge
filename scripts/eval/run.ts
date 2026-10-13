@@ -394,7 +394,7 @@ On the ${V1_PROFILES} v1 profiles (95% bootstrap CI over profiles):
 |---|---|---|---|---|---|---|---|
 ${table}
 
-"Hybrid" = BM25 + embeddings fused with Reciprocal Rank Fusion (k = 60). "Full pipeline" = hybrid + rule-based pre-check scoring (what the app ranks with before AI). "Excluded-label share" = fraction of the top 10 that the labels mark as a clear mismatch (lower is better).
+"Hybrid" = BM25 + embeddings fused with Reciprocal Rank Fusion (k = 20, see eval/rrf-k.md). "Full pipeline" = hybrid + rule-based pre-check scoring (what the app ranks with before AI). "Excluded-label share" = fraction of the top 10 that the labels mark as a clear mismatch (lower is better).
 
 ### Questionnaire v2 pipeline vs v1 (production embeddings, ${profiles.length} profiles)
 | Pipeline | nDCG@10 (p01-p30) | nDCG@10 (all ${profiles.length}) | Excluded-label share of top 10 (p01-p30) |

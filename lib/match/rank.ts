@@ -121,6 +121,8 @@ export interface RankInput extends MatchContext {
   limit?: number;
   /** Fusion weights (default: the shipped set); eval scripts pass candidates here. */
   weights?: FusionWeights;
+  /** RRF k override (default: config/retrieval.ts); eval scripts only. */
+  rrfK?: number;
 }
 
 /**
@@ -129,6 +131,7 @@ export interface RankInput extends MatchContext {
  */
 export function rankTrials(input: RankInput): SearchOutcome {
   const { answers, origin } = input;
+  const rrfK = input.rrfK ?? RRF_K;
   const maxMiles = origin ? answers.travelMiles : null;
   const matching = prepareMatching(answers, input);
   const sex = matching.sex;
@@ -160,7 +163,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
   }
 
   // 3. Fuse with RRF; candidates found by neither method still appear (score 0) after the rest.
-  const fused = reciprocalRankFusion(rankings);
+  const fused = reciprocalRankFusion(rankings, rrfK);
   const fusedIds = new Set(fused.map((f) => f.id));
   for (const id of [...ids].sort()) if (!fusedIds.has(id)) fused.push({ id, score: 0, ranks: rankings.map(() => null) });
 
@@ -168,7 +171,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
   const ranked: RankedTrial[] = fused.map((f) => {
     const c = candidates.get(f.id) as RankEntry & { nearest: ReturnType<typeof nearestSite> };
     const { notes, phase, subtype, unknowns } = matching.precheck(c.card);
-    const retrieval = normalizeRrf(f.score, rankings.length);
+    const retrieval = normalizeRrf(f.score, rankings.length, rrfK);
     const features = featuresOf({
       retrieval,
       notes,
@@ -176,8 +179,8 @@ export function rankTrials(input: RankInput): SearchOutcome {
       subtype,
       viaBasket: reachesViaBasket(c.card, answers.cancerType),
       weakGroup: !groupNamed(c.card, answers.cancerType),
-      kw: f.ranks[0] ? (RRF_K + 1) / (RRF_K + f.ranks[0]) : 0,
-      vec: f.ranks[1] ? (RRF_K + 1) / (RRF_K + f.ranks[1]) : 0,
+      kw: f.ranks[0] ? (rrfK + 1) / (rrfK + f.ranks[0]) : 0,
+      vec: f.ranks[1] ? (rrfK + 1) / (rrfK + f.ranks[1]) : 0,
       cosine: Math.max(0, cosines.get(f.id) ?? 0),
       bm25: bm25Raw ? (bm25Raw.get(f.id) ?? 0) / bm25Max : 0,
     });

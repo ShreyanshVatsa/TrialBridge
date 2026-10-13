@@ -92,3 +92,6 @@ Not done yet: vignette DEV fit (gold not committed when this was written), multi
 - Cache key = hash(trialId, criteriaVersion, promptVersion, minimized profile, hash of the sent items) per trial, in the existing KV store, 30 days. The item hash is added so changed text or a different unknown set is re-judged. Mock results are not cached.
 - Batching: whole trials packed greedily under the provider's maxInputChars (system prompt + answers counted); a trial bigger than one request is chunked by items and merged. Top N = 10 (config/match-judge.ts).
 - Failover order is unchanged: Groq, then Cerebras only once its `dataTermsVerified` is set (it is still false), then the mock (all unknown).
+
+## Step 7: RRF k = 20 (was 60)
+k now lives in config/retrieval.ts. Dev split (TREC 2021, 10 cancer topics), full pipeline mean nDCG@10: k=20 0.4907, k=60 0.4871 (+0.0036, small, untested for significance). Kept k=20. TREC 2022 test split not used; vignette dev split not runnable (gold file absent). Fusion weights not refit. Details: eval/rrf-k.md.

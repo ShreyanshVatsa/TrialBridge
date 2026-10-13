@@ -7,10 +7,11 @@
  *   RRF(trial) = sum over each ranking r of  1 / (k + rank_r(trial))
  *
  * - rank is 1-based (best = 1). A trial missing from a ranking contributes nothing for it.
- * - k (default 60, from Cormack et al., 2009) dampens the gap between top ranks so a single
+ * - k (config/retrieval.ts; Cormack et al., 2009 suggest 60) dampens the gap between top ranks so a single
  *   method can't dominate; a trial ranked well by BOTH methods rises to the top.
  */
-export const RRF_K = 60;
+import { RRF_K } from "@/config/retrieval";
+export { RRF_K };
 
 export interface FusedResult {
   id: string;

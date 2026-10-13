@@ -1,6 +1,6 @@
 import type { FitLevel } from "@/lib/types/analysis";
 import type { PrecheckNote } from "@/lib/types/match";
-import { maxRrfScore } from "./rrf";
+import { maxRrfScore, RRF_K } from "./rrf";
 
 /**
  * Final ranking score. Every weight is named and explained so the formula is auditable:
@@ -69,9 +69,9 @@ export function reliability(n: NoteLike): number {
 }
 
 /** Normalize a raw RRF score to 0..1 given how many rankings were fused. */
-export function normalizeRrf(rrf: number, rankingsUsed: number): number {
+export function normalizeRrf(rrf: number, rankingsUsed: number, k: number = RRF_K): number {
   if (rankingsUsed <= 0) return 0;
-  return Math.min(1, rrf / maxRrfScore(rankingsUsed));
+  return Math.min(1, rrf / maxRrfScore(rankingsUsed, k));
 }
 
 /** Penalty from pre-check conflicts (a positive number to subtract): the largest MAX_COUNTED_CONFLICTS weighted conflicts. */

@@ -68,7 +68,7 @@ export async function trecQueries(): Promise<{ queries: FitQuery[]; meta: Map<st
     index.addAll(t.trials.map((x) => toSearchDoc(x.card)));
     const entries: RankEntry[] = t.trials.map((x) => ({ card: x.card, sites: [{ facility: "", city: "", state: "", zip: "", lat: 38.99, lon: -77.1 }], vector: vecOf.get(x.card.id) as ArrayLike<number> }));
     const scoresOf = (ids: ReadonlySet<string>) => new Map(index.search(queryText, { ...MINISEARCH_SEARCH, filter: (r) => ids.has(String(r.id)) }).map((r) => [String(r.id), r.score] as const));
-    const out = rankTrials({ entries, answers, origin: null, keywordSearch: (ids) => [...scoresOf(ids).keys()], keywordScores: scoresOf, queryVector: q as Float32Array, catalog, policy: FACT_POLICY, limit: entries.length });
+    const out = rankTrials({ entries, answers, origin: null, keywordSearch: (ids) => [...scoresOf(ids).keys()], keywordScores: scoresOf, queryVector: q as Float32Array, catalog, policy: FACT_POLICY, limit: entries.length, ...(process.env.RRF_K ? { rrfK: Number(process.env.RRF_K) } : {}) });
     const loadable: Record<string, number> = {};
     for (const x of t.trials) loadable[x.card.id] = t.qrels[x.card.id] ?? 0;
     const kept = new Set(out.results.map((r) => r.card.id));
