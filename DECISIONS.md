@@ -95,3 +95,13 @@ Not done yet: vignette DEV fit (gold not committed when this was written), multi
 
 ## Step 7: RRF k = 20 (was 60)
 k now lives in config/retrieval.ts. Dev split (TREC 2021, 10 cancer topics), full pipeline mean nDCG@10: k=20 0.4907, k=60 0.4871 (+0.0036, small, untested for significance). Kept k=20. TREC 2022 test split not used; vignette dev split not runnable (gold file absent). Fusion weights not refit. Details: eval/rrf-k.md.
+
+## v6 step 3: deterministic resolver (lib/match/criteria-resolve.ts)
+
+- Input is the questionnaire state + catalog (`profileFromState`), so only counted answers (applicable, prerequisites holding) are used; every non-response leaves the field absent and the item "unknown".
+- Treated status combines disease_status, treatments and lines; if they disagree it stays unknown. Surgery/radiation alone do not count as "previously treated" (systemic therapy only).
+- Hard failures (not_met / excluded) only from families that pass the precision gate (config/questionnaire/fact-policy.ts). Lines (81%), histology (67%) and v2 biomarkers are below it, so they can give met / not_excluded but never a failure. Age, sex and v1 biomarkers always can.
+- Exclusion items with "or" are a list of excluding conditions: any one that applies gives "excluded"; otherwise unknown. Inclusion "or" is always unknown (spec). Same-marker pairs ("BRCA1 or BRCA2"), number ranges ("0 or 1") and method pairs ("histologically or cytologically") are not alternatives.
+- Positive labels (met / not_excluded) also need: no directional fact outside the listed set, no drug name (NCIt synonyms), no carve-out wording, and at most 2 unexplained content words (0 when the only evidence is the cancer-type name). Cohort-specific text (extractor's `cohortSpecific`) is treated like a scope.
+- Washout windows (gap fix) are stored as excluded with a scoped param ("within_4_weeks"); `isScopedParam` facts never create conflicts in the pre-check, the catalog rules or the unknown counter, and a blanket rule for the same key wins the per-trial merge. Shard facts change only on the next `npm run ingest` (not re-run in this step).
+- Measured on real trials with SYNTHETIC answer sets (`npx tsx scripts/eval/resolve-share.ts N seed`): every question answered -> 5.4% of 20,850 items settled (1,000 trials, seed 11); age only -> 1.8%. Precision of settled labels not measured against gold; a by-eye read of ~50 random settled labels found 1 doubtful.
