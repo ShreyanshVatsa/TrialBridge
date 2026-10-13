@@ -221,3 +221,5 @@ Still open, partly addressed: L13 (eval is weak evidence for the national produc
 Effects on national data after the rule fixes (5,726 trials; 53 non-cancer studies dropped): `metastatic:required` 2,156 to 817; `upper_age_limit` 526 to 185; any barrier 1,603 to 1,270. Seed nDCG@10 moved 0.819 to 0.800 because fewer rule penalties now reorder results; labels are synthetic.
 
 Verified after fixes: lint, typecheck, 219 unit tests, `npm audit` (0), build, eval (0% hard-filter violations). Agents report 40/40 e2e passing; not re-run by the coordinator.
+- tests/unit/backend.test.ts "ships with every provider disabled until data terms are verified" fails: stale vs Groq dataTermsVerified=true (pre-existing at b0914f5). Not edited; needs test update.
+- npm run eval:vignettes fails after merge: eval/gold/vignettes-gold-v1.json missing (not on any merged branch). No vignette metrics baseline.

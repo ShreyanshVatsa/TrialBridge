@@ -1,0 +1,45 @@
+
+ RUN  v5.0.3 /Users/shreyanshvatsa/Documents/TrialBridge
+
+···················································································································································································································································································································································································································································································································································································································································································································································stdout | tests/unit/security-audit.test.ts > Worker entry: fail closed outside loopback > treats non-loopback hosts as production even when ENVIRONMENT says development
+{"requestId":"1b74d81a-8e31-4eb4-b259-2fc086ee8dbb","route":"/api/analyze","status":403,"latencyMs":0}
+
+·········································x··························································································································stdout | tests/unit/perf-budget.test.ts > work budgets on the seed > search: cosines, BM25 searches and fact relations for one breast profile
+PERF search cosines=16 factRelations=223 results=15 candidates=16
+
+·········································stdout | tests/unit/perf-budget.test.ts > work budgets on the seed > questionnaire: fact relations, re-scores and trial scores over 3 groups x 2 patients x 8 steps
+PERF questionnaire steps=48 factRelations=770877 rescores=16917 trialScores=1725
+
+·······················································································································stdout | tests/unit/qn-simulate.test.ts > simulated patients: adaptive vs fixed (§7.2, test catalog + group-skewed synthetic pools) > reports
+{"adaptive":[0.6,0.636,0.701,0.745,0.784,0.805,0.816],"fixed":[0.548,0.556,0.567,0.596,0.644,0.728,0.781],"adaptiveConf":[0.399,0.385,0.333,0.286,0.242,0.218,0.204],"fixedConf":[0.416,0.407,0.394,0.366,0.318,0.244,0.229],"fullFixed":0.847,"fullLen":10.75,"quickNdcg":0.815,"quickMedian":6}
+
+·······
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/backend.test.ts > providers > ships with every provider disabled until data terms are verified
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/backend.test.ts:152:61
+    150|   if (!cfg) throw new Error("no providers");
+    151|   it("ships with every provider disabled until data terms are verified…
+    152|     expect(AI_PROVIDERS.every((p) => !p.dataTermsVerified)).toBe(true);
+       |                                                             ^
+    153|     expect(AI_PROVIDERS.some((p) => /gemini|google/i.test(p.name + p.b…
+    154|     expect(resolveProviders({ GROQ_API_KEY: "k" } as never).map((p) =>…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 43 passed (44)
+      Tests  1 failed | 1053 passed (1054)
+   Start at  18:50:17
+   Duration  4.63s (import 44%, tests 39%, transform 17%, worker 1%)
+
+exit 1
