@@ -212,6 +212,7 @@ export function FindFlow() {
     body = (
       <ResultsView
         session={session}
+        {...(session.criteria ? { matches: session.criteria.byTrial, matchDegraded: session.criteria.degraded } : {})}
         onEdit={() => {
           if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
           setSession(null);

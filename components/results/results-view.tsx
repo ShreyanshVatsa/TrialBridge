@@ -14,6 +14,7 @@ import { findOutList, getCatalog } from "@/components/questionnaire/engine";
 import { FindOutList } from "@/components/questionnaire/find-out-list";
 import { isEssential, isNonResponse } from "@/components/questionnaire/contract";
 import { useKeyT } from "@/components/questionnaire/t";
+import { prioritizeFindOut } from "@/lib/match/criteria-rank";
 import { ResultCard } from "./result-card";
 import { DegradedMatchBanner, TierBHeader, type TrialMatchView } from "./match-checklist";
 
@@ -106,7 +107,12 @@ export function ResultsView({
   const today = formatDate(new Date(session.searchedAt).toISOString(), locale);
   // Find-out list and unknown-answer note (browser-only; built from the questionnaire state).
   const qState = session.answers.questionnaire;
-  const findOut = useMemo(() => (qState ? findOutList(qState, getCatalog("cancer", session.answers.cancerType)) : []), [qState, session.answers.cancerType]);
+  // Questions whose answer would settle the most unknown criteria in these trials come first (v6 step 5).
+  const priority = session.criteria?.findOutPriority;
+  const findOut = useMemo(() => {
+    const list = qState ? findOutList(qState, getCatalog("cancer", session.answers.cancerType)) : [];
+    return prioritizeFindOut(list, priority ?? {});
+  }, [qState, session.answers.cancerType, priority]);
   const sexAnswer = qState?.answers.sex;
   const unknownCount = qState ? Object.entries(qState.answers).filter(([id, v]) => !isEssential(id) && (isNonResponse(v) || qState.deferred.includes(id))).length : 0;
 
