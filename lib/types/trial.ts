@@ -102,6 +102,14 @@ export type FactValue = z.infer<typeof FactValueSchema>;
 export const FactParamSchema = z.union([z.number(), z.string()]);
 export type FactParam = z.infer<typeof FactParamSchema>;
 
+/**
+ * Time-window / limited-scope params on excluded facts: "window", "limited", or "within_<n>_<unit>" (e.g. washout
+ * "within_28_days"). Such exclusions only apply inside the window, so they never act as a blanket exclusion. Numbers
+ * (thresholds, carve-out years) and "active_only" / "uncontrolled_only" are not scoped in this sense.
+ */
+export const SCOPED_PARAM_RE = /^(?:window|limited|within_\d+_(?:day|week|month|year)s?)$/;
+export const isScopedParam = (p: FactParam | undefined): boolean => typeof p === "string" && SCOPED_PARAM_RE.test(p);
+
 export const FactSchema = z.object({
   key: FactKeySchema,
   value: FactValueSchema,
