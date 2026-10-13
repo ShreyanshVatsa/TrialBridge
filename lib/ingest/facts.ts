@@ -85,6 +85,32 @@ export function factsForCriterion(section: CriterionSection, text: string, opts:
   return [...best.values()];
 }
 
+/** Exclusion naming the setting of prior therapy: "prior systemic therapy for metastatic disease". */
+const PRIOR_SYSTEMIC_FOR_STAGE = /\b(?:prior|previous|any)\s+(?:systemic|anti-?cancer|cancer-directed)\s+(?:therapy|therapies|treatments?)\s+(?:for|in)\s+(?:the\s+)?(?:metastatic|advanced|recurrent|unresectable)\b/i;
+/** "have not received any prior therapy (for this cancer)". */
+const NOT_RECEIVED_PRIOR = /\b(?:not|never)\s+(?:have\s+|has\s+)?(?:previously\s+)?(?:received|had|undergone|been treated with)\s+(?:any\s+)?(?:prior\s+|previous\s+)?(?:systemic\s+|anti-?cancer\s+)?(?:therapy|therapies|treatments?)\b/i;
+const WINDOW_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, eight: 8, twelve: 12 };
+
+/**
+ * Washout window of an exclusion clause as a scoped param ("within 4 weeks" -> "within_4_weeks", "28 days prior to"
+ * -> "within_28_days"; half-lives or an unparsed window -> "window"); null when the clause states no window.
+ */
+export function washoutParam(text: string): string | null {
+  const m = /\bwithin\s+(?:the\s+)?(?:(?:last|past|previous|prior)\s+)?(\d{1,3}|one|two|three|four|five|six|eight|twelve)\s*(?:\(\d+\)\s*)?(day|week|month|year)s?\b/i.exec(text) ?? /\b(\d{1,3})\s*(day|week|month|year)s?\s+(?:prior|before|of)\b/i.exec(text);
+  if (m) {
+    const n = WINDOW_WORDS[(m[1] ?? "").toLowerCase()] ?? Number(m[1]);
+    return `within_${n}_${(m[2] ?? "").toLowerCase()}s`;
+  }
+  return WASHOUT.test(text) ? "window" : null;
+}
+
+/** Collapse "X1 or X2" when both sides match the same marker pattern, so the "or" no longer reads as an option. */
+function sameMarkerAlternatives(window: string, pattern: RegExp): string {
+  const src = pattern.source;
+  const flags = pattern.flags.replace("g", "");
+  return window.replace(new RegExp(`(${src})\\s*(?:,|\\/|\\bor\\b|\\band\\/or\\b)\\s*(?=${src})`, `${flags}g`), "$1 ");
+}
+
 /** True when an unclosed "(" precedes `index`, i.e. the match sits inside a parenthetical. */
 function insideParens(text: string, index: number): boolean {
   const before = text.slice(0, index);
@@ -95,17 +121,20 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   const out: Candidate[] = [];
   const incl = section === "inclusion";
 
-  // Prior treatments. Exclusion: having had it rules you out (unless it's only a washout window).
+  // Prior treatments. Exclusion: having had it rules you out; a washout window ("within 4 weeks") excludes only
+  // inside the window, so it carries a scoped param (isScopedParam) and never acts as a blanket exclusion.
+  const win = incl ? null : washoutParam(text);
   for (const [key, re] of Object.entries(THERAPY_PATTERNS) as [keyof typeof THERAPY_PATTERNS, RegExp][]) {
     const m = re.exec(text);
-    if (!m || !PRIOR_CONTEXT.test(text)) continue;
+    if (!m || (!PRIOR_CONTEXT.test(text) && !win)) continue;
     // Negation only counts when it precedes the therapy word closely, inside the same clause
     // ("no prior chemotherapy"); the clause starts after the last comma/semicolon/colon.
     const lead = text.slice(Math.max(0, m.index - 60), m.index);
     const clause = lead.slice(Math.max(lead.lastIndexOf(","), lead.lastIndexOf(";"), lead.lastIndexOf(":")) + 1);
     const negated = NEGATION.test(clause) || /na[iï]ve/i.test(text.slice(m.index, m.index + m[0].length + 20));
     const context = EXAMPLE_CONTEXT.test(lead) || insideParens(text, m.index) || UNLESS.test(text);
-    if (WASHOUT.test(text) || ALLOWED.test(text) || context) out.push({ key, value: "mentioned" });
+    if (win && !negated && !context && !ALLOWED.test(text)) out.push({ key, value: "excluded", param: win });
+    else if (WASHOUT.test(text) || ALLOWED.test(text) || context) out.push({ key, value: "mentioned" });
     else if (incl) out.push({ key, value: negated ? "excluded" : "required" });
     // Exclusion: "not (yet) treated with X" describes people lacking X, so having had X is not an exclusion.
     else out.push({ key, value: negated ? "mentioned" : "excluded" });
@@ -113,7 +142,15 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
 
   // Metastatic disease. Brain/bone-metastasis-only exclusions do not exclude metastatic disease in general.
   // Alternatives ("Stage III or IV", "advanced or metastatic", "primary or metastatic") never decide it.
-  if (NON_METASTATIC.test(text)) out.push({ key: "metastatic", value: incl ? "excluded" : "mentioned" });
+  // "Prior systemic therapy for metastatic disease" (exclusion) rules out previously treated patients; the stage
+  // words name the setting of that therapy, not a metastatic-disease exclusion.
+  const priorForStage = !incl && PRIOR_SYSTEMIC_FOR_STAGE.test(text);
+  if (priorForStage) out.push({ key: "previously_treated", value: "excluded" });
+  // "Patients who have not received any prior therapy" (inclusion): previously treated patients are excluded.
+  if (incl && NOT_RECEIVED_PRIOR.test(text) && !ALLOWED.test(text) && !UNLESS.test(text)) out.push({ key: "previously_treated", value: "excluded" });
+  if (priorForStage) {
+    /* the stage words describe the prior therapy's setting: no metastatic fact */
+  } else if (NON_METASTATIC.test(text)) out.push({ key: "metastatic", value: incl ? "excluded" : "mentioned" });
   else {
     const mm = METASTATIC.exec(text);
     if (mm) {
@@ -192,7 +229,9 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     if (v2Weak) pos = neg = false;
     if (V2_BIOMARKERS.has(b.id) && !decisive && (/\b(status|analys[ie]s|testing|tested|test results?|assay|performed|known|may have|regardless|independent of|either|unknown|pending|e\.g|such as|including)\b/i.test(text) || insideParens(text, m.index))) pos = neg = false;
     // In inclusion text a marker offered as one of several options ("A or B", "one of the following cancers") is not required.
-    const optional = incl && (listy || OR_NEAR.test(text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 25)));
+    // "BRCA1 or BRCA2": alternatives naming the same marker are one requirement, not options.
+    const orWindow = sameMarkerAlternatives(text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 25), b.pattern);
+    const optional = incl && (listy || OR_NEAR.test(orWindow));
     if (pos !== neg && !optional) {
       // inclusion+positive => required; inclusion+negative => positive patients excluded;
       // exclusion+positive => excluded; exclusion+negative => negative patients excluded (positive required).

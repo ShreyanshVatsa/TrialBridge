@@ -89,9 +89,10 @@ describe("rule facts", () => {
     expect(get("prior_immunotherapy")?.ref).toEqual({ section: "exclusion", n: 2 });
     for (const f of facts) expect([...inclusion, ...exclusion].some((c) => c.text.includes(f.quote))).toBe(true);
   });
-  it("treats washouts and 'allowed' as mentioned, and negation as excluded", () => {
+  it("treats washouts as window-scoped exclusions, 'allowed' as mentioned, and negation as excluded", () => {
     const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
-    expect(v("exclusion", "Chemotherapy within 4 weeks prior to study entry", "prior_chemotherapy")).toBe("mentioned");
+    expect(factsForCriterion("exclusion", "Chemotherapy within 4 weeks prior to study entry").find((f) => f.key === "prior_chemotherapy")).toMatchObject({ value: "excluded", param: "within_4_weeks" });
+    expect(v("inclusion", "Chemotherapy within 4 weeks prior to study entry", "prior_chemotherapy")).toBe("mentioned");
     expect(v("inclusion", "Prior radiation therapy is allowed", "prior_radiation")).toBe("mentioned");
     expect(v("inclusion", "No prior chemotherapy for metastatic disease", "prior_chemotherapy")).toBe("excluded");
     expect(v("inclusion", "Must have received prior chemotherapy", "prior_chemotherapy")).toBe("required");

@@ -18,9 +18,9 @@
   {"section": "exclusion", "text": "Women who are pregnant or nursing", "expect": {"pregnancy": "excluded"}},
   {"section": "exclusion", "text": "Currently participating in another interventional clinical trial", "expect": {"concurrent_trial": "excluded"}},
   {"section": "exclusion", "text": "Participation in another investigational drug study within 30 days", "expect": {"concurrent_trial": "excluded"}},
-  {"section": "exclusion", "text": "Prior chemotherapy within 4 weeks of enrollment", "expect": {"prior_chemotherapy": "excluded"}, "known": true},
-  {"section": "exclusion", "text": "Radiation therapy within 2 weeks before the first dose", "expect": {"prior_radiation": "excluded"}, "known": true},
-  {"section": "exclusion", "text": "Major surgery within 28 days of study treatment", "expect": {"prior_surgery": "excluded"}, "known": true},
+  {"section": "exclusion", "text": "Prior chemotherapy within 4 weeks of enrollment", "expect": {"prior_chemotherapy": "excluded"}},
+  {"section": "exclusion", "text": "Radiation therapy within 2 weeks before the first dose", "expect": {"prior_radiation": "excluded"}},
+  {"section": "exclusion", "text": "Major surgery within 28 days of study treatment", "expect": {"prior_surgery": "excluded"}},
   {"section": "exclusion", "text": "Prior treatment with immune checkpoint inhibitors", "expect": {"prior_immunotherapy": "excluded"}},
   {"section": "exclusion", "text": "Prior treatment with a CDK4/6 inhibitor", "expect": {"prior_targeted_therapy": "excluded"}},
   {"section": "exclusion", "text": "Metastatic disease", "expect": {"metastatic": "excluded"}},
@@ -41,10 +41,10 @@
   {"section": "inclusion", "text": "Prior radiation therapy is permitted if completed 4 weeks ago", "expect": {"prior_radiation": "mentioned"}},
   {"section": "inclusion", "text": "EGFR mutation positive non-small cell lung cancer", "expect": {"biomarker:EGFR": "required"}},
   {"section": "inclusion", "text": "ALK rearrangement positive", "expect": {"biomarker:ALK": "required"}},
-  {"section": "exclusion", "text": "Known EGFR or ALK alterations", "expect": {"biomarker:EGFR": "excluded", "biomarker:ALK": "excluded"}, "known": true},
-  {"section": "inclusion", "text": "BRCA1 or BRCA2 germline mutation", "expect": {"biomarker:BRCA": "required"}, "known": true},
+  {"section": "exclusion", "text": "Known EGFR or ALK alterations", "expect": {"biomarker:EGFR": "excluded", "biomarker:ALK": "excluded"}},
+  {"section": "inclusion", "text": "BRCA1 or BRCA2 germline mutation", "expect": {"biomarker:BRCA": "required"}},
   {"section": "inclusion", "text": "Estrogen receptor positive and HER2-negative", "expect": {"biomarker:HR": "required", "biomarker:HER2": "excluded"}},
-  {"section": "exclusion", "text": "Prior systemic therapy for metastatic disease", "expect": {"previously_treated": "excluded"}, "known": true},
-  {"section": "inclusion", "text": "Patients who have not received any prior therapy for this cancer", "expect": {"previously_treated": "excluded"}, "known": true}
+  {"section": "exclusion", "text": "Prior systemic therapy for metastatic disease", "expect": {"previously_treated": "excluded"}},
+  {"section": "inclusion", "text": "Patients who have not received any prior therapy for this cancer", "expect": {"previously_treated": "excluded"}}
  ]
 }

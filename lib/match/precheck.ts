@@ -1,6 +1,6 @@
 import type { BiomarkerId } from "@/config/biomarkers";
 import type { IntakeAnswers, Treatment } from "@/lib/types/intake";
-import type { Fact } from "@/lib/types/trial";
+import { isScopedParam, type Fact } from "@/lib/types/trial";
 import type { PrecheckNote } from "@/lib/types/match";
 import type { FactPolicyMap, QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { applyPolicy, compileState, factRelation, type CompiledAnswer } from "@/lib/questionnaire/rules";
@@ -45,7 +45,7 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
   const add = (f: Fact, kind: PrecheckNote["kind"]) => notes.push(toNote(f, kind));
 
   for (const f of facts) {
-    if (f.value === "mentioned" || f.needsReview) continue; // uncertain facts never penalize
+    if (f.value === "mentioned" || f.needsReview || isScopedParam(f.param)) continue; // uncertain facts and time windows never penalize
     const treatment = TREATMENT_FACTS[f.key];
     if (treatment) {
       if (!treatmentsKnown) continue;
@@ -61,13 +61,13 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
         else if (answers.spread === "no" && f.value === "required") add(f, "conflict");
         break;
       case "newly_diagnosed":
-        if (hadAny) add(f, "conflict");
-        else if (hadNone) add(f, "support");
+      case "previously_treated": {
+        // required previously_treated / excluded newly_diagnosed want a treated patient; the other two an untreated one.
+        const wantsTreated = (f.key === "previously_treated") === (f.value === "required");
+        if (wantsTreated ? hadNone : hadAny) add(f, "conflict");
+        else if (wantsTreated ? hadAny : hadNone) add(f, "support");
         break;
-      case "previously_treated":
-        if (hadNone) add(f, "conflict");
-        else if (hadAny) add(f, "support");
-        break;
+      }
       case "pregnancy":
         if (answers.pregnant === "yes") add(f, "conflict");
         break;
@@ -106,7 +106,7 @@ export function unknownCounter(compiled: readonly CompiledAnswer[]): (facts: rea
   for (const c of compiled) for (const k of c.rules.keys()) covered.add(k);
   return (facts) => {
     const seen = new Set<string>();
-    for (const f of facts) if (f.value !== "mentioned" && !f.needsReview && !covered.has(f.key)) seen.add(f.key);
+    for (const f of facts) if (f.value !== "mentioned" && !f.needsReview && !isScopedParam(f.param) && !covered.has(f.key)) seen.add(f.key);
     return seen.size;
   };
 }
