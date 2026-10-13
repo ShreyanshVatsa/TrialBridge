@@ -6,8 +6,8 @@ const note = (kind: PrecheckNote["kind"]): PrecheckNote => ({ key: "pregnancy", 
 
 describe("score", () => {
   it("normalizes RRF to 0..1", () => {
-    expect(normalizeRrf(2 / 61, 2)).toBeCloseTo(1, 12);
-    expect(normalizeRrf(1 / 61, 2)).toBeCloseTo(0.5, 12);
+    expect(normalizeRrf(2 / 21, 2)).toBeCloseTo(1, 12);
+    expect(normalizeRrf(1 / 21, 2)).toBeCloseTo(0.5, 12);
     expect(normalizeRrf(1, 0)).toBe(0);
   });
   it("caps conflict penalties", () => {
