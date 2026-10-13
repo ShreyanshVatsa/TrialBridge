@@ -1,11 +1,651 @@
 {
- "date": "2026-10-08",
+ "date": "2026-10-12",
  "profiles": 40,
  "cancerTypes": 15,
  "states": 21,
  "keyword": {
   "recall10": 0.868422619047619,
   "ndcg10": 0.8110588668381385
+ },
+ "random": {
+  "ndcg10": 0.7440922129025762,
+  "recall10": 0.7978361111111115
+ },
+ "seedStats": {
+  "n30": 30,
+  "pipeline": {
+   "mean": 0.808711861203335,
+   "lo": 0.7415881328777666,
+   "hi": 0.8703584579410412,
+   "n": 30
+  },
+  "hybrid": {
+   "mean": 0.7835327219201317,
+   "lo": 0.7008993178221247,
+   "hi": 0.8626302322889587,
+   "n": 30
+  },
+  "bm25": {
+   "mean": 0.7844430337295677,
+   "lo": 0.7048312558703389,
+   "hi": 0.8618171754670199,
+   "n": 30
+  },
+  "random": {
+   "mean": 0.7440922129025762,
+   "lo": 0.6740117291553624,
+   "hi": 0.8049599082729729,
+   "n": 30
+  },
+  "pipeMinusRandom": {
+   "mean": 0.0646196483007588,
+   "lo": 0.021865899019038834,
+   "hi": 0.11107312150113655,
+   "n": 30
+  },
+  "pipeMinusBm25": {
+   "mean": 0.024268827473767345,
+   "lo": -0.020304221737554532,
+   "hi": 0.07141594013176149,
+   "n": 30
+  },
+  "bm25MinusRandom": {
+   "mean": 0.04035082082699146,
+   "lo": -0.0046208929219233655,
+   "hi": 0.08568050606522987,
+   "n": 30
+  },
+  "v2": {
+   "mean": 0.8069527036068143,
+   "lo": 0.7466125781893411,
+   "hi": 0.8610340093435336,
+   "n": 40
+  },
+  "v2MinusRandom": {
+   "mean": 0.06458521550815591,
+   "lo": 0.02871348663195799,
+   "hi": 0.10099078140522373,
+   "n": 40
+  },
+  "v2MinusV1": {
+   "mean": -0.014603689635356031,
+   "lo": -0.05432921540982441,
+   "hi": 0.01517429971523346,
+   "n": 40
+  },
+  "pipelineExcluded": {
+   "mean": 0.27055555555555555,
+   "lo": 0.18111111111111117,
+   "hi": 0.36620833333333375,
+   "n": 20
+  },
+  "randomExcluded": {
+   "mean": 0.2614555555555554,
+   "lo": 0.19039368055555544,
+   "hi": 0.3355569444444442,
+   "n": 20
+  }
+ },
+ "nationalHeadline": {
+  "trials": 5726,
+  "stats": {
+   "n": 40,
+   "pipeline": {
+    "mean": 0.7844556079612295,
+    "lo": 0.6835648614186173,
+    "hi": 0.8704549637123724,
+    "n": 40
+   },
+   "bm25": {
+    "mean": 0.700371834046815,
+    "lo": 0.5995188763735453,
+    "hi": 0.7902887338819884,
+    "n": 40
+   },
+   "random": {
+    "mean": 0.3765178928601825,
+    "lo": 0.32092749766322887,
+    "hi": 0.43225473737161996,
+    "n": 40
+   },
+   "pipeMinusRandom": {
+    "mean": 0.407937715101047,
+    "lo": 0.3211884436510655,
+    "hi": 0.4870858605958583,
+    "n": 40
+   },
+   "pipeMinusBm25": {
+    "mean": 0.08408377391441467,
+    "lo": 0.045119213199350916,
+    "hi": 0.1263340035527758,
+    "n": 40
+   },
+   "bm25MinusRandom": {
+    "mean": 0.32385394118663224,
+    "lo": 0.2367182617088485,
+    "hi": 0.40807910512113915,
+    "n": 40
+   },
+   "pipelineExcluded": {
+    "mean": 0.26666666666666666,
+    "lo": 0.15333333333333335,
+    "hi": 0.39666666666666656,
+    "n": 30
+   },
+   "randomExcluded": {
+    "mean": 0.18026666666666663,
+    "lo": 0.12413125,
+    "hi": 0.2416699999999999,
+    "n": 30
+   }
+  },
+  "rows": [
+   {
+    "id": "p01",
+    "group": "breast",
+    "candidates": 450,
+    "relevant": 150,
+    "pipeline": 0.23365080824310533,
+    "bm25": 0,
+    "random": 0.32157363683591167,
+    "pipelineExcluded": 0.7,
+    "randomExcluded": 0.30700000000000005
+   },
+   {
+    "id": "p02",
+    "group": "breast",
+    "candidates": 415,
+    "relevant": 159,
+    "pipeline": 0.7065632165480471,
+    "bm25": 0.7695261902392829,
+    "random": 0.37932931501270517,
+    "pipelineExcluded": 0.3,
+    "randomExcluded": 0.09549999999999997
+   },
+   {
+    "id": "p03",
+    "group": "breast",
+    "candidates": 507,
+    "relevant": 204,
+    "pipeline": 0.804810999209339,
+    "bm25": 0.2520649403266671,
+    "random": 0.41320786763868383,
+    "pipelineExcluded": 0.2,
+    "randomExcluded": 0.16950000000000012
+   },
+   {
+    "id": "p04",
+    "group": "breast",
+    "candidates": 539,
+    "relevant": 153,
+    "pipeline": 0.6331992944486872,
+    "bm25": 0.6530488081313035,
+    "random": 0.2760803455564791,
+    "pipelineExcluded": 0.4,
+    "randomExcluded": 0.6194999999999999
+   },
+   {
+    "id": "p05",
+    "group": "lung",
+    "candidates": 415,
+    "relevant": 182,
+    "pipeline": 1,
+    "bm25": 0.6777277508780454,
+    "random": 0.4540648087282761,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.11600000000000006
+   },
+   {
+    "id": "p06",
+    "group": "lung",
+    "candidates": 784,
+    "relevant": 70,
+    "pipeline": 0.1681522864689108,
+    "bm25": 0,
+    "random": 0.08076693445988008,
+    "pipelineExcluded": 0.8,
+    "randomExcluded": 0.41749999999999976
+   },
+   {
+    "id": "p07",
+    "group": "lung",
+    "candidates": 587,
+    "relevant": 325,
+    "pipeline": 1,
+    "bm25": 0.8603818544462509,
+    "random": 0.5393238164174231,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.06899999999999988
+   },
+   {
+    "id": "p08",
+    "group": "lung",
+    "candidates": 530,
+    "relevant": 341,
+    "pipeline": 1,
+    "bm25": 0.8899541168509599,
+    "random": 0.6279163152804201,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p09",
+    "group": "colorectal",
+    "candidates": 317,
+    "relevant": 139,
+    "pipeline": 1,
+    "bm25": 0.914856882358379,
+    "random": 0.4394128887382476,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.015000000000000006
+   },
+   {
+    "id": "p10",
+    "group": "colorectal",
+    "candidates": 238,
+    "relevant": 51,
+    "pipeline": 0.4932162989129127,
+    "bm25": 0.494639655562801,
+    "random": 0.21323498760537496,
+    "pipelineExcluded": 0.3,
+    "randomExcluded": 0.3534999999999999
+   },
+   {
+    "id": "p11",
+    "group": "colorectal",
+    "candidates": 120,
+    "relevant": 63,
+    "pipeline": 0.8899541168509599,
+    "bm25": 0.9216017310213247,
+    "random": 0.5296910646928029,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.006500000000000001
+   },
+   {
+    "id": "p12",
+    "group": "prostate",
+    "candidates": 313,
+    "relevant": 105,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.338760753004504,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.021000000000000008
+   },
+   {
+    "id": "p13",
+    "group": "prostate",
+    "candidates": 405,
+    "relevant": 97,
+    "pipeline": 0,
+    "bm25": 0,
+    "random": 0.2457550225647337,
+    "pipelineExcluded": 1,
+    "randomExcluded": 0.38549999999999995
+   },
+   {
+    "id": "p14",
+    "group": "prostate",
+    "candidates": 399,
+    "relevant": 197,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.4754139215155568,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p15",
+    "group": "leukemia",
+    "candidates": 187,
+    "relevant": 104,
+    "pipeline": 0.9052116356304493,
+    "bm25": 0.762416491594312,
+    "random": 0.5624076198978183,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.31649999999999995
+   },
+   {
+    "id": "p16",
+    "group": "leukemia",
+    "candidates": 300,
+    "relevant": 130,
+    "pipeline": 0,
+    "bm25": 0.06943122193677727,
+    "random": 0.41998760068929136,
+    "pipelineExcluded": 1,
+    "randomExcluded": 0.36950000000000005
+   },
+   {
+    "id": "p17",
+    "group": "leukemia",
+    "candidates": 127,
+    "relevant": 72,
+    "pipeline": 0.8899541168509599,
+    "bm25": 0.7975167679274937,
+    "random": 0.5762145254275061,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.21850000000000008
+   },
+   {
+    "id": "p18",
+    "group": "lymphoma",
+    "candidates": 226,
+    "relevant": 177,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.7826745041313636,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p19",
+    "group": "lymphoma",
+    "candidates": 102,
+    "relevant": 80,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.7751764580498981,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p20",
+    "group": "myeloma",
+    "candidates": 75,
+    "relevant": 44,
+    "pipeline": 1,
+    "bm25": 0.933745776545611,
+    "random": 0.6048450636459759,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.15450000000000003
+   },
+   {
+    "id": "p21",
+    "group": "myeloma",
+    "candidates": 176,
+    "relevant": 79,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.4514406390084788,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.36449999999999994
+   },
+   {
+    "id": "p22",
+    "group": "melanoma",
+    "candidates": 230,
+    "relevant": 60,
+    "pipeline": 0.9266360779006401,
+    "bm25": 0.7753366239771086,
+    "random": 0.2523945348977232,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p23",
+    "group": "melanoma",
+    "candidates": 399,
+    "relevant": 103,
+    "pipeline": 0.8236998933965709,
+    "bm25": 0.7183627972686238,
+    "random": 0.25920363039732003,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p24",
+    "group": "pancreatic",
+    "candidates": 161,
+    "relevant": 45,
+    "pipeline": 0.6994739030813919,
+    "bm25": 0.5462574254588145,
+    "random": 0.27629409426736556,
+    "pipelineExcluded": 0.4,
+    "randomExcluded": 0.09499999999999999
+   },
+   {
+    "id": "p25",
+    "group": "pancreatic",
+    "candidates": 621,
+    "relevant": 209,
+    "pipeline": 1,
+    "bm25": 0.8364586133797037,
+    "random": 0.32608515357998896,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.037999999999999964
+   },
+   {
+    "id": "p26",
+    "group": "ovarian",
+    "candidates": 635,
+    "relevant": 227,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.3747103345033731,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p27",
+    "group": "ovarian",
+    "candidates": 283,
+    "relevant": 106,
+    "pipeline": 0.933745776545611,
+    "bm25": 0.9363792118010483,
+    "random": 0.3664801039558421,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p28",
+    "group": "brain",
+    "candidates": 210,
+    "relevant": 38,
+    "pipeline": 1,
+    "bm25": 0.933745776545611,
+    "random": 0.1890632993473162,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.023999999999999994
+   },
+   {
+    "id": "p29",
+    "group": "brain",
+    "candidates": 744,
+    "relevant": 184,
+    "pipeline": 0.9305687780632227,
+    "bm25": 0.7264127302306637,
+    "random": 0.24508641671731424,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.025499999999999995
+   },
+   {
+    "id": "p30",
+    "group": "bladder",
+    "candidates": 329,
+    "relevant": 52,
+    "pipeline": 0.914856882358379,
+    "bm25": 0.866947989864271,
+    "random": 0.17752161581706752,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.04149999999999997
+   },
+   {
+    "id": "p31",
+    "group": "thyroid",
+    "candidates": 240,
+    "relevant": 24,
+    "pipeline": 0.9052116356304493,
+    "bm25": 0.7849818707050383,
+    "random": 0.10442671148957222,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.0045
+   },
+   {
+    "id": "p32",
+    "group": "liver",
+    "candidates": 295,
+    "relevant": 46,
+    "pipeline": 0.38113435412202,
+    "bm25": 0.38898084950169814,
+    "random": 0.15078867250405484,
+    "pipelineExcluded": 0.7,
+    "randomExcluded": 0.0839999999999999
+   },
+   {
+    "id": "p33",
+    "group": "liver",
+    "candidates": 231,
+    "relevant": 18,
+    "pipeline": 0.30240383049385083,
+    "bm25": 0.39168308588041617,
+    "random": 0.07785002599186003,
+    "pipelineExcluded": 0.7,
+    "randomExcluded": 0.15249999999999997
+   },
+   {
+    "id": "p34",
+    "group": "gastroesophageal",
+    "candidates": 363,
+    "relevant": 120,
+    "pipeline": 0.9052116356304493,
+    "bm25": 1,
+    "random": 0.34475496637606334,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p35",
+    "group": "lung",
+    "candidates": 520,
+    "relevant": 183,
+    "pipeline": 0.9305687780632227,
+    "bm25": 0.6975961695061491,
+    "random": 0.37763304539075876,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.10299999999999995
+   },
+   {
+    "id": "p36",
+    "group": "lung",
+    "candidates": 781,
+    "relevant": 70,
+    "pipeline": 0.07839826897867533,
+    "bm25": 0.06362078819895171,
+    "random": 0.09574896462239932,
+    "pipelineExcluded": 0.9,
+    "randomExcluded": 0.4235
+   },
+   {
+    "id": "p37",
+    "group": "prostate",
+    "candidates": 337,
+    "relevant": 120,
+    "pipeline": 1,
+    "bm25": 0.857980942822373,
+    "random": 0.35192820562174915,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.021500000000000005
+   },
+   {
+    "id": "p38",
+    "group": "ovarian",
+    "candidates": 635,
+    "relevant": 227,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.35158824857301285,
+    "pipelineExcluded": null,
+    "randomExcluded": null
+   },
+   {
+    "id": "p39",
+    "group": "leukemia",
+    "candidates": 203,
+    "relevant": 111,
+    "pipeline": 0.9216017310213247,
+    "bm25": 0.4932162989129127,
+    "random": 0.5509252558043523,
+    "pipelineExcluded": 0.1,
+    "randomExcluded": 0.31599999999999984
+   },
+   {
+    "id": "p40",
+    "group": "myeloma",
+    "candidates": 175,
+    "relevant": 117,
+    "pipeline": 1,
+    "bm25": 1,
+    "random": 0.6809543456488375,
+    "pipelineExcluded": 0,
+    "randomExcluded": 0.07999999999999989
+   }
+  ]
+ },
+ "oracle": {
+  "seed": {
+   "results": 3395,
+   "unverifiable": 0,
+   "group": 66,
+   "age": 0,
+   "sex": 0,
+   "distance": 0,
+   "distanceStrict": 0,
+   "distanceUnverifiable": 7,
+   "any": 66,
+   "samples": [
+    "NCT07217171 for p09 (group)",
+    "NCT07217171 for p10 (group)",
+    "NCT07114939 for p18 (group)",
+    "NCT04573140 for p18 (group)",
+    "NCT06860594 for p18 (group)",
+    "NCT06860594 for p19 (group)",
+    "NCT06463028 for p27 (group)",
+    "NCT06458712 for p28 (group)"
+   ],
+   "eligibleAcrossProfiles": 759,
+   "eligibleMissedByApp": 162,
+   "appCandidates": 612,
+   "appCandidatesOracleRejects": 15
+  },
+  "national": {
+   "rawRecords": 5888,
+   "returnedTop15": {
+    "results": 600,
+    "unverifiable": 0,
+    "group": 0,
+    "age": 0,
+    "sex": 0,
+    "distance": 0,
+    "distanceStrict": 0,
+    "distanceUnverifiable": 0,
+    "any": 0,
+    "samples": []
+   },
+   "allCandidates": {
+    "results": 14604,
+    "unverifiable": 0,
+    "group": 537,
+    "age": 0,
+    "sex": 0,
+    "distance": 3,
+    "distanceStrict": 3,
+    "distanceUnverifiable": 3,
+    "any": 540,
+    "samples": [
+     "NCT07209111 for p01 (group)",
+     "NCT07008118 for p01 (group)",
+     "NCT07415031 for p01 (group)",
+     "NCT06327685 for p01 (group)",
+     "NCT07441694 for p01 (group)",
+     "NCT06150157 for p01 (group)",
+     "NCT06034002 for p01 (group)",
+     "NCT05382559 for p01 (group)"
+    ]
+   },
+   "eligibleInBuild": 19526,
+   "eligibleMissedByApp": 5462
+  }
  },
  "variants": [
   {

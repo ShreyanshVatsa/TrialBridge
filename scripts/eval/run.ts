@@ -1,6 +1,8 @@
 /**
- * Offline evaluation (`npm run eval`): retrieval quality, hard-filter safety, rule-fact precision,
- * and mock AI analysis checks over the committed seed + eval/labels.json. Writes eval/RESULTS.md and
+ * Offline evaluation (`npm run eval`): retrieval quality with random and BM25 baselines and bootstrap CIs,
+ * hard-filter safety against an INDEPENDENT oracle (oracle.ts, computed from raw CT.gov fields), rule-fact precision,
+ * and mock AI analysis checks. Seed: committed data/seed + eval/labels.json. National: public/data shards when present.
+ * The title/condition-regex labels are a smoke test, not accuracy evidence. Writes eval/RESULTS.md and
  * eval/results.json. Uses the mock AI provider only (`eval:live` is deferred).
  * Embedding variants compared: MiniLM vs bge-small, q8 vs fp32 weights, int8 vs float32 storage.
  */
@@ -24,6 +26,9 @@ import type { TrialCard } from "../../lib/types/trial";
 import { loadAssertionCases, runAssertions } from "./assertions";
 import { runSimulation, simulationMarkdown } from "./simulate";
 import { loadNational } from "./national";
+import { emptyTally, loadRawNational, loadRawSeed, oracleEligibleIds, tallyResults, type OraclePatient, type OracleTally } from "./oracle";
+import { bootstrapCI, fmtCI, fmtDiff, pairedBootstrapCI, randomBaseline, rng } from "./stats";
+import { runHeadline, type HeadlineResult } from "./headline";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import { applyAnswer, eligibleQuestions } from "../../lib/questionnaire/engine";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
@@ -79,17 +84,40 @@ async function main(): Promise<void> {
   const keywordRank = (p: (typeof profiles)[number], ids: Set<string>) =>
     index.search(p.query, { ...MINISEARCH_SEARCH, filter: (r) => ids.has(String(r.id)) }).map((r) => String(r.id));
 
-  // Keyword-only baseline.
+  // Independent hard-filter oracle: raw CT.gov fields only (oracle.ts). Patient = what the profile told the app.
+  const rawSeed = loadRawSeed();
+  const oracleSeed = emptyTally();
+  const patientOf = (p: (typeof profiles)[number], sex?: unknown): OraclePatient => ({ group: p.answers.cancerType, age: p.answers.age, origin: p.origin, travelMiles: p.origin ? p.answers.travelMiles : null, sex: sex === "female" || sex === "male" ? sex : null });
+
+  // Keyword-only baseline and a random-ranking baseline over the SAME hard-filtered candidates.
+  const rand = rng(20261012);
   const kw = profiles.map((p) => {
     const rel = new Set(p.relevant);
-    const r = keywordRank(p, candidatesFor(p));
-    return { recall: recallAt(r, rel), ndcg: ndcgAt(r, rel) };
+    const ids = candidatesFor(p);
+    const r = keywordRank(p, ids);
+    return { recall: recallAt(r, rel), ndcg: ndcgAt(r, rel), randNdcg: randomBaseline([...ids], (x) => ndcgAt(x, rel), rand), randRecall: randomBaseline([...ids], (x) => recallAt(x, rel), rand), randExcluded: randomBaseline([...ids], (x) => { const e = new Set(p.excluded); return e.size ? x.slice(0, 10).filter((id) => e.has(id)).length / Math.min(10, x.length || 1) : NaN; }, rand), candidates: ids.size };
   });
+  // Where the app's candidate set and the oracle's eligible set disagree (all raw seed studies, not only returned ones).
+  let seedMissed = 0, seedMissedByGroup = 0, seedMissedByDistance = 0, seedOracleEligible = 0, seedCandidateRejected = 0, seedCandidates = 0;
+  for (const p of profiles) {
+    const eligible = new Set(oracleEligibleIds(rawSeed, patientOf(p)).filter((id) => byId.has(id)));
+    const cand = candidatesFor(p);
+    seedOracleEligible += eligible.size;
+    for (const id of eligible) {
+      if (cand.has(id)) continue;
+      seedMissed++;
+      const c = byId.get(id) as TrialCard;
+      if (!passesGroup(c, p.answers.cancerType)) seedMissedByGroup++;
+      else if (!passesDistance(nearestSite(sites.get(id) ?? [], p.origin), p.origin ? p.answers.travelMiles : null)) seedMissedByDistance++;
+    }
+    seedCandidates += cand.size;
+    seedCandidateRejected += [...cand].filter((id) => !eligible.has(id)).length;
+  }
 
   const variantRows: { name: string; embRecall: number; embNdcg: number; hybRecall: number; hybNdcg: number; sysRecall: number; sysNdcg: number; excludedAt10: number; violations: number; results: number }[] = [];
   const productionSystem = new Map<string, string[]>();
   const V1_PROFILES = 30; // p01-p30: the v1 labels, so the headline stays comparable across versions
-  let prodRows: Array<{ sysNdcg: number; excludedAt10: number }> = [];
+  let prodRows: Array<{ sysNdcg: number; embNdcg: number; hybNdcg: number; sysRecall: number; excludedAt10: number }> = [];
   for (const v of VARIANTS) {
     process.stdout.write(`Variant: ${v.name}\n`);
     const docVecs = await embedAll(v.model, v.dtype, cards.map(embeddingText));
@@ -107,6 +135,7 @@ async function main(): Promise<void> {
       const sys = rankTrials({ entries, answers: p.answers, origin: p.origin, keywordSearch: (s) => keywordRank(p, new Set(s)), queryVector: q });
       const sysIds = sys.results.map((r) => r.card.id);
       if (v === VARIANTS[0]) productionSystem.set(p.id, sysIds);
+      tallyResults(oracleSeed, rawSeed, sysIds, patientOf(p), p.id);
       // Independent hard-filter re-check of every returned result.
       const violations = sys.results.filter((r) => {
         const c = byId.get(r.card.id) as TrialCard;
@@ -150,6 +179,7 @@ async function main(): Promise<void> {
     const out = rankV2(p, p.state, v2Vecs[pi] as Float32Array, v2Queries[pi] as string);
     const ids = out.results.map((r) => r.card.id);
     const sexAnswer = p.state.answers["sex"];
+    tallyResults(oracleSeed, rawSeed, ids, patientOf(p, sexAnswer), `${p.id}/v2`);
     for (const r of out.results) {
       const c = byId.get(r.card.id) as TrialCard;
       const bad = !passesGroup(c, p.answers.cancerType) || !passesAge(c, p.answers.age) || !passesDistance(nearestSite(sites.get(c.id) ?? [], p.origin), p.origin ? p.answers.travelMiles : null) || (sexAnswer === "female" && c.sex === "MALE") || (sexAnswer === "male" && c.sex === "FEMALE");
@@ -180,6 +210,16 @@ async function main(): Promise<void> {
   const nE2 = ecog2.filter(Boolean).length;
   const sim = runSimulation();
   const national = loadNational();
+  // National headline: same profiles and label rules over the national shards, plus the oracle on raw CT.gov pages.
+  let headline: HeadlineResult | null = null;
+  const rawNational = national ? loadRawNational() : null;
+  if (national) {
+    try {
+      headline = await runHeadline({ national, zips, labels: labels as unknown as Parameters<typeof runHeadline>[0]["labels"], rawNational });
+    } catch (err) {
+      console.warn(`national headline skipped: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
   // The national shards can be mid-swap while an ingest runs; a missing file then only skips this optional section.
   let simNat: ReturnType<typeof runSimulation> | null = null;
   try {
@@ -229,12 +269,51 @@ async function main(): Promise<void> {
   const prod = variantRows[0];
   if (!prod) throw new Error("no variants");
   const totalViolations = variantRows.reduce((s, r) => s + r.violations, 0) + v2Violations;
+
+  // Confidence intervals (percentile bootstrap over profiles) and paired differences, seed.
+  const col = <T,>(rows: T[], f: (r: T) => number, n = rows.length) => rows.slice(0, n).map(f);
+  const seedStats = {
+    n30: V1_PROFILES,
+    pipeline: bootstrapCI(col(prodRows, (r) => r.sysNdcg, V1_PROFILES)),
+    hybrid: bootstrapCI(col(prodRows, (r) => r.hybNdcg, V1_PROFILES)),
+    bm25: bootstrapCI(col(kw, (r) => r.ndcg, V1_PROFILES)),
+    random: bootstrapCI(col(kw, (r) => r.randNdcg, V1_PROFILES)),
+    pipeMinusRandom: pairedBootstrapCI(col(prodRows, (r) => r.sysNdcg, V1_PROFILES), col(kw, (r) => r.randNdcg, V1_PROFILES)),
+    pipeMinusBm25: pairedBootstrapCI(col(prodRows, (r) => r.sysNdcg, V1_PROFILES), col(kw, (r) => r.ndcg, V1_PROFILES)),
+    bm25MinusRandom: pairedBootstrapCI(col(kw, (r) => r.ndcg, V1_PROFILES), col(kw, (r) => r.randNdcg, V1_PROFILES)),
+    v2: bootstrapCI(v2Rows.map((r) => r.sysNdcg)),
+    v2MinusRandom: pairedBootstrapCI(v2Rows.map((r) => r.sysNdcg), kw.map((r) => r.randNdcg)),
+    v2MinusV1: pairedBootstrapCI(v2Rows.map((r) => r.sysNdcg), prodRows.map((r) => r.sysNdcg)),
+    pipelineExcluded: bootstrapCI(col(prodRows, (r) => r.excludedAt10, V1_PROFILES)),
+    randomExcluded: bootstrapCI(col(kw, (r) => r.randExcluded, V1_PROFILES)),
+  };
+  const natStats = headline
+    ? (() => {
+        const rs = headline.rows;
+        return {
+          n: rs.filter((r) => !Number.isNaN(r.pipeline)).length,
+          pipeline: bootstrapCI(rs.map((r) => r.pipeline)),
+          bm25: bootstrapCI(rs.map((r) => r.bm25)),
+          random: bootstrapCI(rs.map((r) => r.random)),
+          pipeMinusRandom: pairedBootstrapCI(rs.map((r) => r.pipeline), rs.map((r) => r.random)),
+          pipeMinusBm25: pairedBootstrapCI(rs.map((r) => r.pipeline), rs.map((r) => r.bm25)),
+          bm25MinusRandom: pairedBootstrapCI(rs.map((r) => r.bm25), rs.map((r) => r.random)),
+          pipelineExcluded: bootstrapCI(rs.map((r) => r.pipelineExcluded)),
+          randomExcluded: bootstrapCI(rs.map((r) => r.randomExcluded)),
+        };
+      })()
+    : null;
+  const oracleLine = (t: OracleTally) => `${t.any} of ${t.results} results (${pc(t.any / Math.max(1, t.results))}): group ${t.group}, age ${t.age}, sex ${t.sex}, distance ${t.distance} (strict, no slack: ${t.distanceStrict}); distance not checkable for ${t.distanceUnverifiable} (raw record has no coordinates); ${t.unverifiable} had no raw record`;
   const results = {
     date: new Date().toISOString().slice(0, 10),
     profiles: profiles.length,
     cancerTypes: new Set(profiles.map((p) => p.answers.cancerType)).size,
     states: new Set(profiles.map((p) => p.answers.zip.slice(0, 3))).size,
     keyword: { recall10: kwRecall, ndcg10: kwNdcg },
+    random: { ndcg10: mean(kw.slice(0, V1_PROFILES).map((r) => r.randNdcg)), recall10: mean(kw.slice(0, V1_PROFILES).map((r) => r.randRecall)) },
+    seedStats,
+    nationalHeadline: headline ? { trials: headline.trials, stats: natStats, rows: headline.rows } : null,
+    oracle: { seed: { ...oracleSeed, eligibleAcrossProfiles: seedOracleEligible, eligibleMissedByApp: seedMissed, appCandidates: seedCandidates, appCandidatesOracleRejects: seedCandidateRejected }, national: headline ? { rawRecords: headline.oracle.raw, returnedTop15: headline.oracle.returned, allCandidates: headline.oracle.candidates, eligibleInBuild: headline.oracle.oracleEligible, eligibleMissedByApp: headline.oracle.missed } : null },
     variants: variantRows,
     v2: { profiles: profiles.length, v1PipelineNdcg: v1All.ndcg, v2PipelineNdcg: v2All.ndcg, comparable: { n: profiles.length - nE2, v1: v1Cmp, v2: v2Cmp }, ecog2: { n: nE2, v1: v1E2, v2: v2E2 }, v1First30: v1First30, v2First30, v2Excluded30: v2Excl30, v2Excluded: v2All.excluded, v1Excluded: v1All.excluded, violations: v2Violations, nonResponseChecks: nrChecks, nonResponseMismatches: nrMismatch },
     simulation: sim,
@@ -249,16 +328,66 @@ async function main(): Promise<void> {
   const table = variantRows
     .map((r) => `| ${r.name} | ${f3(r.embRecall)} | ${f3(r.embNdcg)} | ${f3(r.hybRecall)} | ${f3(r.hybNdcg)} | ${f3(r.sysRecall)} | ${f3(r.sysNdcg)} | ${f3(r.excludedAt10)} |`)
     .join("\n");
+  const natRows = headline?.rows ?? [];
+  const natMeanCand = mean(natRows.map((r) => r.candidates)), natMeanRel = mean(natRows.map((r) => r.relevant));
+  const natSection = headline && natStats
+    ? `Data: ${headline.trials} real recruiting U.S. cancer trials from the national build (\`public/data\`, data version ${national?.manifest.dataVersion}). ${natStats.n} of the ${profiles.length} synthetic profiles have at least one relevant label there (profiles with an empty label set are dropped from the means). Every system ranks the **same hard-filtered candidates** (cancer group, age, distance, definite sex): on average ${natMeanCand.toFixed(0)} candidates per profile, of which ${natMeanRel.toFixed(0)} carry a "relevant" label.
+
+| System | nDCG@10, mean [95% CI] | Excluded-label share of top 10 [95% CI] |
+|---|---|---|
+| Random order (expected value over 200 shuffles per profile) | ${fmtCI(natStats.random)} | ${fmtCI(natStats.randomExcluded)} |
+| BM25 keyword only | ${fmtCI(natStats.bm25)} | n/a |
+| Production pipeline (v2 questionnaire: BM25 + embeddings + pre-check) | ${fmtCI(natStats.pipeline)} | ${fmtCI(natStats.pipelineExcluded)} |
+
+Paired bootstrap over profiles (4000 resamples, seed 20261012; the interval is for the mean per-profile difference):
+- Pipeline minus random: **${fmtDiff(natStats.pipeMinusRandom)}**
+- Pipeline minus BM25: **${fmtDiff(natStats.pipeMinusBm25)}**
+- BM25 minus random: ${fmtDiff(natStats.bm25MinusRandom)}
+
+Plan gate "random baseline <= 0.45 on the headline set": **${natStats.random.mean <= 0.45 ? "met" : "NOT met"}** (random scores ${f3(natStats.random.mean)}). ${natStats.pipelineExcluded.mean > natStats.randomExcluded.mean ? "Caution: the pipeline's excluded-label share is **not better than random**. The \"excluded\" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. " : ""}When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.`
+    : "National shards are not present in `public/data` (seed-only build), so no national headline was computed. Run `npm run local:national` (or restore `public/data`) and re-run `npm run eval`.";
+
+  const natOracle = headline && rawNational
+    ? `- **National** (${rawNational.size} raw CT.gov records from \`data/cache/national\`; ${headline.trials} in the build): top 15 returned for each profile: **${oracleLine(headline.oracle.returned)}**. Over **all** candidates the app's filters let through: ${oracleLine(headline.oracle.candidates)}.
+  - Missed-trial direction: the oracle finds ${headline.oracle.oracleEligible} (profile, trial) pairs eligible on group, age, sex and distance among trials in the build; the app's filters drop **${headline.oracle.missed}** of them (${pc(headline.oracle.missed / Math.max(1, headline.oracle.oracleEligible))}): ${headline.oracle.missedByGroup} because the app does not tag the trial with the profile's group (the oracle reads any generic "cancer" or "solid tumor" record as a basket, and a person should look at these before calling them recall losses), ${headline.oracle.missedByDistance} because the app finds no site in range.
+  - Samples of flagged candidates: ${headline.oracle.candidates.samples.length ? headline.oracle.candidates.samples.join("; ") : "none"}.`
+    : "- **National**: raw pages (`data/cache/national`) or national shards are not present here, so the oracle was not run at national scale.";
+
   const md = `# Evaluation results
 
-Generated by \`npm run eval\` on ${results.date}. Data: the committed ClinicalTrials.gov seed (${cards.length} real trials). Mock AI provider only.
+Generated by \`npm run eval\` on ${results.date}. Mock AI provider only. All profiles are synthetic; nothing here is a clinical accuracy claim.
 
-> **Synthetic, provisional.** ${profiles.length} synthetic patient profiles (p01-p30 are the v1 labels; p31-p40 were added for the questionnaire, with hand-written v2 answers incl. unknowns) (not real people) across ${results.cancerTypes} cancer types and ${results.states} ZIP regions. Relevance labels come from hand-written per-profile rules over trial titles and conditions (\`scripts/eval/make-labels.ts\`), independent of the criteria facts and embeddings being evaluated, and are **not clinician-reviewed**. Treat the numbers as a regression baseline, not a clinical accuracy claim.
+> **How to read this file.** Section 1 is the headline: the production ranker against a random baseline and a BM25 baseline, on the national data, with 95% bootstrap confidence intervals. Section 2 checks the hard filters against an independent oracle computed from raw ClinicalTrials.gov fields. Section 3 (seed, ${cards.length} trials) is a **smoke test** that guards against regressions. The relevance labels in sections 1 and 3 are regexes over trial titles and conditions, not clinician judgements, and BM25 reads the same text, so they flatter keyword matching. Graded, quote-backed judgements live in the vignette benchmark (\`eval/gold/\`, \`npm run eval:vignettes\`) and the TREC Clinical Trials cancer subset (\`eval/trec/\`); those, not this file, are the evidence for retrieval quality.
 
-## Safety: hard filters
-- **Hard-filter violation rate: ${pc(results.hardFilterViolationRate)}** (${totalViolations} violations in ${variantRows.reduce((s, r) => s + r.results, 0) + v2Results} returned results across all variants and the v2 questionnaire pipeline; the v2 re-check also covers a definite sex answer). Every returned trial was re-checked independently for cancer type, age range, and travel distance.
+## 1. Headline: national-scale ranking vs baselines (title/condition regex labels)
+${natSection}
 
-## Retrieval (recall@10 and nDCG@10, mean over the 30 v1 profiles, legacy answers)
+## 2. Safety: hard filters checked by an independent oracle
+The app's filters (cancer group, age, distance, definite sex) read derived card fields. Checking a result with the same filter functions can never fail, so the old "0 violations" line (reproduced in the last bullet) is true by construction and is not evidence. \`scripts/eval/oracle.ts\` instead re-derives each decision from the **raw CT.gov record** with separate code: its own cancer-group term lists over conditions, keywords and titles; its own parser of the raw minimum/maximum age strings; and its own haversine over the registry's facility coordinates of recruiting U.S. sites. Distance is counted with 25 miles of slack, because the app measures to ZIP centroids and the registry gives facility coordinates (the strict count is shown too). A "group" flag means the raw text names a different cancer than the profile's; it can also be the oracle's term list being narrower than the registry's wording, so read flagged samples before concluding anything.
+- **Seed** (${rawSeed.size} raw records), over all variants and the v2 pipeline: **${oracleLine(oracleSeed)}**. Samples: ${oracleSeed.samples.length ? oracleSeed.samples.join("; ") : "none"}.
+  - Missed-trial direction: ${seedOracleEligible} (profile, trial) pairs are oracle-eligible; the app's candidate sets omit **${seedMissed}** (${pc(seedMissed / Math.max(1, seedOracleEligible))}; ${seedMissedByGroup} because the app does not tag the trial with the profile's group, ${seedMissedByDistance} because the app finds no site in range); of ${seedCandidates} app candidates the oracle rejects ${seedCandidateRejected} (${pc(seedCandidateRejected / Math.max(1, seedCandidates))}).
+${natOracle}
+- Circular check, kept only as a regression test (same filter functions as the app): ${totalViolations} violations in ${variantRows.reduce((s, r) => s + r.results, 0) + v2Results} results.
+
+## 3. Seed smoke test (${cards.length} trials, ${profiles.length} synthetic profiles, title/condition regex labels)
+> **Smoke test only.** ${profiles.length} synthetic patient profiles (p01-p30 are the v1 labels; p31-p40 were added for the questionnaire, with hand-written v2 answers incl. unknowns) (not real people) across ${results.cancerTypes} cancer types and ${results.states} ZIP regions. Relevance labels come from hand-written per-profile rules over trial titles and conditions (\`scripts/eval/make-labels.ts\`), are **not clinician-reviewed**, and are read by BM25 too. Use these numbers to notice regressions, not to claim accuracy.
+
+On the ${V1_PROFILES} v1 profiles (95% bootstrap CI over profiles):
+
+| System | nDCG@10 [95% CI] |
+|---|---|
+| Random order over the same hard-filtered candidates | ${fmtCI(seedStats.random)} |
+| BM25 keyword only | ${fmtCI(seedStats.bm25)} |
+| Hybrid (BM25 + embeddings, RRF) | ${fmtCI(seedStats.hybrid)} |
+| Full pipeline (production variant, v1 answers) | ${fmtCI(seedStats.pipeline)} |
+
+- Pipeline minus random: **${fmtDiff(seedStats.pipeMinusRandom)}**; pipeline minus BM25: **${fmtDiff(seedStats.pipeMinusBm25)}**; BM25 minus random: ${fmtDiff(seedStats.bm25MinusRandom)}.
+- v2 questionnaire pipeline on all ${profiles.length} profiles: ${fmtCI(seedStats.v2)}; v2 minus random ${fmtDiff(seedStats.v2MinusRandom)}; v2 minus v1 ${fmtDiff(seedStats.v2MinusV1)}.
+- Excluded-label share of the top 10, pipeline ${fmtCI(seedStats.pipelineExcluded)} vs random ${fmtCI(seedStats.randomExcluded)}.
+- Plan gate "random baseline <= 0.45": **${seedStats.random.mean <= 0.45 ? "met" : "NOT met"}** on the seed (random ${f3(seedStats.random.mean)}). The seed is small (about ${(kw.slice(0, V1_PROFILES).reduce((s, r) => s + r.candidates, 0) / V1_PROFILES).toFixed(0)} candidates per profile), so random ordering already puts many relevant trials in the top 10.
+
+### Embedding variants (recall@10 and nDCG@10, mean over the 30 v1 profiles, legacy answers)
+- Random order: recall@10 **${f3(mean(kw.slice(0, V1_PROFILES).map((r) => r.randRecall)))}**, nDCG@10 **${f3(seedStats.random.mean)}**
 - Keyword only (BM25, MiniSearch): recall@10 **${f3(kwRecall)}**, nDCG@10 **${f3(kwNdcg)}**
 
 | Embedding variant | Emb. recall@10 | Emb. nDCG@10 | Hybrid recall@10 | Hybrid nDCG@10 | Full pipeline recall@10 | Full pipeline nDCG@10 | Excluded-label share of top 10 |
@@ -267,7 +396,7 @@ ${table}
 
 "Hybrid" = BM25 + embeddings fused with Reciprocal Rank Fusion (k = 60). "Full pipeline" = hybrid + rule-based pre-check scoring (what the app ranks with before AI). "Excluded-label share" = fraction of the top 10 that the labels mark as a clear mismatch (lower is better).
 
-## Questionnaire v2 pipeline vs v1 (production embeddings, ${profiles.length} profiles)
+### Questionnaire v2 pipeline vs v1 (production embeddings, ${profiles.length} profiles)
 | Pipeline | nDCG@10 (p01-p30) | nDCG@10 (all ${profiles.length}) | Excluded-label share of top 10 (p01-p30) |
 |---|---|---|---|
 | v1 (legacy answers) | ${f3(v1First30)} | ${f3(v1All.ndcg)} | ${f3(variantRows[0]?.excludedAt10 ?? NaN)} |
@@ -275,7 +404,7 @@ ${table}
 
 Split by whether the profile has a definite ECOG 2 answer (${nE2} profiles do): without ECOG 2 (${profiles.length - nE2} profiles) v1 ${f3(v1Cmp)} vs v2 ${f3(v2Cmp)}; with ECOG 2 v1 ${f3(v1E2)} vs v2 ${f3(v2E2)}. The labels are title/condition rules and cannot see ECOG, so for ECOG 2 patients they call ECOG 0-1-only trials relevant while v2 (correctly, by design) flags them as conflicts and ranks them lower. That drop is expected, not a retrieval regression, and the v2 >= v1 gate is therefore applied to the profiles without ECOG 2.
 
-- Gates: v1 labels nDCG@10 >= 0.800 (**${v1First30 >= 0.8 ? "pass" : "FAIL"}**, ${f3(v1First30)}); v2 >= v1 on the ${profiles.length - nE2} profiles without ECOG 2 (**${v2Cmp >= v1Cmp - 1e-9 ? "pass" : "FAIL"}**, ${f3(v2Cmp)} vs ${f3(v1Cmp)}); hard-filter violations 0 (**${totalViolations === 0 ? "pass" : "FAIL"}**); excluded share on p01-p30 <= 0.271 (**${(variantRows[0]?.excludedAt10 ?? 1) <= 0.2715 && v2Excl30 <= 0.2715 ? "pass" : "FAIL"}**, v1 ${f3(variantRows[0]?.excludedAt10 ?? NaN)}, v2 ${f3(v2Excl30)}).
+- Gates: v1 labels nDCG@10 >= 0.800 (**${v1First30 >= 0.8 ? "pass" : "FAIL"}**, ${f3(v1First30)}); v2 >= v1 on the ${profiles.length - nE2} profiles without ECOG 2 (**${v2Cmp >= v1Cmp - 1e-9 ? "pass" : "FAIL"}**, ${f3(v2Cmp)} vs ${f3(v1Cmp)}); circular filter re-check 0 violations (**${totalViolations === 0 ? "pass" : "FAIL"}**, regression test only; the independent oracle is section 2); excluded share on p01-p30 <= 0.271 (**${(variantRows[0]?.excludedAt10 ?? 1) <= 0.2715 && v2Excl30 <= 0.2715 ? "pass" : "FAIL"}**, v1 ${f3(variantRows[0]?.excludedAt10 ?? NaN)}, v2 ${f3(v2Excl30)}).
 - Unknown/skip never reduces rank: answering "don't know" to every other eligible question left the top-15 order identical for **${nrChecks - nrMismatch}/${nrChecks}** profiles.
 - Caveat: the labels use only title and condition text, so they cannot reward answers about ECOG, prior drugs, lines, or brain metastases; v2's benefit there cannot show up in these numbers. v2 >= v1 therefore mostly checks that the new pre-check does not hurt and that group, subtype and biomarker answers are used.
 
@@ -298,14 +427,15 @@ ${simulationMarkdown(sim, simNat)}
 See DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
 
 ## What this evidence does and does not show
-- **Hard-filter safety (0% violations)** is the strongest result: it is a deterministic invariant re-checked independently of the ranker, and does not depend on labels. It was measured on the seed, but the filters are pure functions of cancer group, age, and distance, so the property transfers to the national set; it is not re-measured there by this script.
-- **Retrieval quality is weakly evidenced.** Hybrid nDCG@10 is not meaningfully better than keyword-only (differences of ~0.00-0.01 on 30 profiles are within noise); the full-pipeline gain comes from the rule-based pre-check, which uses the same fact layer whose precision is imperfect, and the labels are coarse and synthetic.
-- **No national-scale or real-user evaluation exists.** Seed nDCG moves when rules change (0.819 to 0.800 after the M-series rule fixes) because penalties reorder results, not necessarily because quality changed.
-- Nothing here is a clinical accuracy claim. No labels were fabricated: all label files are either rule-derived (\`labels.json\`), hand-reviewed (\`facts-labels.json\`), or hand-authored (\`assertions.json\`), and each says so.
+- **Hard-filter safety** is checked against an independent oracle built from raw CT.gov fields (section 2), on the seed and, when the raw national pages are cached, at national scale. The earlier "0% violations" claim was circular and is withdrawn. The oracle is a second opinion with its own limits (term lists, 25 mile distance slack, registry coordinates), not ground truth; any flagged samples should be read by a person.
+- **Retrieval quality is measured against baselines, not asserted.** Sections 1 and 3 report random and BM25 baselines with bootstrap CIs. The labels are title/condition regexes that BM25 also reads, so a pipeline-over-BM25 gain here is conservative on semantics and a pipeline-below-BM25 result is not alarming by itself; neither is a statement about patients. Differences whose interval includes 0 are not distinguishable.
+- **What would be real evidence** is graded, quote-backed judgement: the synthetic-vignette benchmark (\`eval/gold/\`) and the TREC Clinical Trials cancer subset (\`eval/trec/\`). Neither is summarised here.
+- **No real-user evaluation exists.** Nothing here is a clinical accuracy claim. Label files are rule-derived (\`labels.json\`), hand-reviewed (\`facts-labels.json\`), or hand-authored (\`assertions.json\`), and each says so.
 
 ## Limitations
-- Small seed (${cards.length} trials) and coarse, rule-generated labels: many profiles have most candidates labeled relevant, so recall@10 is bounded and differences between variants are small.
-- Labels do not reflect detailed eligibility (labs, performance status, prior lines of therapy).
+- Profiles are synthetic and few (${profiles.length}); intervals are over profiles, so they are wide for subgroup claims.
+- Labels do not reflect detailed eligibility (labs, performance status, prior lines of therapy); on easy profiles most candidates are labelled relevant, which raises the random baseline.
+- The oracle's cancer-group term lists were written independently but by the same team; a shared blind spot is possible.
 `;
   writeFileSync("eval/RESULTS.md", md);
   console.log(`\nKeyword recall@10 ${f3(kwRecall)} nDCG ${f3(kwNdcg)}`);
@@ -314,8 +444,17 @@ See DECISIONS.md. Production uses the variant in the first row unless another va
   console.log(`v2 pipeline nDCG@10 ${f3(v2All.ndcg)} (v1 ${f3(v1All.ndcg)}), p01-p30 v1 ${f3(v1First30)} v2 ${f3(v2First30)}; non-response mismatches ${nrMismatch}/${nrChecks}`);
   if (simNat) console.log(`national simulation: adaptive ${simNat.adaptive.map(f3).join("/")} fixed ${simNat.fixed.map(f3).join("/")}; non-response drops ${simNat.nonResponse.rankDrops + simNat.nonResponse.scoreDrops}`);
   console.log(`simulation: adaptive ${sim.adaptive.map(f3).join("/")} fixed ${sim.fixed.map(f3).join("/")} at k=${sim.ks.join(",")}; non-response drops ${sim.nonResponse.rankDrops + sim.nonResponse.scoreDrops}`);
+  console.log(`oracle (seed): ${oracleLine(oracleSeed)}`);
+  if (headline) console.log(`oracle (national top 15): ${oracleLine(headline.oracle.returned)}; all candidates: ${oracleLine(headline.oracle.candidates)}`);
+  if (natStats) console.log(`national nDCG@10: random ${fmtCI(natStats.random)} bm25 ${fmtCI(natStats.bm25)} pipeline ${fmtCI(natStats.pipeline)}`);
+  console.log(`seed nDCG@10 (p01-p30): random ${fmtCI(seedStats.random)} bm25 ${fmtCI(seedStats.bm25)} pipeline ${fmtCI(seedStats.pipeline)}`);
   const failures: string[] = [];
   if (totalViolations > 0) failures.push("hard-filter violations found");
+  // Independent oracle: age, sex and distance are exact checks on raw fields and must be clean. Group flags are reported, not gated:
+  // they mix real mis-tags with the oracle\'s own narrower term lists (see RESULTS.md section 2).
+  for (const [name, t] of [["seed", oracleSeed], ["national top 15", headline?.oracle.returned ?? emptyTally()]] as const) {
+    if (t.age > 0 || t.sex > 0 || t.distance > 0) failures.push(`independent oracle found age/sex/distance violations (${name}: age ${t.age}, sex ${t.sex}, distance ${t.distance})`);
+  }
   if (v1First30 < 0.8) failures.push(`v1 full-pipeline nDCG@10 ${f3(v1First30)} < 0.800`);
   if (v2Cmp < v1Cmp - 1e-9) failures.push(`v2 nDCG@10 ${f3(v2Cmp)} < v1 ${f3(v1Cmp)} (profiles without ECOG 2)`);
   if ((variantRows[0]?.excludedAt10 ?? 1) > 0.2715 || v2Excl30 > 0.2715) failures.push("excluded-label share above 0.271");
