@@ -1007,6 +1007,8 @@ export const en = {
     whyUnknown: { one: "1 requirement is still unknown.", other: "{count} requirements are still unknown." },
     whyTierB: { one: "Number {pos}: listed lower because 1 requirement may rule you out.", other: "Number {pos}: listed lower because {count} requirements may rule you out." },
     hardFailureTitle: "The requirement that may not fit",
+    tierBBadge: "May not be a match: see why",
+    tierBSummary: "At least one requirement may rule you out. Ask your care team if it really does.",
     tierBTitle: "Possible matches with a requirement that may not fit",
     tierBIntro: "These trials are listed lower. Each shows the requirement that may rule you out. Your care team can tell you if it really does.",
     degraded: "AI reading is not available right now, so requirements were checked with simple rules only. More of them show as unknown. That never lowers a trial.",

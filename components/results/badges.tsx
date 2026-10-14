@@ -38,6 +38,17 @@ export function FitBadge({ level }: { level: FitLevel }) {
 
 const warnBadge = "border-warn-border bg-warn text-warn-foreground";
 
+/** Tier B chip in place of the fit chip: links to the card's note on the requirement that may not fit. */
+export function TierBBadge({ href }: { href: string }) {
+  const m = useMessages();
+  return (
+    <a href={href} className={cn(badgeBase, warnBadge, "underline-offset-4 hover:underline")}>
+      <AlertTriangle className="size-4" aria-hidden />
+      {m.match.tierBBadge}
+    </a>
+  );
+}
+
 /** Barrier badge with an expandable explanation quoting the exact triggering sentence. */
 export function BarrierBadge({ barrier }: { barrier: Barrier }) {
   const m = useMessages();

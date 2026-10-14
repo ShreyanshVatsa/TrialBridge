@@ -8,7 +8,7 @@ import { formatMiles, formatPhases, officialUrl, trialHref } from "@/components/
 import { buttonVariants } from "@/components/ui/button";
 import type { CriterionAssessment, RankedTrial } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { BarrierBadge, Badge, FitBadge, LanguageWarning, Quote } from "./badges";
+import { BarrierBadge, Badge, FitBadge, LanguageWarning, Quote, TierBBadge } from "./badges";
 import { CriteriaChecklist, HardFailureNote, WhyRankedLine, type TrialMatchView } from "./match-checklist";
 
 interface Point {
@@ -19,6 +19,14 @@ interface Point {
 }
 
 const MAX_POINTS = 3;
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** True when a quoted point (12+ chars, so a stray word never matches) is the same requirement as a stored criterion text. */
+function sameRequirement(quote: string, texts: readonly string[]): boolean {
+  const q = norm(quote);
+  return q.length >= 12 && texts.some((t) => t.length > 0 && (t.includes(q) || q.includes(t)));
+}
 
 function fromAnalysis(items: CriterionAssessment[]): Point[] {
   return items.map((c) => ({
@@ -90,10 +98,19 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
     ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_not_met"))
     : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref }));
   const needsDoctor: Point[] = analysis ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "needs_doctor")) : [];
+  // Tier B: the requirement that may not fit is shown once, in its own note. The older v5 wording (fit chip,
+  // summary) and lists would contradict it or repeat it, so they give way.
+  const tierB = match?.score.tier === "B";
+  const failTexts = tierB
+    ? match.score.hardFailures.map((f) => card.criteria?.find((c) => c.id === f.id)?.text).filter((t): t is string => Boolean(t)).map(norm)
+    : [];
+  const keep = (p: Point) => !sameRequirement(p.quote, failTexts);
+  const lists = tierB ? { why: why.filter(keep), ruleOut: ruleOut.filter(keep), needsDoctor: needsDoctor.filter(keep) } : { why, ruleOut, needsDoctor };
+  const hardId = `trial-${card.id}-hard`;
   const questions: readonly string[] = analysis && analysis.doctorQuestions.length > 0 ? analysis.doctorQuestions : m.card.defaultQuestions;
 
   let section: ReactNode = null;
-  if (why.length + ruleOut.length + needsDoctor.length === 0) {
+  if (!tierB && why.length + ruleOut.length + needsDoctor.length === 0) {
     section = <p className="text-muted-foreground">{m.card.noAnalysis}</p>;
   }
 
@@ -107,7 +124,7 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         className="pointer-events-none absolute end-6 top-4 hidden font-heading text-[3.5rem] leading-none font-extrabold text-foreground/[0.08] [font-stretch:60%] before:content-[attr(data-rank)] sm:block"
       />
       <div className="flex flex-wrap items-center gap-2 sm:pe-16">
-        {trial.scores.fit && <FitBadge level={trial.scores.fit} />}
+        {tierB ? <TierBBadge href={`#${hardId}`} /> : trial.scores.fit && <FitBadge level={trial.scores.fit} />}
         <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
         {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
         <span className="text-sm text-muted-foreground">{card.id}</span>
@@ -147,15 +164,19 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         </div>
       )}
 
-      {match && <WhyRankedLine score={match.score} position={index + 1} className="mt-3" />}
-      {match && match.score.tier === "B" && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} className="mt-4" />}
+      {match && (
+        <div id={hardId} className="scroll-mt-28">
+          <WhyRankedLine score={match.score} position={index + 1} className="mt-3" />
+          {tierB && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} className="mt-4" />}
+        </div>
+      )}
 
-      {analysis?.summary && <p className="mt-4 text-lg leading-relaxed">{analysis.summary}</p>}
+      {tierB ? <p className="mt-4 text-lg leading-relaxed">{m.match.tierBSummary}</p> : analysis?.summary && <p className="mt-4 text-lg leading-relaxed">{analysis.summary}</p>}
 
       <div className="mt-4 space-y-5">
-        <PointList title={m.card.whyFit} points={why} tone="fit" />
-        <PointList title={m.card.ruleOut} points={ruleOut} tone="risk" />
-        <PointList title={m.card.needsDoctor} points={needsDoctor} tone="ask" />
+        <PointList title={m.card.whyFit} points={lists.why} tone="fit" />
+        <PointList title={m.card.ruleOut} points={lists.ruleOut} tone="risk" />
+        <PointList title={m.card.needsDoctor} points={lists.needsDoctor} tone="ask" />
         {section}
         {match && <CriteriaChecklist labels={match.labels} criteria={card.criteria} />}
         <section>
