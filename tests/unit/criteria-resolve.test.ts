@@ -3,7 +3,7 @@ import { getCatalog } from "@/config/questionnaire";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import { factsForCriterion } from "@/lib/ingest/facts";
 import { hasAlternatives, normalizeMarkers, parseAgeBounds, profileFromState, resolveCriteria, resolveItem, unresolved, type ResolverProfile } from "@/lib/match/criteria-resolve";
-import { precheck } from "@/lib/match/precheck";
+import { evaluateAnswers, precheck } from "@/lib/match/precheck";
 import { compileState, factRelation } from "@/lib/questionnaire/rules";
 import type { QuestionnaireState } from "@/lib/types/questionnaire";
 import { isScopedParam, type Fact, type TrialCard } from "@/lib/types/trial";
@@ -250,5 +250,22 @@ describe("MSI status wording (BUGS.md step 9: MSS trial ranked #1 for an MSI-hig
     expect(lab("inclusion", "MSI-H or MSS colorectal cancer", msiH())).toBe("unknown");
     expect(lab("inclusion", "Any MSI status, regardless of MSI-H or MSS", msiH())).toBe("unknown");
     expect(lab("inclusion", "pMMR/MSS tumor", profile("colorectal"))).toBe("unknown");
+  });
+});
+
+describe("pre-check ignores qualified biomarker wording (BUGS.md step 9, NCT07315113 'What might rule you out')", () => {
+  const fact = (quote: string, value: "excluded" | "required" = "excluded"): Fact => ({ key: "biomarker:EGFR", value, quote, ref: { section: "exclusion", n: 1 }, source: "rule" });
+  const v1 = { spread: "yes" as const, treatments: ["chemotherapy"], biomarkers: { EGFR: "positive" as const }, pregnant: "no" as const, inAnotherTrial: "no" as const };
+  const egfrPos = state("lung", { biomarkers: { EGFR: "positive" } });
+  const catalog = getCatalog("cancer", "lung");
+  it("no conflict for 'other than EGFR' or resistance-mutation wording", () => {
+    for (const q of ["Known oncogenic driver alteration other than EGFR", "Known EGFR mutations that cause resistance to osimertinib", "EGFR T790M mutation"]) {
+      expect(precheck(v1, [fact(q)])).toEqual([]);
+      expect(evaluateAnswers(egfrPos, catalog, [fact(q)])).toEqual([]);
+    }
+  });
+  it("still conflicts on plain wording", () => {
+    expect(precheck(v1, [fact("Known EGFR mutation")]).map((n) => n.kind)).toEqual(["conflict"]);
+    expect(evaluateAnswers(egfrPos, catalog, [fact("Known EGFR mutation")]).map((n) => n.kind)).toEqual(["conflict"]);
   });
 });

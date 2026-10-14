@@ -9,16 +9,16 @@ Data: 5726 real recruiting U.S. cancer trials from the national build (`public/d
 
 | System | nDCG@10, mean [95% CI] | Excluded-label share of top 10 [95% CI] |
 |---|---|---|
-| Random order (expected value over 200 shuffles per profile) | 0.381 [0.321, 0.442] | 0.179 [0.123, 0.242] |
+| Random order (expected value over 200 shuffles per profile) | 0.382 [0.322, 0.444] | 0.180 [0.124, 0.241] |
 | BM25 keyword only | 0.685 [0.592, 0.768] | n/a |
-| Production pipeline (v2 questionnaire: BM25 + embeddings + pre-check) | 0.775 [0.688, 0.850] | 0.217 [0.130, 0.310] |
+| Production pipeline (v2 questionnaire: BM25 + embeddings + pre-check) | 0.775 [0.689, 0.851] | 0.217 [0.130, 0.310] |
 
 Paired bootstrap over profiles (4000 resamples, seed 20261012; the interval is for the mean per-profile difference):
-- Pipeline minus random: **+0.394 [0.321, 0.466] (excludes 0, better)**
-- Pipeline minus BM25: **+0.090 [0.047, 0.136] (excludes 0, better)**
-- BM25 minus random: +0.304 [0.227, 0.377] (excludes 0, better)
+- Pipeline minus random: **+0.393 [0.318, 0.465] (excludes 0, better)**
+- Pipeline minus BM25: **+0.090 [0.047, 0.137] (excludes 0, better)**
+- BM25 minus random: +0.302 [0.224, 0.377] (excludes 0, better)
 
-Plan gate "random baseline <= 0.45 on the headline set": **met** (random scores 0.381). Caution: the pipeline's excluded-label share is **not better than random**. The "excluded" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.
+Plan gate "random baseline <= 0.45 on the headline set": **met** (random scores 0.382). Caution: the pipeline's excluded-label share is **not better than random**. The "excluded" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.
 
 ## 2. Safety: hard filters checked by an independent oracle
 The app's filters (cancer group, age, distance, definite sex) read derived card fields. Checking a result with the same filter functions can never fail, so the old "0 violations" line (reproduced in the last bullet) is true by construction and is not evidence. `scripts/eval/oracle.ts` instead re-derives each decision from the **raw CT.gov record** with separate code: its own cancer-group term lists over conditions, keywords and titles; its own parser of the raw minimum/maximum age strings; and its own haversine over the registry's facility coordinates of recruiting U.S. sites. Distance is counted with 25 miles of slack, because the app measures to ZIP centroids and the registry gives facility coordinates (the strict count is shown too). A "group" flag means the raw text names a different cancer than the profile's; it can also be the oracle's term list being narrower than the registry's wording, so read flagged samples before concluding anything.
@@ -39,10 +39,10 @@ On the 30 v1 profiles (95% bootstrap CI over profiles):
 | Random order over the same hard-filtered candidates | 0.751 [0.679, 0.812] |
 | BM25 keyword only | 0.833 [0.770, 0.890] |
 | Hybrid (BM25 + embeddings, RRF) | 0.817 [0.742, 0.887] |
-| Full pipeline (production variant, v1 answers) | 0.811 [0.740, 0.874] |
+| Full pipeline (production variant, v1 answers) | 0.811 [0.740, 0.873] |
 
 - Pipeline minus random: **+0.060 [0.018, 0.101] (excludes 0, better)**; pipeline minus BM25: **-0.022 [-0.070, 0.015] (includes 0, not distinguishable)**; BM25 minus random: +0.082 [0.028, 0.151] (excludes 0, better).
-- v2 questionnaire pipeline on all 40 profiles: 0.813 [0.752, 0.867]; v2 minus random +0.066 [0.029, 0.105] (excludes 0, better); v2 minus v1 -0.017 [-0.051, 0.011] (includes 0, not distinguishable).
+- v2 questionnaire pipeline on all 40 profiles: 0.813 [0.753, 0.868]; v2 minus random +0.066 [0.029, 0.105] (excludes 0, better); v2 minus v1 -0.017 [-0.051, 0.011] (includes 0, not distinguishable).
 - Excluded-label share of the top 10, pipeline 0.261 [0.186, 0.336] vs random 0.262 [0.191, 0.337].
 - Plan gate "random baseline <= 0.45": **NOT met** on the seed (random 0.751). The seed is small (about 16 candidates per profile), so random ordering already puts many relevant trials in the top 10.
 
@@ -53,7 +53,7 @@ On the 30 v1 profiles (95% bootstrap CI over profiles):
 | Embedding variant | Emb. recall@10 | Emb. nDCG@10 | Hybrid recall@10 | Hybrid nDCG@10 | Full pipeline recall@10 | Full pipeline nDCG@10 | Excluded-label share of top 10 |
 |---|---|---|---|---|---|---|---|
 | MiniLM q8 + int8 (production) | 0.860 | 0.811 | 0.860 | 0.817 | 0.857 | 0.811 | 0.261 |
-| MiniLM q8 + float32 | 0.857 | 0.809 | 0.843 | 0.813 | 0.857 | 0.812 | 0.261 |
+| MiniLM q8 + float32 | 0.857 | 0.809 | 0.843 | 0.813 | 0.853 | 0.809 | 0.261 |
 | MiniLM fp32 + int8 | 0.850 | 0.805 | 0.850 | 0.817 | 0.857 | 0.813 | 0.261 |
 | bge-small q8 + int8 | 0.830 | 0.790 | 0.863 | 0.813 | 0.859 | 0.808 | 0.261 |
 | bge-small q8 + float32 | 0.823 | 0.786 | 0.860 | 0.811 | 0.855 | 0.806 | 0.271 |
@@ -65,9 +65,9 @@ On the 30 v1 profiles (95% bootstrap CI over profiles):
 | Pipeline | nDCG@10 (p01-p30) | nDCG@10 (all 40) | Excluded-label share of top 10 (p01-p30) |
 |---|---|---|---|
 | v1 (legacy answers) | 0.811 | 0.830 | 0.261 |
-| v2 (questionnaire state, catalog pre-check, sex filter) | 0.804 | 0.813 | 0.261 |
+| v2 (questionnaire state, catalog pre-check, sex filter) | 0.805 | 0.813 | 0.261 |
 
-Split by whether the profile has a definite ECOG 2 answer (7 profiles do): without ECOG 2 (33 profiles) v1 0.834 vs v2 0.830; with ECOG 2 v1 0.807 vs v2 0.732. The labels are title/condition rules and cannot see ECOG, so for ECOG 2 patients they call ECOG 0-1-only trials relevant while v2 (correctly, by design) flags them as conflicts and ranks them lower. That drop is expected, not a retrieval regression, and the v2-vs-v1 gate is therefore applied to the profiles without ECOG 2.
+Split by whether the profile has a definite ECOG 2 answer (7 profiles do): without ECOG 2 (33 profiles) v1 0.834 vs v2 0.830; with ECOG 2 v1 0.807 vs v2 0.733. The labels are title/condition rules and cannot see ECOG, so for ECOG 2 patients they call ECOG 0-1-only trials relevant while v2 (correctly, by design) flags them as conflicts and ranks them lower. That drop is expected, not a retrieval regression, and the v2-vs-v1 gate is therefore applied to the profiles without ECOG 2.
 
 - Gates: v1 labels nDCG@10 >= 0.800 (**pass**, 0.811); v2 not distinguishably worse than v1 on the 33 profiles without ECOG 2 (**pass**, 0.830 vs 0.834, v2 minus v1 -0.004 [-0.022, 0.012] (includes 0, not distinguishable); point estimate v2 >= v1: no); circular filter re-check 0 violations (**pass**, regression test only; the independent oracle is section 2); excluded share on p01-p30 <= 0.271 (**pass**, v1 0.261, v2 0.261).
 - Unknown/skip never reduces rank: answering "don't know" to every other eligible question left the top-15 order identical for **40/40** profiles.
@@ -115,7 +115,7 @@ nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow
 ## AI analysis (mock provider)
 - JSON validity: **100.0%** (40 batched calls)
 - Quote verification pass rate: **99.9%** (2193 quoted criteria)
-- Agreement with labels (relevant => strong/possible, excluded => unlikely): **64.1%** over 426 labeled trials
+- Agreement with labels (relevant => strong/possible, excluded => unlikely): **64.3%** over 426 labeled trials
 - Live providers (`npm run eval:live`) are deferred.
 
 ## Model choice

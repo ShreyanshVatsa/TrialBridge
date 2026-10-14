@@ -4,6 +4,7 @@ import { isScopedParam, type Fact } from "@/lib/types/trial";
 import type { PrecheckNote } from "@/lib/types/match";
 import type { FactPolicyMap, QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { applyPolicy, compileState, factRelation, type CompiledAnswer } from "@/lib/questionnaire/rules";
+import { qualifiedMarkerFact } from "./marker-qualifier";
 
 /** A pre-check note for one trial fact (carries direction and source for FACT_WEIGHT / RELIABILITY). */
 function toNote(f: Fact, kind: PrecheckNote["kind"]): PrecheckNote {
@@ -45,7 +46,7 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
   const add = (f: Fact, kind: PrecheckNote["kind"]) => notes.push(toNote(f, kind));
 
   for (const f of facts) {
-    if (f.value === "mentioned" || f.needsReview || isScopedParam(f.param)) continue; // uncertain facts and time windows never penalize
+    if (f.value === "mentioned" || f.needsReview || isScopedParam(f.param) || qualifiedMarkerFact(f)) continue; // uncertain facts, time windows and qualified marker wording never penalize
     const treatment = TREATMENT_FACTS[f.key];
     if (treatment) {
       if (!treatmentsKnown) continue;
@@ -122,6 +123,7 @@ export function answerEvaluator(compiled: readonly CompiledAnswer[], policy?: Fa
     const notes: PrecheckNote[] = [];
     if (empty) return notes;
     for (const f of facts) {
+      if (qualifiedMarkerFact(f)) continue; // "other than EGFR", "T790M": a plain test result does not settle these
       const rel = applyPolicy(factRelation(compiled, f), f.key, policy);
       if (rel !== "neutral") notes.push(toNote(f, rel));
     }
