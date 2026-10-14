@@ -72,3 +72,19 @@ describe("ResultCard tier wording", () => {
     expect(out).not.toMatch(/\beligible\b/i);
   });
 });
+
+describe("ResultCard tier A with a pre-check conflict the checklist could not settle (QA: 'might rule you out' beside ✗ 0)", () => {
+  it("lists it under 'Your doctor can help check', not 'What might rule you out'", () => {
+    const noAi: RankedTrial = {
+      ...trial,
+      analysis: null,
+      precheck: [{ key: "biomarker:HER2", kind: "conflict", quote: "HER2-negative breast cancer", ref: { section: "inclusion", n: 1 }, value: "required", source: "rule" }],
+    };
+    const out = renderToStaticMarkup(<ResultCard trial={noAi} index={0} match={view("A")} />);
+    expect(out).not.toContain(en.card.ruleOut);
+    expect(out).toContain(en.card.needsDoctor);
+    expect(out).toContain("HER2-negative breast cancer");
+    // without the v6 checklist the v5 wording is unchanged
+    expect(renderToStaticMarkup(<ResultCard trial={noAi} index={0} />)).toContain(en.card.ruleOut);
+  });
+});

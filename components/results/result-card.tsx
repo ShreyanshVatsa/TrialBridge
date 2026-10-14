@@ -105,12 +105,18 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
     ? match.score.hardFailures.map((f) => card.criteria?.find((c) => c.id === f.id)?.text).filter((t): t is string => Boolean(t)).map(norm)
     : [];
   const keep = (p: Point) => !sameRequirement(p.quote, failTexts);
-  const lists = tierB ? { why: why.filter(keep), ruleOut: ruleOut.filter(keep), needsDoctor: needsDoctor.filter(keep) } : { why, ruleOut, needsDoctor };
+  // Tier A: the checklist and the "nothing we found rules you out" line say no requirement clearly fails, so a v5
+  // pre-check conflict (a rule the checklist could not settle) is shown as something to check, not as a rule-out.
+  const lists = tierB
+    ? { why: why.filter(keep), ruleOut: ruleOut.filter(keep), needsDoctor: needsDoctor.filter(keep) }
+    : match && !analysis
+      ? { why, ruleOut: [], needsDoctor: [...needsDoctor, ...ruleOut.filter((p) => !needsDoctor.some((d) => d.key === p.key))] }
+      : { why, ruleOut, needsDoctor };
   const hardId = `trial-${card.id}-hard`;
   const questions: readonly string[] = analysis && analysis.doctorQuestions.length > 0 ? analysis.doctorQuestions : m.card.defaultQuestions;
 
   let section: ReactNode = null;
-  if (!tierB && why.length + ruleOut.length + needsDoctor.length === 0) {
+  if (!tierB && why.length + lists.ruleOut.length + lists.needsDoctor.length === 0) {
     section = <p className="text-muted-foreground">{m.card.noAnalysis}</p>;
   }
 
