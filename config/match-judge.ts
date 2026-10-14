@@ -11,4 +11,6 @@ export const MATCH_JUDGE = {
   reasonMaxWords: 25,
   /** Characters of the trial summary shown to the model for context (TrialGPT also shows the summary). */
   summaryChars: 400,
+  /** Re-asks of one batch after malformed / empty output before failing over (each re-ask reserves budget). */
+  invalidOutputRetries: 1,
 } as const;

@@ -114,3 +114,11 @@ k now lives in config/retrieval.ts. Dev split (TREC 2021, 10 cancer topics), ful
 - Find-out feed: `findOutPriority` counts, per question already in the Find-out list, the unknown items whose extracted fact keys that question covers; the list is sorted by it (`prioritizeFindOut`). Items no question covers stay as "ask your doctor" unknowns in the per-trial labels.
 - The judge needs its own single-use Turnstile token, fetched right after the analyze token; both requests then run in parallel.
 - Budgets (step 5): route JS gz /find/ 329 -> 362 KB measured (step-6 UI commit vs step 5 wired), budget raised by the measured +33 KB (337 -> 370). The find page HTML references the lazily imported criteria chunk (resolver + criteria-rank, ~15 KB gz) plus the wiring; it loads only after a search. Other routes and all shard budgets unchanged; ingest national-20261007-9b70994dd3 needed no raise.
+
+## v6 step 8: matching eval (`npm run eval:matching`)
+- Arms re-rank what production re-ranks: the top 15 (rankTrials TOP_N) of the v5 order; the rest keep v5 order. The judge sees the unknown items of the top 10 (MATCH_JUDGE.topN). A "full pool" resolver arm is reported as exploratory only.
+- Missed exclusions = share of the top 10 that TREC labels excluded (1) and the arm still shows in Tier A; the v5 baseline has no tiers, so every shown trial counts. P@10 counts eligible (2) only.
+- Groq free tier caps one request at 8000 tokens/min, so the eval plans batches at 16000 chars with max_tokens 3500 and reasoning_effort low (chosen on dev after medium reasoning truncated the JSON). Prompt text unchanged. Production settings not changed (BUGS.md).
+- Judge: one re-ask of a batch after malformed or empty output (MATCH_JUDGE.invalidOutputRetries = 1) before failing over; seen on dev in about 1 of 10 completions.
+- A topic whose judge call fails is scored with the app's resolver-only fallback (counts in the LLM arm); a topic blocked by the daily cap is not scored for the LLM arm (no imputation).
+- Test (TREC 2022) ran once after the dev settings were frozen (eval/matching/test-runs.json); its LLM arm was blocked by the daily cap.

@@ -1,0 +1,17 @@
+{
+  "note": "TREC 2022 test split: run once at the end of step 8, after all dev decisions.",
+  "runs": [
+    {
+      "at": "2026-10-14T00:34:00.340Z",
+      "sha": "3207e61afe276ac2e00b6fa6f0ab077ce23762c1 (+ uncommitted step-8 script)",
+      "llm": true,
+      "llmStatus": {
+        "ok": 0,
+        "degraded": 0,
+        "quota": 2,
+        "not_run": 0
+      },
+      "note": "LLM arm blocked by the Groq daily token cap (dev used it). Baseline and resolver arms scored. Completing the LLM arm with the frozen dev config needs --allow-test-rerun (would be run 2)."
+    }
+  ]
+}

@@ -124,11 +124,21 @@ async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[
       { role: "system", content: MATCH_SYSTEM_PROMPT },
       { role: "user", content: buildMatchUserPrompt(answers, batch) },
     ];
-    await reserve();
-    const raw = await provider.complete({ messages, trials: [], match: { trials: batch } });
-    const validated = validateMatchOutput(raw, batch, answerIds);
-    const sent = validated.reduce((s, v) => s + v.sent, 0);
-    if (sent > 0 && validated.every((v) => v.judged === 0)) throw new ProviderError("invalid_output", "no criterion judged");
+    let validated: ValidatedTrial[] | null = null;
+    // A malformed or empty batch is re-asked (MATCH_JUDGE.invalidOutputRetries) before the provider counts as failed:
+    // on the step-8 dev run about one in four 16k-char Groq batches came back with a broken shape.
+    for (let attempt = 0; validated === null; attempt++) {
+      await reserve();
+      const raw = await provider.complete({ messages, trials: [], match: { trials: batch } });
+      try {
+        const v = validateMatchOutput(raw, batch, answerIds);
+        const sent = v.reduce((s, x) => s + x.sent, 0);
+        if (sent > 0 && v.every((x) => x.judged === 0)) throw new ProviderError("invalid_output", "no criterion judged");
+        validated = v;
+      } catch (err) {
+        if (!(err instanceof ProviderError && err.kind === "invalid_output") || attempt >= MATCH_JUDGE.invalidOutputRetries) throw err;
+      }
+    }
     for (const v of validated) chunks.set(v.trialId, [...(chunks.get(v.trialId) ?? []), v]);
   }
   return inputs.map((t) => mergeChunks(t, chunks.get(t.trialId) ?? [], provider.name, promptVersion));

@@ -242,6 +242,15 @@ describe("judgeCriteria", () => {
     expect(r.results[0]?.coverage).toBe(1);
   });
 
+  it("re-asks a batch once after malformed output before failing over", async () => {
+    let n = 0;
+    const flaky = fakeProvider("groq", (req) => (n++ === 0 ? '[{"trials":[]},"trialId"]' : labelAll(req)));
+    const r = await judgeCriteria(profile, [input(T1)], jdeps([flaky]));
+    expect(r.ok && r.provider).toBe("groq");
+    expect(flaky.calls).toHaveLength(2);
+    expect(r.results[0]?.coverage).toBe(1);
+  });
+
   it("fails over on invalid output, and to the mock (all unknown, never cached)", async () => {
     const bad = fakeProvider("groq", () => "not json");
     const zero = fakeProvider("cerebras", () => JSON.stringify({ trials: [] }));

@@ -42,7 +42,8 @@
     "budgets": "tsx scripts/budgets.ts",
     "ci": "npm run lint && npm run typecheck && npm test && npm run build && npm run budgets && npm run data:verify",
     "eval:vignettes": "tsx scripts/eval/vignettes/run.ts",
-    "eval:split": "tsx scripts/eval/trialgpt/run.ts"
+    "eval:split": "tsx scripts/eval/trialgpt/run.ts",
+    "eval:matching": "tsx scripts/eval/matching/run.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
