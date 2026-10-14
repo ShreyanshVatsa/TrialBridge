@@ -11,6 +11,8 @@ export const MATCH_JUDGE = {
   reasonMaxWords: 25,
   /** Characters of the trial summary shown to the model for context (TrialGPT also shows the summary). */
   summaryChars: 400,
+  /** Whole-request budget for the model calls of one /api/match request (the browser gives up at 60 s; the Worker must stop first). */
+  deadlineMs: 45_000,
   /** Re-asks of one batch after malformed / empty output before failing over (each re-ask reserves budget). */
   invalidOutputRetries: 1,
   /**

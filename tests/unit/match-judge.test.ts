@@ -243,6 +243,25 @@ describe("judgeCriteria", () => {
     expect(r.results[0]?.coverage).toBe(1);
   });
 
+  it("stops starting model calls once the request deadline has passed and degrades (no unbounded sequential batches)", async () => {
+    const many = Array.from({ length: 90 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs and organ function`));
+    const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
+    const slow = fakeProvider("groq", labelAll, overhead + 900);
+    const inner = slow.complete.bind(slow);
+    slow.complete = async (req) => {
+      await new Promise((r) => setTimeout(r, 60));
+      return inner(req);
+    };
+    const backup = fakeProvider("cerebras", labelAll, overhead + 900);
+    const r = await judgeCriteria(profile, [input(T1, many)], jdeps([slow, backup], { deadlineMs: 100 }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe("ai_unavailable");
+    expect(slow.calls.length).toBeLessThan(5);
+    expect(slow.calls.every((c) => c.signal !== undefined)).toBe(true);
+    expect(backup.calls).toHaveLength(0);
+    expect(breakerFor("cerebras").canRequest()).toBe(true);
+  });
+
   it("caps batches at MATCH_JUDGE.maxBatchChars and sends the eval-proven completion settings", async () => {
     const many = Array.from({ length: 300 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs, organ function and prior therapy windows`));
     const p = fakeProvider("groq", labelAll, 60_000);

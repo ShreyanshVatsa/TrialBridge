@@ -20,7 +20,7 @@ import { apiError, devCorsHeaders, isSameOrigin, json, readJsonBody } from "./ht
 import { checkRateLimit, hashIp } from "./ratelimit";
 import { tryConsumeBudget } from "./budget";
 import { dailyBudget } from "./ai/providers";
-import { runWithFailover, type FailoverDeps, type FailoverResult, type Reserve } from "./ai/failover";
+import { BudgetExhaustedError, runWithFailover, type FailoverDeps, type FailoverResult, type Reserve } from "./ai/failover";
 import { validateMatchOutput, type ValidatedTrial } from "./ai/match-output";
 import { ProviderError, type AiProvider, type ChatMessage } from "./ai/types";
 
@@ -40,6 +40,8 @@ export interface JudgeDeps {
   consumeBudget: FailoverDeps["consumeBudget"];
   log?: (event: Record<string, string | number>) => void;
   promptVersion?: string;
+  /** Overrides MATCH_JUDGE.deadlineMs (tests). */
+  deadlineMs?: number;
 }
 
 export type JudgeOutcome =
@@ -114,7 +116,7 @@ function mergeChunks(input: JudgeTrialInput, chunks: readonly ValidatedTrial[], 
 }
 
 /** One provider attempt over every batch. A batch with zero coverage counts as invalid output (fail over). */
-async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[], inputs: readonly JudgeTrialInput[], reserve: Reserve, promptVersion: string): Promise<TrialCriteriaLabels[]> {
+async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[], inputs: readonly JudgeTrialInput[], reserve: Reserve, promptVersion: string, deadline: number): Promise<TrialCriteriaLabels[]> {
   const answerIds = new Set(answers.map((a) => a.id));
   const prompt: MatchPromptTrial[] = inputs.map((t) => ({ trialId: t.trialId, items: t.items, ...(t.title ? { title: t.title } : {}), ...(t.summary ? { summary: t.summary } : {}) }));
   const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
@@ -128,8 +130,12 @@ async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[
     // A malformed or empty batch is re-asked (MATCH_JUDGE.invalidOutputRetries) before the provider counts as failed:
     // on the step-8 dev run about one in four 16k-char Groq batches came back with a broken shape.
     for (let attempt = 0; validated === null; attempt++) {
+      // Batches run one after another and each model call may take up to its own 30 s timeout, so the request as a
+      // whole has a deadline: past it no further call starts, and a running call is aborted when it passes.
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new ProviderError("timeout", `${provider.name}: judge deadline`);
       await reserve();
-      const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort });
+      const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort, signal: AbortSignal.timeout(remaining) });
       try {
         const v = validateMatchOutput(raw, batch, answerIds);
         const sent = v.reduce((s, x) => s + x.sent, 0);
@@ -173,11 +179,20 @@ export async function judgeCriteria(profile: MinimizedProfile, inputs: readonly 
   if (todo.length === 0) return { ok: true, provider: [...results.values()].find((r) => r.provider)?.provider ?? null, results: ordered(), cachedIds };
 
   const answers = numberAnswers(profile);
-  const outcome = await runWithFailover(deps.providers, (p, reserve) => judgeWith(p, answers, todo, reserve, promptVersion), {
-    breakerFor: deps.breakerFor,
-    consumeBudget: deps.consumeBudget,
-    log: (e) => deps.log?.({ route: "match", ...e }),
-  });
+  const deadline = Date.now() + (deps.deadlineMs ?? MATCH_JUDGE.deadlineMs);
+  const outcome = await runWithFailover(
+    deps.providers,
+    async (p, reserve) => {
+      // Past the deadline the next provider is skipped without counting against its circuit breaker.
+      if (Date.now() >= deadline) throw new BudgetExhaustedError();
+      return judgeWith(p, answers, todo, reserve, promptVersion, deadline);
+    },
+    {
+      breakerFor: deps.breakerFor,
+      consumeBudget: deps.consumeBudget,
+      log: (e) => deps.log?.({ route: "match", ...e }),
+    },
+  );
   if (!outcome.ok) return { ok: false, reason: outcome.reason, results: ordered(), cachedIds };
   const isMock = deps.providers.find((p) => p.name === outcome.provider)?.isMock ?? false;
   for (const r of outcome.value) {
