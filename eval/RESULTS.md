@@ -1,6 +1,6 @@
 # Evaluation results: v5 baseline vs v6 criterion matching
 
-Hand-written summary (v6 step 9, 2026-10-13). Every number below was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic or rule-derived, and no real patient was evaluated.
+Hand-written summary (v6 step 9, 2026-10-13; numbers updated at step 10, 2026-10-14). Every number below was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic or rule-derived, and no real patient was evaluated.
 
 Detailed, generated reports:
 - `eval/matching/RESULTS.md` (+ `dev.json`, `test.json`, `test-runs.json`): TREC criterion-matching eval, `npm run eval:matching`.
@@ -12,38 +12,38 @@ Intervals are bootstrap 95% CIs over topics (TREC) or profiles (regression). "Di
 
 ## 1. Matching on TREC Clinical Trials (cancer subset, human qrels)
 
-Arms: **baseline** = v5 pipeline order; **resolver** = v6 deterministic per-criterion labels re-ranking the top 15 (Tier A then incScore); **resolver+LLM** = resolver plus the Groq judge (gpt-oss-120b) on the unknown items of the top 10. Dev = TREC 2021 (10 topics), test = TREC 2022 (2 topics).
+Arms: **baseline** = v5 pipeline order; **resolver** = v6 deterministic per-criterion labels re-ranking the top 15 (Tier A then incScore); **resolver+LLM** = resolver plus the Groq judge (gpt-oss-120b) on the unknown items of the top 10. Dev = TREC 2021 (10 topics), test = TREC 2022 (2 topics). Final numbers: rerun at step 10 (commit 4229463, after the resolver/pre-check/ingest fixes; LLM responses replayed from the cache where the request was unchanged).
 
-### Dev, the 9 topics with a completed LLM run
+### Dev, all 10 topics (LLM arm complete: 9 ok, 1 degraded to resolver-only)
 
 | metric | baseline (v5) | resolver | resolver+LLM |
 | --- | --- | --- | --- |
-| nDCG@10 | 0.480 [0.338, 0.626] | 0.504 [0.394, 0.642] | 0.543 [0.423, 0.677] |
-| P@10 (eligible) | 0.300 [0.178, 0.444] | 0.311 [0.189, 0.467] | 0.333 [0.211, 0.478] |
-| missed exclusions (TREC-excluded trials in Tier A of top 10) | 0.367 [0.222, 0.522] | 0.344 [0.222, 0.489] | 0.322 [0.200, 0.467] |
-| unknown share of criterion labels | n/a | 0.967 [0.951, 0.980] | 0.843 [0.769, 0.901] |
+| nDCG@10 | 0.491 [0.352, 0.623] | 0.509 [0.407, 0.630] | 0.545 [0.435, 0.668] |
+| P@10 (eligible) | 0.320 [0.200, 0.450] | 0.320 [0.200, 0.460] | 0.350 [0.230, 0.480] |
+| missed exclusions (TREC-excluded trials in Tier A of top 10) | 0.330 [0.180, 0.490] | 0.310 [0.180, 0.450] | 0.290 [0.170, 0.440] |
+| unknown share of criterion labels | n/a | 0.967 [0.953, 0.979] | 0.836 [0.769, 0.891] |
 
 Paired differences vs baseline:
-- resolver+LLM nDCG@10 **+0.063 [0.011, 0.119], distinguishable (better)**.
-- resolver+LLM P@10 +0.033 [-0.011, 0.078]; missed exclusions -0.044 [-0.122, 0.022]: not distinguishable.
-- resolver alone: nDCG@10 +0.024 [-0.050, 0.106], P@10 +0.011 [-0.033, 0.056], missed exclusions -0.022 [-0.078, 0.033]: none distinguishable.
+- resolver+LLM nDCG@10 **+0.054 [0.006, 0.108], distinguishable (better)**.
+- resolver+LLM P@10 +0.030 [-0.010, 0.070]; missed exclusions -0.040 [-0.110, 0.020]: not distinguishable.
+- resolver alone: nDCG@10 +0.018 [-0.047, 0.093], P@10 +0.000 [-0.050, 0.050], missed exclusions -0.020 [-0.080, 0.030]: none distinguishable.
 
-All 10 dev topics (no LLM arm): baseline nDCG@10 0.491 [0.352, 0.623], resolver 0.509 [0.407, 0.630], difference +0.018 [-0.047, 0.093] (not distinguishable).
+(Step 8 measured +0.063 [0.011, 0.119] on the 9 topics the daily cap allowed; the 10th topic, 2021-61, now ran: base 0.589, resolver 0.554, LLM 0.565.)
 
-LLM judge on dev (eval request settings: 16000-char batches, max_tokens 3500, reasoning_effort low):
-- JSON validity 38/42 completions (90.5%); coverage (items judged / sent) 1385/1748 (79.2%).
-- Tokens per patient 19,797 [15,434, 24,215]; model latency per patient 15.5 s [12.1, 19.1] (sum of sequential calls); 0 calls over the app's 30 s timeout.
-- One topic (2021-17) fell back to resolver-only after a malformed batch and is scored as such; one topic (2021-61) was blocked by the Groq free-tier daily cap and is not scored for the LLM arm.
+LLM judge on dev (eval request settings = production: 16000-char batches, max_tokens 3500, reasoning_effort low):
+- JSON validity 44/48 completions (91.7%); coverage (items judged / sent) 1582/1950 (81.1%).
+- Tokens per patient 20,096 [16,189, 24,072]; model latency per patient 15.6 s [12.6, 18.8] (sum of sequential calls); 0 calls over the app's 30 s timeout.
+- One topic (2021-17) fell back to resolver-only after a malformed batch and is scored as such.
 
-### Test (TREC 2022, run once)
+### Test (TREC 2022, 2 topics; run 2, see eval/matching/test-runs.json)
 
-| metric | baseline (v5) | resolver |
-| --- | --- | --- |
-| nDCG@10 | 0.842 [0.821, 0.864] | 0.908 [0.889, 0.927] |
-| P@10 | 0.800 [0.800, 0.800] | 0.850 [0.800, 0.900] |
-| missed exclusions | 0.100 [0.100, 0.100] | 0.050 [0.000, 0.100] |
+| metric | baseline (v5) | resolver | resolver+LLM |
+| --- | --- | --- | --- |
+| nDCG@10 | 0.842 [0.821, 0.864] | 0.908 [0.889, 0.927] | 0.908 [0.889, 0.927] |
+| P@10 | 0.800 [0.800, 0.800] | 0.850 [0.800, 0.900] | 0.850 [0.800, 0.900] |
+| missed exclusions | 0.100 [0.100, 0.100] | 0.050 [0.000, 0.100] | 0.050 [0.000, 0.100] |
 
-Resolver minus baseline nDCG@10 +0.065 [0.025, 0.106]. With only 2 topics this CI is not meaningful. The LLM arm on test was blocked by the Groq daily cap (0/2 topics), so **the LLM judge has no test-split result**.
+Resolver minus baseline nDCG@10 +0.065 [0.025, 0.106]; with only 2 topics this CI is not meaningful. Run 1 (step 8) had its LLM arm blocked by the Groq daily cap; run 2 is the single permitted rerun for that reason. In run 2 **both test topics degraded**: the judge's output failed validation in 4 of 5 completions (0/306 items judged; one cached response wraps the expected JSON object in a top-level array), so the resolver+LLM column equals the resolver-only fallback. **The LLM judge therefore has no successful test-split result.** No further test run was made.
 
 ## 2. Components
 
@@ -76,19 +76,19 @@ These labels are a smoke test: BM25 reads the same text. v5 = the report generat
 - The gate used to be a point comparison (v2 mean >= v1 mean); it now fails only when the paired 95% CI is entirely below 0. The step-9 gap (0.004) is inside the CI, on ~16 candidates per profile, and no ranking was tuned to these labels. The strict point gate would still fail.
 
 ## What improved
-- On TREC dev, resolver+LLM beats the v5 order on nDCG@10 by +0.063 [0.011, 0.119], the only distinguishable gain on the dev split.
-- The LLM judge settles about 12 points more of the criteria (unknown share 0.967 -> 0.843).
+- On TREC dev (all 10 topics), resolver+LLM beats the v5 order on nDCG@10 by +0.054 [0.006, 0.108], the only distinguishable gain on the dev split.
+- The LLM judge settles about 13 points more of the criteria on dev (unknown share 0.967 -> 0.836).
 - The splitter matches TrialGPT's item boundaries closely (F1 0.986), and the 7 documented rule gaps are closed.
 
 ## What failed or got worse
 - No metric other than dev nDCG@10 (LLM arm) is distinguishable from baseline; P@10 and missed exclusions move the right way but their CIs include 0.
-- The judge returned malformed JSON in 4 of 42 dev completions, and coverage is 79%; one dev topic fell back to resolver-only.
+- The judge returned malformed JSON in 4 of 48 dev completions (coverage 81%; one dev topic fell back to resolver-only) and in 4 of 5 test completions (both test topics fell back).
 - The deterministic resolver alone settles very little (3.3% of top-10 criterion labels on TREC dev, 5.4% with full synthetic answers), so in degraded mode almost everything is "unknown".
 - Regression smoke: v2 trails v1 by 0.004 on the point estimate (not distinguishable, [-0.022, 0.012]); the gate was redefined on the paired CI rather than the ranking being tuned (DECISIONS.md step 10). The national oracle needed a correction of its own term lists to reach 0 flags, besides the ingest fix.
 
 ## What is unvalidated
-- The LLM judge on the TREC test split (blocked by the Groq daily cap), and on a full dev run (9/10 topics).
+- The LLM judge on the TREC test split: run 2 degraded on both topics (malformed output), so there is no held-out evidence for it.
 - Production judge settings: /api/match now uses the same request settings as the eval (step 9), but it has not been load-tested live.
 - The vignette benchmark: `eval/gold/vignettes-gold-v1.json` is absent, so `npm run eval:vignettes` cannot run.
-- Precision of the resolver's settled labels against gold labels (only a by-eye read of about 50 labels was done). A step-9 demo probe found two false exclusions for an EGFR-positive answer, now guarded (BUGS.md); the TREC numbers above were measured before that guard.
+- Precision of the resolver's settled labels against gold labels (only a by-eye read of about 50 labels was done). A step-9 demo probe found two false exclusions for an EGFR-positive answer and an MSS trial first for an MSI-high answer, both now guarded (BUGS.md); the TREC numbers above were measured after those guards.
 - Anything about real patients, real clinicians, or translations of the new checklist text.
