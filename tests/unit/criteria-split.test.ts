@@ -101,7 +101,11 @@ describe("splitCriteria contract", () => {
     expect(a.map((c) => c.id)).toEqual(["I1", "I2", "E1", "E2", "E3"]);
     expect(a.every((c) => c.section === (c.id.startsWith("I") ? "inclusion" : "exclusion"))).toBe(true);
     expect(splitCriteria(raw)).toEqual(a);
-    expect(CRITERIA_VERSION).toBe(1);
+    expect(CRITERIA_VERSION).toBe(2);
+  });
+  it("drops label-only heading items but keeps real criteria that mention criteria", () => {
+    const raw = "Inclusion Criteria:\n\n* Criteria:\n* Age >= 18\n* Patient Eligibility Criteria:\n* No exclusion criteria\n\nExclusion Criteria:\n\n* Does not meet inclusion criteria";
+    expect(texts(raw)).toEqual(["I1: Age >= 18", "I2: No exclusion criteria", "E1: Does not meet inclusion criteria"]);
   });
   it("keeps text verbatim apart from whitespace and escapes", () => {
     const raw = "Inclusion Criteria:\n\n* Histologically confirmed (biopsy-proven) NSCLC; stage IIIB/IV [AJCC v8]";

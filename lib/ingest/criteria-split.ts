@@ -14,7 +14,7 @@
  */
 import { unescapeMarkdown } from "./parse";
 
-export const CRITERIA_VERSION = 1;
+export const CRITERIA_VERSION = 2;
 
 export type SplitSection = "inclusion" | "exclusion";
 
@@ -271,6 +271,13 @@ export function splitSegments(raw: string): Segment[] {
 }
 
 /** Group segments into criteria and number them per section. */
+/**
+ * A bare heading with no criterion in it ("Criteria:", "Patient Eligibility Criteria:", "Treatment eligibility"):
+ * up to three label words, then one heading word. Real criteria with more words ("No exclusion criteria",
+ * "Does not meet inclusion criteria") do not match.
+ */
+const HEADING_ONLY = /^(?!(?:no|not|none|without|do|does)\b)(?:[A-Za-z-]+\s+){0,3}?(?:criteria|criterion|eligibility|inclusion|exclusion)\s*:?$/i;
+
 export function splitCriteria(raw: string): SplitCriterion[] {
   const segs = splitSegments(raw);
   type Item = { section: SplitSection; lines: string[]; scope?: string };
@@ -363,7 +370,7 @@ export function splitCriteria(raw: string): SplitCriterion[] {
   const n = { inclusion: 0, exclusion: 0 };
   for (const it of items) {
     const text = it.lines.join("\n").trim();
-    if (text.length < 2) continue;
+    if (text.length < 2 || HEADING_ONLY.test(text)) continue;
     n[it.section]++;
     // Inline cohort prefix ("Cohort A: must have ...") sets scope when no header did.
     let scope = it.scope;
