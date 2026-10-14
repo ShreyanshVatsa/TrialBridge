@@ -21,8 +21,9 @@ export function createOpenAiCompatibleProvider(config: AiProviderConfig, apiKey:
             model: config.model,
             messages: req.messages,
             temperature: 0.1,
-            max_tokens: 6000,
+            max_tokens: req.maxTokens ?? 6000,
             response_format: { type: "json_object" },
+            ...(req.reasoningEffort ? { reasoning_effort: req.reasoningEffort } : {}),
           }),
           signal,
         });

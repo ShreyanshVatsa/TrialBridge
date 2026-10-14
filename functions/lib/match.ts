@@ -119,7 +119,7 @@ async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[
   const prompt: MatchPromptTrial[] = inputs.map((t) => ({ trialId: t.trialId, items: t.items, ...(t.title ? { title: t.title } : {}), ...(t.summary ? { summary: t.summary } : {}) }));
   const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
   const chunks = new Map<string, ValidatedTrial[]>();
-  for (const batch of planBatches(prompt, provider.maxInputChars, overhead)) {
+  for (const batch of planBatches(prompt, Math.min(provider.maxInputChars, MATCH_JUDGE.maxBatchChars), overhead)) {
     const messages: ChatMessage[] = [
       { role: "system", content: MATCH_SYSTEM_PROMPT },
       { role: "user", content: buildMatchUserPrompt(answers, batch) },
@@ -129,7 +129,7 @@ async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[
     // on the step-8 dev run about one in four 16k-char Groq batches came back with a broken shape.
     for (let attempt = 0; validated === null; attempt++) {
       await reserve();
-      const raw = await provider.complete({ messages, trials: [], match: { trials: batch } });
+      const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort });
       try {
         const v = validateMatchOutput(raw, batch, answerIds);
         const sent = v.reduce((s, x) => s + x.sent, 0);

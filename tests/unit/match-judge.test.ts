@@ -11,6 +11,7 @@ import { MemoryKvStore } from "@/functions/lib/store";
 import { MemoryTrialStore, type ServerTrial } from "@/functions/lib/trials";
 import { CircuitBreaker } from "@/functions/lib/ai/circuit";
 import { mockProvider } from "@/functions/lib/ai/mock";
+import { createOpenAiCompatibleProvider } from "@/functions/lib/ai/openai-client";
 import { ProviderError, type AiProvider, type CompletionRequest } from "@/functions/lib/ai/types";
 import { makeAnswers } from "./fixtures";
 
@@ -240,6 +241,32 @@ describe("judgeCriteria", () => {
     for (const c of p.calls) expect(c.messages.reduce((s, m) => s + m.content.length, 0)).toBeLessThanOrEqual(overhead + 900);
     expect(r.results[0]?.labels.map((l) => l.id)).toEqual(many.map((c) => c.id));
     expect(r.results[0]?.coverage).toBe(1);
+  });
+
+  it("caps batches at MATCH_JUDGE.maxBatchChars and sends the eval-proven completion settings", async () => {
+    const many = Array.from({ length: 300 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs, organ function and prior therapy windows`));
+    const p = fakeProvider("groq", labelAll, 60_000);
+    await judgeCriteria(profile, [input(T1, many.slice(0, 120)), input(T2, many.slice(120, 240))], jdeps([p]));
+    expect(p.calls.length).toBeGreaterThan(1);
+    for (const c of p.calls) {
+      expect(c.messages.reduce((s, m) => s + m.content.length, 0)).toBeLessThanOrEqual(MATCH_JUDGE.maxBatchChars);
+      expect(c.maxTokens).toBe(MATCH_JUDGE.maxTokens);
+      expect(c.reasoningEffort).toBe("low");
+    }
+  });
+
+  it("OpenAI-compatible client forwards maxTokens and reasoningEffort, default 6000 and none", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+      return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const client = createOpenAiCompatibleProvider({ name: "groq", baseUrl: "https://example.invalid", model: "m", keyEnv: "GROQ_API_KEY", budgetEnv: "DAILY_BUDGET_GROQ", dataTermsVerified: true, maxInputChars: 60_000 }, "test-key", fetchImpl);
+    await client.complete({ messages: [], trials: [], maxTokens: 3500, reasoningEffort: "low" });
+    await client.complete({ messages: [], trials: [] });
+    expect(bodies[0]).toMatchObject({ max_tokens: 3500, reasoning_effort: "low" });
+    expect(bodies[1]?.max_tokens).toBe(6000);
+    expect(bodies[1]).not.toHaveProperty("reasoning_effort");
   });
 
   it("re-asks a batch once after malformed output before failing over", async () => {

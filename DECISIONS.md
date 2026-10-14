@@ -122,3 +122,7 @@ k now lives in config/retrieval.ts. Dev split (TREC 2021, 10 cancer topics), ful
 - Judge: one re-ask of a batch after malformed or empty output (MATCH_JUDGE.invalidOutputRetries = 1) before failing over; seen on dev in about 1 of 10 completions.
 - A topic whose judge call fails is scored with the app's resolver-only fallback (counts in the LLM arm); a topic blocked by the daily cap is not scored for the LLM arm (no imputation).
 - Test (TREC 2022) ran once after the dev settings were frozen (eval/matching/test-runs.json); its LLM arm was blocked by the daily cap.
+
+## Step 9: judge request settings (BUGS.md step-8 entry)
+- /api/match now uses the settings the step-8 eval ran with: batches capped at 16000 chars (`MATCH_JUDGE.maxBatchChars`, min with the provider's maxInputChars), max_tokens 3500, reasoning_effort "low" (gpt-oss). Simplest fix with measured evidence: on dev, 38/42 completions valid at these settings; medium reasoning had truncated the JSON. `CompletionRequest` gained optional `maxTokens` / `reasoningEffort`; /api/analyze and /api/ask are unchanged (6000, model default).
+- Cost: more, smaller requests per patient (dev: 3-7 calls, ~15 s summed model latency); each batch reserves one daily-budget unit.

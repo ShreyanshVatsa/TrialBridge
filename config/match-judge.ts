@@ -13,4 +13,13 @@ export const MATCH_JUDGE = {
   summaryChars: 400,
   /** Re-asks of one batch after malformed / empty output before failing over (each re-ask reserves budget). */
   invalidOutputRetries: 1,
+  /**
+   * Request settings proven on the step-8 eval (gpt-oss-120b on Groq): batches of at most 16000 chars (also caps a
+   * provider whose maxInputChars is larger), 3500 completion tokens, low reasoning effort. With the model-default
+   * (medium) reasoning a 16k batch spent 3077 of 3500 tokens on reasoning and the JSON was truncated; 60k batches also
+   * exceed Groq's free-tier 8000 tokens/minute per request.
+   */
+  maxBatchChars: 16_000,
+  maxTokens: 3500,
+  reasoningEffort: "low",
 } as const;
