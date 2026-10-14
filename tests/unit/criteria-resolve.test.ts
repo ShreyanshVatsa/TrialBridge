@@ -47,6 +47,13 @@ describe("known extractor gaps (eval/RESULTS.md), fixed", () => {
   it("prior chemo/radiation/surgery windows stay mentioned in inclusion text", () => {
     expect(facts("inclusion", "Prior chemotherapy within 4 weeks of enrollment").prior_chemotherapy).toBe("mentioned");
   });
+  it("qualified marker wording is never a hard failure for a positive test (other than / resistance / exon / variant)", () => {
+    const p = profile("lung", { biomarkers: { EGFR: "positive" } });
+    for (const text of ["Subject's cancer has a known oncogenic driver alteration other than EGFR.", "Known EGFR mutations that cause resistance to osimertinib", "EGFR exon 20 insertion mutation", "Known EGFR T790M mutation"]) {
+      expect(lab("exclusion", text, p), text).toBe("unknown");
+    }
+    expect(lab("exclusion", "Known EGFR mutation", p)).toBe("excluded");
+  });
   it('"Known EGFR or ALK" excludes both markers', () => {
     expect(facts("exclusion", "Known EGFR or ALK alterations")).toMatchObject({ "biomarker:EGFR": "excluded", "biomarker:ALK": "excluded" });
     expect(lab("exclusion", "Known EGFR or ALK alterations", profile("lung", { biomarkers: { EGFR: "positive" } }))).toBe("excluded");

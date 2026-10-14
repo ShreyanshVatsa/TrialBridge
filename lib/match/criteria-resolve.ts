@@ -445,6 +445,11 @@ const OTHER_CANCER_WORDS = /\bmalignan\w*|\b(?:other|another|second|additional|c
 const ECOG_EXACT = /(?:^|[^<>=\u2264\u2265])=\s*[1-4]\b(?!\s*-)/;
 const TREATED_KEYS = new Set(["previously_treated", "newly_diagnosed", "min_prior_lines", "max_prior_lines"]);
 const UNTREATED_NON_CANCER = /\buntreated\s+(?:\w+\s+){0,2}(?:brain|cns|metasta\w*|lesions?|infections?|spinal|cord compression|leptomeningeal|hypertension|thyroid|disease of)\b/i;
+/**
+ * Biomarker wording narrower than a positive/negative answer: "other than EGFR", "EGFR mutations that cause
+ * resistance to osimertinib", "exon 20 insertion", "T790M". A positive test does not settle these (step 9 demo probe).
+ */
+const MARKER_QUALIFIER = /\b(?:other than|besides|aside from|except|resistan\w*|exon\s*\d+|insertions?|deletions?|co-?mutations?|acquired|sensitizing|activating|variants? of unknown)\b|\b[A-Z]\d{2,4}[A-Z*]\b/i;
 const CARVE_OUT = /\b(?:unless|except|other than|with the exception of|permitted|allowed|acceptable|may (?:be|have)|eligible if|are eligible)\b/i;
 /** Inclusion wording that says who MAY join, not who must. */
 const PERMISSIVE_ITEM = /\b(?:allowed|permitted|acceptable|may (?:be|have|enroll|participate)|eligible if|are (?:also )?eligible|will (?:also )?be (?:equally )?considered|can be enrolled)\b/i;
@@ -477,7 +482,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     if (!allowedKey(f.key)) continue;
     // "untreated brain metastases / lesion / infection" is not about treatment history; carve-outs ("unless",
     // "adjuvant therapy is permitted") are not modeled for treated status and line counts.
-    const loose = (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text));
+    const loose = (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
     checks.push({ key: f.key, verdict: loose ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
   }
   const outside = directional.filter((f) => !allowedKey(f.key));
