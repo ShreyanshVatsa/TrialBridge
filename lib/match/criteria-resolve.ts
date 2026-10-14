@@ -357,6 +357,10 @@ const BENIGN_OR = [
   /\b(?:BRCA ?1|BRCA)\s*(?:or|and\/or|\/)\s*BRCA ?2\b/gi,
   /\b(?:IDH ?1)\s*(?:or|and\/or|\/)\s*IDH ?2\b/gi,
   /\b(?:ER|estrogen receptor)\s*(?:and\/or|or|\/)\s*(?:PR|progesterone receptor)\b/gi,
+  // Specimen, disease-extent and test-method pairs describe how or where, not a second criterion.
+  /\b(?:tissue|blood|plasma|serum|archival|fresh|liquid)\s+(?:biopsy\s+)?(?:or|and\/or)\s+(?:tissue|blood|plasma|serum|archival|fresh|liquid)\b/gi,
+  /\b(?:locally advanced|advanced|unresectable)\s+(?:or|and\/or)\s+(?:metastatic|unresectable|recurrent)\b/gi,
+  /\b(?:FISH|IHC|NGS|PCR|ctDNA|cfDNA|CISH)\b[^.;]{0,60}?\b(?:or|and\/or)\s*(?:\(\d\)\s*)?(?:a |an |the )?(?:fluorescence|immuno\w*|next|tissue|circulating|cell-free|cfDNA|ctDNA|FISH|IHC|NGS|PCR|CISH|blood|plasma|polymerase|sequencing|in situ)/gi,
 ];
 /** True when the item offers alternatives that a fact-by-fact check would misread. Exported for tests. */
 export function hasAlternatives(text: string): boolean {

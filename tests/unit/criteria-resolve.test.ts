@@ -269,3 +269,18 @@ describe("pre-check ignores qualified biomarker wording (BUGS.md step 9, NCT0731
     expect(evaluateAnswers(egfrPos, catalog, [fact("Known EGFR mutation")]).map((n) => n.kind)).toEqual(["conflict"]);
   });
 });
+
+describe("single-marker requirement with specimen / extent / method 'or' (QA: ALK-negative patient, ALK-positive trial stayed unknown)", () => {
+  const alkNeg = () => profile("lung", { biomarkers: { EGFR: "positive", ALK: "negative" } });
+  it("is not_met for an ALK-negative answer", () => {
+    expect(lab("inclusion", "Documented Anaplastic Lymphoma Kinase (ALK) rearrangement via testing of tissue or blood", alkNeg())).toBe("not_met");
+    expect(lab("inclusion", "Documented ALK rearrangement as detected by: (1) fluorescence in situ hybridization (FISH), (2) immuno-histochemistry (IHC), (3) tissue next-generation sequencing (NGS), or (4) circulating tumor DNA (ctDNA) NGS", alkNeg())).toBe("not_met");
+    expect(lab("inclusion", "Locally advanced or metastatic NSCLC with a documented ALK rearrangement", alkNeg())).toBe("not_met");
+  });
+  it("stays unknown when markers are real alternatives or the answer is missing", () => {
+    expect(lab("inclusion", "Documented ALK rearrangement or EGFR mutation", profile("lung", { biomarkers: { ALK: "negative" } }))).toBe("unknown");
+    expect(lab("inclusion", "Documented ALK rearrangement via tissue or blood", profile("lung"))).toBe("unknown");
+    expect(lab("inclusion", "Documented ALK rearrangement via tissue or blood", profile("lung", { biomarkers: { ALK: "unknown" } }))).toBe("unknown");
+    expect(hasAlternatives("ALK fusion by FISH or EGFR mutation")).toBe(true);
+  });
+});
