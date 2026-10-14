@@ -107,7 +107,7 @@ import {
 } from "@/config/criteria";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import type { DrugClassId } from "@/config/questionnaire/ids";
-import type { CriterionSection, FactKey, FactParam, FactValue } from "@/lib/types/trial";
+import { isScopedParam, type CriterionSection, type FactKey, type FactParam, type FactValue } from "@/lib/types/trial";
 
 export interface V2Candidate {
   key: FactKey;
@@ -1034,6 +1034,9 @@ export function moreLenient(key: string, prev: { value: FactValue; param?: FactP
   if (prev.value !== next.value) return false;
   const a = prev.param;
   const b = next.param;
+  // Washout windows are timing rules on top of the criterion set: a blanket rule is kept over a window.
+  if (isScopedParam(b)) return false;
+  if (isScopedParam(a)) return true;
   if (b === undefined) return false;
   if (a === undefined) return true; // a carve-out/threshold beats a blanket rule
   if (typeof a === "number" && typeof b === "number") {

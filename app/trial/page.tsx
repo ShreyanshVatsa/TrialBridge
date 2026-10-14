@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TrialDetail, TrialLoading } from "@/components/trial/trial-detail";
+import { TrialLoading } from "@/components/trial/trial-detail";
+import { SessionTrialDetail } from "@/components/trial/session-trial-detail";
 import { PageTransition } from "@/components/fx/page-transition";
 
 export const metadata: Metadata = { title: "Trial details" };
@@ -13,7 +14,7 @@ export default function TrialPage() {
       <link rel="preload" href="/data/manifest.json" as="fetch" crossOrigin="anonymous" />
       <PageTransition>
         <Suspense fallback={<TrialLoading />}>
-          <TrialDetail />
+          <SessionTrialDetail />
         </Suspense>
       </PageTransition>
     </>

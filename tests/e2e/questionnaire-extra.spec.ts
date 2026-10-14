@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { findPrivacyLeaks } from "../../lib/privacy/leaks";
 import { chooseLanguage } from "./i18n-helpers";
-import { answerCurrent, answerEssentials, completeQuestionnaire, freshFind, RESULTS_HEADING, SUMMARY_HEADING } from "./helpers";
+import { answerCurrent, answerEssentials, completeQuestionnaire, freshFind, RESULTS_HEADING, settle, SUMMARY_HEADING } from "./helpers";
 
 /** Cards of the national dataset by id (all shards), for checking what a results page may contain. */
 function cardSexById(): Map<string, string> {
@@ -22,6 +22,7 @@ function cardSexById(): Map<string, string> {
 }
 
 async function axeSerious(page: Page, label: string) {
+  await settle(page);
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).exclude("iframe").analyze();
   const serious = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(serious.map((v) => `${label}: ${v.id} (${v.impact}) ${v.nodes.slice(0, 2).map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
@@ -169,7 +170,7 @@ test.describe("guided intake polish", () => {
     }
     await page.getByRole("button", { name: "Show my matches now" }).click();
     await expect(page.getByRole("heading", { name: SUMMARY_HEADING })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "About you" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "About you", exact: true })).toBeVisible();
   });
 
   test("biomarker grid shows an answered count and the one-click unknown", async ({ page }) => {

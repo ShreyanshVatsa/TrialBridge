@@ -1,5 +1,6 @@
 import { TrialCardSchema, type Site, type TrialCard } from "@/lib/types/trial";
 import type { RawStudy } from "./raw";
+import { CRITERIA_VERSION, splitCriteria } from "./criteria-split";
 import { contacts, parseAge, parseEligibility, STATE_CODES, unescapeMarkdown, usSites } from "./parse";
 import { mapGroups } from "./groups";
 import { detectBarriers } from "./barriers";
@@ -70,6 +71,8 @@ export function buildRecord(study: RawStudy, zipLookup?: (zip: string) => { lat:
       sex,
       inclusion,
       exclusion,
+      criteria: splitCriteria(elig.eligibilityCriteria),
+      criteriaVersion: CRITERIA_VERSION,
       contacts: contacts(study),
       barriers: detectBarriers({ inclusion, exclusion, maxAge, minAge, ...(elig.maximumAge ? { maxAgeRaw: elig.maximumAge } : {}) }),
       facts: extractRuleFacts(inclusion, exclusion, groups, [...conditions, ps.identificationModule.briefTitle]),

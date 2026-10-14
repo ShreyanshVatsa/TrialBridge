@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { emptyState, type QuestionnaireState } from "@/components/questionnaire/contract";
 import type { IntakeAnswers, RankedTrial, SearchOutcome } from "@/lib/types";
+import type { CriteriaRanking } from "@/lib/types/criteria";
 
 /**
  * Session state shared across client-side navigation (find -> trial detail -> back).
@@ -20,6 +21,11 @@ export interface SearchSession {
   outcome: SearchOutcome;
   results: RankedTrial[];
   analysis: AnalysisState;
+  /**
+   * v6 per-criterion ranking (lib/match/criteria-rank.ts): per-trial TrialMatchScore + merged labels, the degraded
+   * flag and the Find-out priority. `results` is kept in `criteria.order`. Absent before the first ranking.
+   */
+  criteria?: CriteriaRanking;
   origin: { lat: number; lon: number } | null;
   searchedAt: number;
 }

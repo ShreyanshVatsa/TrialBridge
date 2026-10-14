@@ -1,0 +1,860 @@
+{
+  "split": "test",
+  "year": 2022,
+  "pool": 15,
+  "ranAt": "2026-10-14T10:39:49.895Z",
+  "head": "4229463eb7cdd121adc6a145c27d1800ef7ae665",
+  "judgeTopN": 10,
+  "llm": {
+    "provider": "groq openai/gpt-oss-120b",
+    "evalMaxInputChars": 16000,
+    "evalMaxTokens": 3500,
+    "reasoningEffort": "low",
+    "callsOver30s": 0,
+    "topicsWithLlm": 2,
+    "topicsTotal": 2,
+    "statusCounts": {
+      "ok": 0,
+      "degraded": 2,
+      "quota": 0,
+      "not_run": 0
+    },
+    "jsonValidity": {
+      "valid": 1,
+      "calls": 5,
+      "share": 0.2
+    },
+    "coverage": {
+      "judged": 0,
+      "sent": 306,
+      "share": 0
+    },
+    "tokensPerPatient": {
+      "mean": 11917.5,
+      "lo": 7612,
+      "hi": 16223,
+      "n": 2
+    },
+    "latencyMsPerPatient": {
+      "mean": 11250,
+      "lo": 7529,
+      "hi": 14971,
+      "n": 2
+    },
+    "tokensTotal": 23835,
+    "tokensUncachedThisRun": "see per-topic cachedCalls"
+  },
+  "summary": {
+    "all": {
+      "topics": [
+        "2022-6",
+        "2022-11"
+      ],
+      "arms": {
+        "baseline": {
+          "ndcg10": {
+            "mean": 0.8424187247615081,
+            "lo": 0.8205228949141826,
+            "hi": 0.8643145546088337,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.8,
+            "lo": 0.8,
+            "hi": 0.8,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.1,
+            "lo": 0.1,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": null
+        },
+        "resolver": {
+          "ndcg10": {
+            "mean": 0.9078105537584564,
+            "lo": 0.8889850296162729,
+            "hi": 0.9266360779006401,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.8500000000000001,
+            "lo": 0.8,
+            "hi": 0.9,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.05,
+            "lo": 0,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": {
+            "mean": 0.9604938271604938,
+            "lo": 0.9333333333333333,
+            "hi": 0.9876543209876543,
+            "n": 2
+          }
+        },
+        "llm": {
+          "ndcg10": null,
+          "p10": null,
+          "missedExclusions": null,
+          "unknownShare": null
+        },
+        "resolverFull": {
+          "ndcg10": {
+            "mean": 0.7176099855377228,
+            "lo": 0.6731745157965351,
+            "hi": 0.7620454552789105,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.6,
+            "lo": 0.6,
+            "hi": 0.6,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.1,
+            "lo": 0.1,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": {
+            "mean": 0.8347744360902256,
+            "lo": 0.8142857142857143,
+            "hi": 0.8552631578947368,
+            "n": 2
+          }
+        }
+      },
+      "deltas": {
+        "resolver-baseline": {
+          "ndcg10": {
+            "mean": 0.06539182899694834,
+            "lo": 0.02467047500743924,
+            "hi": 0.10611318298645744,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.04999999999999999,
+            "lo": 0,
+            "hi": 0.09999999999999998,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": -0.05,
+            "lo": -0.1,
+            "hi": 0,
+            "n": 2
+          }
+        },
+        "llm-baseline": {
+          "ndcg10": null,
+          "p10": null,
+          "missedExclusions": null
+        },
+        "resolverFull-baseline": {
+          "ndcg10": {
+            "mean": -0.12480873922378533,
+            "lo": -0.19114003881229857,
+            "hi": -0.05847743963527208,
+            "n": 2
+          },
+          "p10": {
+            "mean": -0.20000000000000007,
+            "lo": -0.20000000000000007,
+            "hi": -0.20000000000000007,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0,
+            "lo": 0,
+            "hi": 0,
+            "n": 2
+          }
+        }
+      }
+    },
+    "llmCovered": {
+      "topics": [
+        "2022-6",
+        "2022-11"
+      ],
+      "arms": {
+        "baseline": {
+          "ndcg10": {
+            "mean": 0.8424187247615081,
+            "lo": 0.8205228949141826,
+            "hi": 0.8643145546088337,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.8,
+            "lo": 0.8,
+            "hi": 0.8,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.1,
+            "lo": 0.1,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": null
+        },
+        "resolver": {
+          "ndcg10": {
+            "mean": 0.9078105537584564,
+            "lo": 0.8889850296162729,
+            "hi": 0.9266360779006401,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.8500000000000001,
+            "lo": 0.8,
+            "hi": 0.9,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.05,
+            "lo": 0,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": {
+            "mean": 0.9604938271604938,
+            "lo": 0.9333333333333333,
+            "hi": 0.9876543209876543,
+            "n": 2
+          }
+        },
+        "llm": {
+          "ndcg10": {
+            "mean": 0.9078105537584564,
+            "lo": 0.8889850296162729,
+            "hi": 0.9266360779006401,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.8500000000000001,
+            "lo": 0.8,
+            "hi": 0.9,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.05,
+            "lo": 0,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": {
+            "mean": 0.9604938271604938,
+            "lo": 0.9333333333333333,
+            "hi": 0.9876543209876543,
+            "n": 2
+          }
+        },
+        "resolverFull": {
+          "ndcg10": {
+            "mean": 0.7176099855377228,
+            "lo": 0.6731745157965351,
+            "hi": 0.7620454552789105,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.6,
+            "lo": 0.6,
+            "hi": 0.6,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0.1,
+            "lo": 0.1,
+            "hi": 0.1,
+            "n": 2
+          },
+          "unknownShare": {
+            "mean": 0.8347744360902256,
+            "lo": 0.8142857142857143,
+            "hi": 0.8552631578947368,
+            "n": 2
+          }
+        }
+      },
+      "deltas": {
+        "resolver-baseline": {
+          "ndcg10": {
+            "mean": 0.06539182899694834,
+            "lo": 0.02467047500743924,
+            "hi": 0.10611318298645744,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.04999999999999999,
+            "lo": 0,
+            "hi": 0.09999999999999998,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": -0.05,
+            "lo": -0.1,
+            "hi": 0,
+            "n": 2
+          }
+        },
+        "llm-baseline": {
+          "ndcg10": {
+            "mean": 0.06539182899694834,
+            "lo": 0.02467047500743924,
+            "hi": 0.10611318298645744,
+            "n": 2
+          },
+          "p10": {
+            "mean": 0.04999999999999999,
+            "lo": 0,
+            "hi": 0.09999999999999998,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": -0.05,
+            "lo": -0.1,
+            "hi": 0,
+            "n": 2
+          }
+        },
+        "resolverFull-baseline": {
+          "ndcg10": {
+            "mean": -0.12480873922378533,
+            "lo": -0.19114003881229857,
+            "hi": -0.05847743963527208,
+            "n": 2
+          },
+          "p10": {
+            "mean": -0.20000000000000007,
+            "lo": -0.20000000000000007,
+            "hi": -0.20000000000000007,
+            "n": 2
+          },
+          "missedExclusions": {
+            "mean": 0,
+            "lo": 0,
+            "hi": 0,
+            "n": 2
+          }
+        }
+      }
+    }
+  },
+  "topics": [
+    {
+      "key": "2022-6",
+      "candidates": 175,
+      "arms": {
+        "baseline": {
+          "ndcg10": 0.8205228949141826,
+          "p10": 0.8,
+          "missedExclusions": 0.1,
+          "unknownShare": null,
+          "top10": [
+            {
+              "id": "NCT00469196",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT04300244",
+              "grade": 1,
+              "tier": null
+            },
+            {
+              "id": "NCT00188890",
+              "grade": 0,
+              "tier": null
+            },
+            {
+              "id": "NCT00094978",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT01624090",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT02300883",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT02613299",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT00227630",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT02613312",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT00005636",
+              "grade": 2,
+              "tier": null
+            }
+          ]
+        },
+        "resolver": {
+          "ndcg10": 0.9266360779006401,
+          "p10": 0.9,
+          "missedExclusions": 0,
+          "unknownShare": 0.9333333333333333,
+          "top10": [
+            {
+              "id": "NCT02300883",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00469196",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02613299",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02613312",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02648763",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01624090",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00188890",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00094978",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00227630",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00005636",
+              "grade": 2,
+              "tier": "A"
+            }
+          ]
+        },
+        "resolverFull": {
+          "ndcg10": 0.7620454552789105,
+          "p10": 0.6,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.8142857142857143,
+          "top10": [
+            {
+              "id": "NCT00690261",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02300883",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT03290183",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04264325",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00978939",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00469196",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT03053804",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04235998",
+              "grade": 1,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04806412",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00752076",
+              "grade": 0,
+              "tier": "A"
+            }
+          ]
+        },
+        "llm": {
+          "ndcg10": 0.9266360779006401,
+          "p10": 0.9,
+          "missedExclusions": 0,
+          "unknownShare": 0.9333333333333333,
+          "top10": [
+            {
+              "id": "NCT02300883",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00469196",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02613299",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02613312",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02648763",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01624090",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00188890",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00094978",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00227630",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00005636",
+              "grade": 2,
+              "tier": "A"
+            }
+          ]
+        }
+      },
+      "llm": {
+        "status": "degraded",
+        "trialsSent": 10,
+        "itemsSent": 146,
+        "itemsJudged": 0,
+        "calls": 2,
+        "validCalls": 0,
+        "cachedCalls": 0,
+        "tokens": 7612,
+        "promptTokens": 4762,
+        "completionTokens": 2850,
+        "latencyMs": 7529,
+        "slowCalls": 0,
+        "degradedReason": "invalid_output"
+      }
+    },
+    {
+      "key": "2022-11",
+      "candidates": 235,
+      "arms": {
+        "baseline": {
+          "ndcg10": 0.8643145546088337,
+          "p10": 0.8,
+          "missedExclusions": 0.1,
+          "unknownShare": null,
+          "top10": [
+            {
+              "id": "NCT00215514",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT01523015",
+              "grade": 1,
+              "tier": null
+            },
+            {
+              "id": "NCT00849615",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT04379596",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT04034251",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT04808791",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT02741778",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT02177552",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT01962246",
+              "grade": 0,
+              "tier": null
+            },
+            {
+              "id": "NCT00601705",
+              "grade": 2,
+              "tier": null
+            }
+          ]
+        },
+        "resolver": {
+          "ndcg10": 0.8889850296162729,
+          "p10": 0.8,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.9876543209876543,
+          "top10": [
+            {
+              "id": "NCT00601705",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04808791",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00215514",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01523015",
+              "grade": 1,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00849615",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04379596",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04034251",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02741778",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02177552",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01962246",
+              "grade": 0,
+              "tier": "A"
+            }
+          ]
+        },
+        "resolverFull": {
+          "ndcg10": 0.6731745157965351,
+          "p10": 0.6,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.8552631578947368,
+          "top10": [
+            {
+              "id": "NCT01704664",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02302118",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT03917173",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01132534",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02788214",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04843397",
+              "grade": 1,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00555620",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00842244",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00555672",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02337673",
+              "grade": 0,
+              "tier": "A"
+            }
+          ]
+        },
+        "llm": {
+          "ndcg10": 0.8889850296162729,
+          "p10": 0.8,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.9876543209876543,
+          "top10": [
+            {
+              "id": "NCT00601705",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04808791",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00215514",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01523015",
+              "grade": 1,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00849615",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04379596",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04034251",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02741778",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02177552",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT01962246",
+              "grade": 0,
+              "tier": "A"
+            }
+          ]
+        }
+      },
+      "llm": {
+        "status": "degraded",
+        "trialsSent": 10,
+        "itemsSent": 160,
+        "itemsJudged": 0,
+        "calls": 3,
+        "validCalls": 1,
+        "cachedCalls": 0,
+        "tokens": 16223,
+        "promptTokens": 9989,
+        "completionTokens": 6234,
+        "latencyMs": 14971,
+        "slowCalls": 0,
+        "degradedReason": "invalid_output"
+      }
+    }
+  ]
+}

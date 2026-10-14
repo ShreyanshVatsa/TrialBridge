@@ -1,6 +1,7 @@
 import type { FitLevel } from "@/lib/types/analysis";
 import type { PrecheckNote } from "@/lib/types/match";
-import { maxRrfScore } from "./rrf";
+import type { CriterionLabel, TrialMatchScore } from "@/lib/types/criteria";
+import { maxRrfScore, RRF_K } from "./rrf";
 
 /**
  * Final ranking score. Every weight is named and explained so the formula is auditable:
@@ -69,9 +70,9 @@ export function reliability(n: NoteLike): number {
 }
 
 /** Normalize a raw RRF score to 0..1 given how many rankings were fused. */
-export function normalizeRrf(rrf: number, rankingsUsed: number): number {
+export function normalizeRrf(rrf: number, rankingsUsed: number, k: number = RRF_K): number {
   if (rankingsUsed <= 0) return 0;
-  return Math.min(1, rrf / maxRrfScore(rankingsUsed));
+  return Math.min(1, rrf / maxRrfScore(rankingsUsed, k));
 }
 
 /** Penalty from pre-check conflicts (a positive number to subtract): the largest MAX_COUNTED_CONFLICTS weighted conflicts. */
@@ -106,4 +107,80 @@ export function phaseBonus(pref: string | null | undefined, phases: readonly str
 export function finalScore(input: { retrieval: number; precheck: readonly NoteLike[]; fit: FitLevel | null; phase?: number }): number {
   const fitAdj = input.fit ? FIT_ADJUSTMENT[input.fit] : 0;
   return RETRIEVAL_WEIGHT * input.retrieval - precheckPenalty(input.precheck) + precheckBonus(input.precheck) + (input.phase ?? 0) + fitAdj;
+}
+
+// ---------------------------------------------------------------------------------------------
+// v6 step 5: per-criterion scoring (TrialGPT-style). Labels come from the deterministic resolver
+// (criteria-resolve.ts) and, for the items it left unknown, the LLM judge (POST /api/match).
+// ---------------------------------------------------------------------------------------------
+
+/** Keeps incScore finite for a trial with no counted inclusion items. */
+export const INC_SCORE_EPSILON = 1e-9;
+
+const INCLUSION_LABELS: ReadonlySet<string> = new Set(["met", "not_met", "unknown", "not_applicable"]);
+const EXCLUSION_LABELS: ReadonlySet<string> = new Set(["excluded", "not_excluded", "unknown", "not_applicable"]);
+
+/** True when `label` is a valid value for the criterion's section. */
+export function labelFitsSection(l: Pick<CriterionLabel, "section" | "label">): boolean {
+  return (l.section === "inclusion" ? INCLUSION_LABELS : EXCLUSION_LABELS).has(l.label);
+}
+
+/** A hard failure: an inclusion not_met or an exclusion excluded. Unknown is never a failure. */
+export function isHardFailure(l: Pick<CriterionLabel, "section" | "label">): boolean {
+  return (l.section === "inclusion" && l.label === "not_met") || (l.section === "exclusion" && l.label === "excluded");
+}
+
+/**
+ * Merge resolver labels with LLM labels. The resolver wins wherever it settled an item; an LLM label only fills an id
+ * the resolver left "unknown", and only when the id exists, the section matches and the label is valid for it.
+ * Order follows the resolver (the trial's criterion order). Pure.
+ */
+export function mergeLabels(resolver: readonly CriterionLabel[], llm: readonly CriterionLabel[] | null | undefined): CriterionLabel[] {
+  if (!llm?.length) return resolver.map((l) => ({ ...l }));
+  const byId = new Map(llm.map((l) => [l.id, l]));
+  return resolver.map((r) => {
+    if (r.label !== "unknown") return { ...r };
+    const j = byId.get(r.id);
+    if (!j || j.section !== r.section || !labelFitsSection(j)) return { ...r };
+    const out: CriterionLabel = { id: r.id, section: r.section, label: j.label, source: "llm" };
+    if (j.reason) out.reason = j.reason;
+    if (j.answerIds?.length) out.answerIds = [...j.answerIds];
+    return out;
+  });
+}
+
+/**
+ * Per-trial score from its labels:
+ *   incScore = met / (met + not_met + unknown + 1e-9), over INCLUSION items (not_applicable is left out);
+ *   tier "B" when any inclusion is not_met or any exclusion is excluded, else "A".
+ * `counts` covers both sections (unknown = inclusion + exclusion unknowns). Unknowns never change the tier.
+ */
+export function trialMatchScore(trialId: string, labels: readonly CriterionLabel[], retrievalRank: number, degraded: boolean): TrialMatchScore {
+  const counts = { met: 0, notMet: 0, excluded: 0, unknown: 0, notApplicable: 0 };
+  let incUnknown = 0;
+  for (const l of labels) {
+    if (l.label === "met") counts.met++;
+    else if (l.label === "not_met") counts.notMet++;
+    else if (l.label === "excluded") counts.excluded++;
+    else if (l.label === "not_applicable") counts.notApplicable++;
+    else if (l.label === "unknown") {
+      counts.unknown++;
+      if (l.section === "inclusion") incUnknown++;
+    }
+  }
+  const hardFailures = labels.filter(isHardFailure).map((l) => ({ ...l }));
+  return {
+    trialId,
+    incScore: counts.met / (counts.met + counts.notMet + incUnknown + INC_SCORE_EPSILON),
+    tier: hardFailures.length > 0 ? "B" : "A",
+    hardFailures,
+    counts,
+    retrievalRank,
+    degraded,
+  };
+}
+
+/** Tier A first (incScore high to low, then retrieval rank), then tier B (same order). Returns a new array. */
+export function tierOrder<T extends Pick<TrialMatchScore, "tier" | "incScore" | "retrievalRank" | "trialId">>(scores: readonly T[]): T[] {
+  return [...scores].sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "A" ? -1 : 1) || b.incScore - a.incScore || a.retrievalRank - b.retrievalRank || a.trialId.localeCompare(b.trialId));
 }

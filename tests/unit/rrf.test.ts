@@ -4,7 +4,7 @@ import { maxRrfScore, reciprocalRankFusion, RRF_K } from "@/lib/match/rrf";
 describe("reciprocalRankFusion", () => {
   it("scores 1/(k+rank) summed across rankings", () => {
     const out = reciprocalRankFusion([["a", "b"], ["b", "a"]]);
-    expect(out[0]?.score).toBeCloseTo(1 / 61 + 1 / 62, 12);
+    expect(out[0]?.score).toBeCloseTo(1 / (RRF_K + 1) + 1 / (RRF_K + 2), 12);
     expect(out.map((r) => r.ranks)).toEqual([[1, 2], [2, 1]]);
   });
   it("rewards agreement between methods", () => {
@@ -23,12 +23,12 @@ describe("reciprocalRankFusion", () => {
   it("ignores duplicates within one ranking", () => {
     const out = reciprocalRankFusion([["a", "a", "b"]]);
     expect(out.find((r) => r.id === "b")?.ranks).toEqual([3]);
-    expect(out.find((r) => r.id === "a")?.score).toBeCloseTo(1 / 61, 12);
+    expect(out.find((r) => r.id === "a")?.score).toBeCloseTo(1 / (RRF_K + 1), 12);
   });
-  it("uses k = 60 by default and validates k", () => {
-    expect(RRF_K).toBe(60);
+  it("uses configured k by default and validates k", () => {
+    expect(RRF_K).toBe(20);
     expect(() => reciprocalRankFusion([["a"]], 0)).toThrow();
-    expect(maxRrfScore(2)).toBeCloseTo(2 / 61, 12);
+    expect(maxRrfScore(2)).toBeCloseTo(2 / (RRF_K + 1), 12);
   });
   it("returns empty for no input", () => {
     expect(reciprocalRankFusion([])).toEqual([]);

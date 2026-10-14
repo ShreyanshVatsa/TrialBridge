@@ -1,5 +1,6 @@
 import type { Site, TrialCard, FactKey, FactValue, CriterionRef } from "./trial";
 import type { FitLevel, TrialAnalysis } from "./analysis";
+import type { Features } from "@/lib/match/fusion";
 
 /** A note from the rule-based eligibility pre-check (lib/match/precheck.ts). */
 export interface PrecheckNote {
@@ -40,6 +41,10 @@ export interface RankedTrial {
     /** Phase-preference nudge (v2 questionnaire), ±PHASE_PREF_BONUS or 0. */
     phaseBonus?: number;
     fit: FitLevel | null;
+    /** The fusion features the final score is computed from (lib/match/fusion.ts); re-fused when the AI fit arrives. */
+    features?: Features;
+    /** Directional criteria the patient's answers say nothing about (questionnaire intake only). */
+    unknowns?: number;
     final: number;
   };
   analysis: TrialAnalysis | null;

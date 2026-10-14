@@ -1,9 +1,10 @@
 import type { BiomarkerId } from "@/config/biomarkers";
 import type { IntakeAnswers, Treatment } from "@/lib/types/intake";
-import type { Fact } from "@/lib/types/trial";
+import { isScopedParam, type Fact } from "@/lib/types/trial";
 import type { PrecheckNote } from "@/lib/types/match";
 import type { FactPolicyMap, QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { applyPolicy, compileState, factRelation, type CompiledAnswer } from "@/lib/questionnaire/rules";
+import { qualifiedMarkerFact } from "./marker-qualifier";
 
 /** A pre-check note for one trial fact (carries direction and source for FACT_WEIGHT / RELIABILITY). */
 function toNote(f: Fact, kind: PrecheckNote["kind"]): PrecheckNote {
@@ -45,7 +46,7 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
   const add = (f: Fact, kind: PrecheckNote["kind"]) => notes.push(toNote(f, kind));
 
   for (const f of facts) {
-    if (f.value === "mentioned" || f.needsReview) continue; // uncertain facts never penalize
+    if (f.value === "mentioned" || f.needsReview || isScopedParam(f.param) || qualifiedMarkerFact(f)) continue; // uncertain facts, time windows and qualified marker wording never penalize
     const treatment = TREATMENT_FACTS[f.key];
     if (treatment) {
       if (!treatmentsKnown) continue;
@@ -61,13 +62,13 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
         else if (answers.spread === "no" && f.value === "required") add(f, "conflict");
         break;
       case "newly_diagnosed":
-        if (hadAny) add(f, "conflict");
-        else if (hadNone) add(f, "support");
+      case "previously_treated": {
+        // required previously_treated / excluded newly_diagnosed want a treated patient; the other two an untreated one.
+        const wantsTreated = (f.key === "previously_treated") === (f.value === "required");
+        if (wantsTreated ? hadNone : hadAny) add(f, "conflict");
+        else if (wantsTreated ? hadAny : hadNone) add(f, "support");
         break;
-      case "previously_treated":
-        if (hadNone) add(f, "conflict");
-        else if (hadAny) add(f, "support");
-        break;
+      }
       case "pregnancy":
         if (answers.pregnant === "yes") add(f, "conflict");
         break;
@@ -97,6 +98,21 @@ export function evaluateAnswers(state: QuestionnaireState, catalog: readonly Que
 }
 
 /**
+ * How many of a trial's directional criteria (required/excluded facts) the patient's answers say nothing about:
+ * no answered question carries a rule for that fact key. Non-responses compile to no rules, so every "don't know"
+ * adds to this count and to nothing else. Shown as "N criteria we could not check", never used to rank.
+ */
+export function unknownCounter(compiled: readonly CompiledAnswer[]): (facts: readonly Fact[]) => number {
+  const covered = new Set<string>();
+  for (const c of compiled) for (const k of c.rules.keys()) covered.add(k);
+  return (facts) => {
+    const seen = new Set<string>();
+    for (const f of facts) if (f.value !== "mentioned" && !f.needsReview && !isScopedParam(f.param) && !covered.has(f.key)) seen.add(f.key);
+    return seen.size;
+  };
+}
+
+/**
  * Same as `evaluateAnswers`, but the answers are compiled once and reused for many trials. Ranking checks hundreds
  * of trials against the SAME answers, and compiling them per trial (walking the catalog, prerequisites and
  * option effects each time) was most of the pre-check's cost.
@@ -107,6 +123,7 @@ export function answerEvaluator(compiled: readonly CompiledAnswer[], policy?: Fa
     const notes: PrecheckNote[] = [];
     if (empty) return notes;
     for (const f of facts) {
+      if (qualifiedMarkerFact(f)) continue; // "other than EGFR", "T790M": a plain test result does not settle these
       const rel = applyPolicy(factRelation(compiled, f), f.key, policy);
       if (rel !== "neutral") notes.push(toNote(f, rel));
     }

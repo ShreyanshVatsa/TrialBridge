@@ -21,6 +21,10 @@ const applies = (q: QuestionDef, group: CancerGroupId) => (q.appliesTo === "all"
 /** Apply the precision gate to one question. Pure. */
 export function gate(q: QuestionDef): QuestionDef {
   if (!q.enabled || q.families.length === 0 || q.legacyFacts) return q;
+  // Subtype is always asked: "ask" and "penalize" are separate decisions. Its histology facts stay support-only through
+  // FACT_POLICY while the family is below the gate; the answer still shapes the query and the structured subtype match
+  // (lib/match/subtype.ts), which reads the trial's registered conditions rather than criteria text.
+  if (q.id === "subtype") return q;
   const primary = q.families[0] as string;
   if (familyPasses(primary)) return q;
   const p = FAMILY_PRECISION[primary as keyof typeof FAMILY_PRECISION];

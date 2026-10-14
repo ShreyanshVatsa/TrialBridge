@@ -117,3 +117,29 @@ export function sampleTrialId(): string {
 }
 
 export const RESULTS_HEADING = /Possible matches to discuss with your care team/i;
+
+/**
+ * Wait until the page is visually at rest before an axe scan: smooth (Lenis) scrolling has stopped and every
+ * finite time-based CSS animation/transition has finished. Without this, axe can sample a mid-fade frame:
+ * e.g. Playwright's click scrolls the landing page, and the header's glass background is still fading in
+ * (500 ms) while the nav links sit over the lens wall, whose clipped lavender layer axe counts as background.
+ */
+export async function settle(page: Page): Promise<void> {
+  await page.waitForFunction(() => !document.documentElement.classList.contains("lenis-scrolling"), undefined, { timeout: 10_000 });
+  await page.evaluate(async () => {
+    const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await document.fonts?.ready;
+    const deadline = performance.now() + 5_000;
+    for (;;) {
+      // Scroll-linked state (header glass, reveal) is applied on the next frames; let it start first.
+      await frame();
+      const running = document.getAnimations().filter((a) => {
+        if (a.playState !== "running" || !(a.timeline instanceof DocumentTimeline)) return false;
+        const end = a.effect?.getComputedTiming().endTime;
+        return typeof end === "number" && Number.isFinite(end);
+      });
+      if (!running.length || performance.now() > deadline) return;
+      await Promise.race([Promise.all(running.map((a) => a.finished.catch(() => undefined))), new Promise((r) => setTimeout(r, deadline - performance.now()))]);
+    }
+  });
+}

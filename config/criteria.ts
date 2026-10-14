@@ -39,7 +39,7 @@ export const CONCURRENT_TRIAL =
   /\b(another|other|concurrent|simultaneous|concomitant)\b[^.;]{0,50}\b(investigational|clinical (trial|study)|interventional (trial|study)|therapeutic (trial|study))|\bparticipat(e|es|ing|ion) in (another|other|any other)\b[^.;]{0,40}\b(study|trial)/i;
 
 /** Biomarker direction words. */
-export const POSITIVE_WORDS = /\b(positive|positivity|mutat(ion|ed|ions)|mutant|amplif(ied|ication)|overexpress(ion|ing)?|fusion|rearrange(d|ment)|high|deficient|altered|alteration|variant|expressing|methylated)\b|\+/i;
+export const POSITIVE_WORDS = /\b(positive|positivity|mutat(ion|ed|ions)|mutant|amplif(ied|ication)|overexpress(ion|ing)?|fusion|rearrange(d|ment)|high|deficient|altered|alterations?|variants?|fusions|rearrangements|expressing|methylated)\b|\+/i;
 export const NEGATIVE_WORDS = /\b(negative|wild[- ]?type|absence|non-?(mutated|amplified)|not (mutated|amplified)|low|proficient|unmethylated)\b|-negative|\bwt\b/i;
 
 /** Triple-negative breast cancer (ER-, PR-, HER2-). */

@@ -9,7 +9,7 @@
 import { BIOMARKERS } from "@/config/biomarkers";
 import { perfCounters } from "@/lib/perf/counters";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "@/config/cancer-groups";
-import type { FactKey, FactValue } from "@/lib/types/trial";
+import { isScopedParam, type FactKey, type FactValue } from "@/lib/types/trial";
 import {
   NON_RESPONSE_IDS,
   UNKNOWN,
@@ -188,7 +188,8 @@ export function compileAnswer(q: QuestionDef, v: AnswerValue | undefined): Compi
 /** Combined relation of compiled answers to one fact: any conflict wins, then any support. */
 export function factRelation(compiled: readonly CompiledAnswer[], fact: CompactFact): FactRelation {
   perfCounters.factRelation++;
-  if (fact.value === "mentioned" || fact.needsReview) return "neutral"; // uncertain facts never penalize
+  // Uncertain facts and time-window exclusions (answers cannot say when a treatment was) never penalize.
+  if (fact.value === "mentioned" || fact.needsReview || isScopedParam(fact.param)) return "neutral";
   let support = false;
   for (const c of compiled) {
     for (const { rule, inverted } of c.rules.get(fact.key) ?? []) {

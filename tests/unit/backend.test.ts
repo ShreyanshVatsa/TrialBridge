@@ -148,10 +148,14 @@ describe("same-origin check", () => {
 describe("providers", () => {
   const cfg = AI_PROVIDERS[0];
   if (!cfg) throw new Error("no providers");
-  it("ships with every provider disabled until data terms are verified", () => {
-    expect(AI_PROVIDERS.every((p) => !p.dataTermsVerified)).toBe(true);
+  it("enables only providers whose data terms were verified (groq); all others stay disabled", () => {
+    expect(AI_PROVIDERS.filter((p) => p.dataTermsVerified).map((p) => p.name)).toEqual(["groq"]);
+    expect(AI_PROVIDERS.filter((p) => !p.dataTermsVerified).map((p) => p.name).sort()).toEqual(["cerebras", "openrouter"]);
     expect(AI_PROVIDERS.some((p) => /gemini|google/i.test(p.name + p.baseUrl))).toBe(false);
-    expect(resolveProviders({ GROQ_API_KEY: "k" } as never).map((p) => p.name)).toEqual(["mock"]);
+    // Keys for unverified providers never enable them.
+    expect(resolveProviders({ CEREBRAS_API_KEY: "k", OPENROUTER_API_KEY: "k" } as never).map((p) => p.name)).toEqual(["mock"]);
+    expect(resolveProviders({ GROQ_API_KEY: "k", CEREBRAS_API_KEY: "k", OPENROUTER_API_KEY: "k" } as never).map((p) => p.name)).toEqual(["groq"]);
+    expect(resolveProviders({} as never).map((p) => p.name)).toEqual(["mock"]);
   });
   it("enables a provider only with key AND verified terms", () => {
     const reg = [{ ...cfg, dataTermsVerified: true }];

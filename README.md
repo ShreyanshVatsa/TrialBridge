@@ -130,20 +130,27 @@ English, Spanish, Portuguese, and Haitian Creole (`components/i18n/`). Translati
 ## Evaluation
 
 ```
-npm run eval          # runs the evaluation, writes eval/RESULTS.md and results.json
+npm run eval          # regression eval, writes eval/REGRESSION.md and eval/results.json
+npm run eval:matching # v6 criterion matching on TREC (eval/matching/)
 npm run eval:labels   # regenerates the synthetic labels
+npm run eval:vignettes  # graded vignette benchmark (eval/gold/)
 ```
 
-Results are in `eval/RESULTS.md` (also summarized on the Methodology page). Numbers below are **seed data** results, not national:
+`eval/RESULTS.md` is the hand-written summary (v5 baseline vs v6 matching, with CIs); `eval/REGRESSION.md` is the generated regression report. Regression headline numbers (national data, 5,726 trials, 40 synthetic profiles, nDCG@10 against **title/condition regex labels**, 95% bootstrap CI over profiles):
 
-| Metric (seed, mock AI) | Value |
+| System | nDCG@10 |
 |---|---|
-| Hard-filter violation rate | 0.0% |
-| Full-pipeline nDCG@10 (production variant) | 0.819 |
-| Rule-fact precision (50-item hand-labeled sample) | 66% |
-| Mock AI JSON validity / quote verification | 100% / 99.8% |
+| Random order over the same hard-filtered candidates | 0.377 [0.321, 0.432] |
+| BM25 keyword only | 0.700 [0.600, 0.790] |
+| Full pipeline | 0.784 [0.684, 0.870] |
 
-**Limitations (honest):** 30 synthetic patient profiles, not real people. Relevance labels are rule-generated from titles/conditions and **not clinician-reviewed**. The seed is small and labels are coarse, so differences between variants are small. Labels ignore detailed eligibility (labs, performance status, prior lines). Rule-fact labels were judged internally. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim.
+The pipeline beats random by +0.41 and BM25 by +0.08 (paired CIs exclude 0). On the 301-trial seed the same labels are a smoke test only: random scores 0.744, the pipeline 0.809, and the pipeline-minus-BM25 interval includes 0.
+
+**Hard filters** are checked against an independent oracle (`scripts/eval/oracle.ts`) that re-derives cancer group, age and distance from the raw ClinicalTrials.gov fields instead of calling the app's own filter functions. Age, sex and distance: 0 violations among results on the seed and in the top 15 on national data. Cancer group: no violations in the top 15 on national data, but 3.7% of all candidates the filters let through and 1.9% of seed results are flagged (mixed MeSH-hierarchy tags such as thyroid under head and neck, CLL under lymphoma, plus a few genuine mis-tags); the report lists them. The older "0% violations" line was true by construction and is no longer used as evidence.
+
+Rule-fact precision on a 50-item hand-labeled sample is 66%. Mock AI JSON validity / quote verification is 100% / 99.9%.
+
+**Limitations (honest):** profiles are synthetic, not real people. The regex labels are not clinician-reviewed and BM25 reads the same text, so they flatter keyword matching; they are not accuracy evidence. Graded, quote-backed evidence comes from the vignette benchmark (`eval/gold/`) and the TREC Clinical Trials cancer subset (`eval/trec/`). Labels ignore detailed eligibility (labs, performance status, prior lines). The pipeline's excluded-label share is not better than random. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim. Re-running `npm run eval` without the national data (a fresh clone has only the seed) rewrites `eval/REGRESSION.md` with the headline section marked as skipped.
 
 ## Security measures
 
@@ -160,9 +167,11 @@ Results are in `eval/RESULTS.md` (also summarized on the Methodology page). Numb
 |---|---|---|
 | Unit | `npm run test:unit` | Vitest: matching, minimization, ingestion rules, backend, D1 code against real SQL |
 | Unit + coverage | `npm test` | Coverage thresholds enforced in `vitest.config.ts` |
-| End-to-end | `npm run test:e2e` | Playwright against a snapshot of `./out`: main flow, mobile, AI fallback, data-minimization network check, Q&A safety. Run `npm run build` first |
-| Accessibility | | Automated axe checks (`@axe-core/playwright`) were run across pages, languages, themes, and 390 px width (see `PROGRESS.md`) |
+| End-to-end | `npm run test:e2e` | Playwright against a snapshot of `./out` served by `wrangler dev` with a local D1 (the script copies `out/`, migrates and seeds D1, then runs Playwright). Main flow, mobile, AI fallback, data-minimization network check, Q&A safety. Run `npm run build` first; the first run needs `npx playwright install chromium` |
+| Accessibility | included in `npm run test:e2e` | Automated axe checks (`@axe-core/playwright`) across pages, languages, themes, and 390 px width |
 | Static | `npm run lint`, `npm run typecheck` | |
+| Budgets and data | `npm run budgets`, `npm run data:verify` | Route JS, shard, asset and file-count budgets (after a build); data lock and model revision checks |
+| Everything | `npm run ci` | lint, typecheck, unit tests with coverage, build, budgets, data:verify (add `npm run test:e2e` for the browser tests) |
 
 ## Run locally with one command
 
@@ -191,7 +200,14 @@ npm run build      # Next static export + postbuild + wrangler dry-run
 npm run preview    # migrates/seeds local D1, runs wrangler dev (site + /api)
 ```
 
-Always build with `npm run build`; a bare `next build` output is not deployable. `npm run dev` runs the UI only (no API; AI analysis shows as degraded). Without any keys, the mock AI provider is used.
+Then open http://localhost:8787.
+
+Notes:
+- Prerequisite: Node 22 or newer. Run these commands from the repository root.
+- `npm run build` produces a **static export in `out/`**. There is no `npm start`: `npm run preview` serves `out/` plus the `/api` Worker with `wrangler dev` (local D1, mock AI).
+- Always build with `npm run build`; a bare `next build` output is not deployable. `npm run dev` runs the UI only (no API; AI analysis shows as degraded). Without any keys, the mock AI provider is used.
+- `npm run setup` needs internet once, to fetch the embedding model and ONNX runtime files (`public/models`, `public/ort`, both gitignored).
+- To run against all ~5,700 national trials instead of the 301-trial seed, use `npm run local:national` (see above).
 
 **API keys:** paste them into `.dev.vars` yourself (`GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`; optional `TURNSTILE_SECRET_KEY`, `RATE_LIMIT_SALT`). Never put keys in chat, issues, or the repo; `.dev.vars` is gitignored. Then read the provider's data terms and set `dataTermsVerified: true` in `config/ai-providers.ts`. Set `NEXT_PUBLIC_PARTNER_EMAIL` at build time for the "Partner with us" link.
 

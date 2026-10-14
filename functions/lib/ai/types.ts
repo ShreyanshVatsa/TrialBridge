@@ -1,6 +1,7 @@
 import type { MinimizedProfile } from "@/lib/types/analysis";
 import type { Language } from "@/lib/types/intake";
 import type { ServerTrial } from "../trials";
+import type { MatchPromptTrial } from "@/prompts/analyze-v3";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -27,6 +28,12 @@ export interface CompletionRequest {
   trials: readonly ServerTrial[];
   /** Present for Trial Q&A requests (mock provider uses it). */
   ask?: { question: string; language: Language };
+  /** Present for criterion-judge requests (mock provider uses it). */
+  match?: { trials: readonly MatchPromptTrial[] };
+  /** Completion-token cap for this request (default 6000). */
+  maxTokens?: number;
+  /** gpt-oss reasoning effort; omitted = the model default (medium). */
+  reasoningEffort?: "low" | "medium" | "high";
   signal?: AbortSignal;
 }
 

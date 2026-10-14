@@ -1,4 +1,4 @@
-import { basketAppliesTo, isBasketOnly, type CancerGroupId } from "@/config/cancer-groups";
+import { basketAppliesTo, getCancerGroup, isBasketOnly, type CancerGroupId } from "@/config/cancer-groups";
 import { haversineMiles, type LatLon } from "@/lib/geo/distance";
 import type { Site, TrialCard } from "@/lib/types/trial";
 import type { NearestSite } from "@/lib/types/match";
@@ -7,8 +7,19 @@ import type { NearestSite } from "@/lib/types/match";
  * Hard filter: the trial's group list must include the selected group ("other" = any group).
  * Solid-tumor basket trials that name no specific cancer type also apply to every solid-tumor group.
  */
-export function passesGroup(card: Pick<TrialCard, "groups">, group: CancerGroupId): boolean {
-  return group === "other" || card.groups.includes(group) || (basketAppliesTo(group) && isBasketOnly(card.groups));
+export function passesGroup(card: Pick<TrialCard, "groups"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): boolean {
+  return group === "other" || card.groups.includes(group) || (basketAppliesTo(group) && isBasketOnly(card.groups)) || untaggedNamesGroup(card, group);
+}
+
+/**
+ * Recall rescue: a trial the ingest could not place in any group ("other") still passes when its own conditions or
+ * titles name the patient's group (e.g. "Pleural Effusion, Malignant" for lung). Trials with any group tag are not
+ * second-guessed here. Found on the TREC subset, where 37 judged-eligible mesothelioma trials sat in "other".
+ */
+export function untaggedNamesGroup(card: Pick<TrialCard, "groups"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): boolean {
+  if (card.groups.length !== 1 || card.groups[0] !== "other" || group === "solid-tumors") return false;
+  const text = [...(card.conditions ?? []), card.title ?? "", card.officialTitle ?? ""].join(" ; ");
+  return getCancerGroup(group).text.some((re) => re.test(text));
 }
 
 /** Hard filter: age within [minAge, maxAge]; null bounds mean no limit. */

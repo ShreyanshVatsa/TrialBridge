@@ -18,6 +18,18 @@ export type CriterionSection = z.infer<typeof CriterionSectionSchema>;
 export const CriterionSchema = z.object({ n: z.number().int().positive(), text: z.string().min(1) });
 export type Criterion = z.infer<typeof CriterionSchema>;
 
+/**
+ * v6 split criterion (lib/ingest/criteria-split.ts, criteriaVersion 1): one atomic-as-written item with a stable id
+ * (I1..In / E1..En), verbatim whitespace-normalized text and an optional cohort/arm/part scope.
+ */
+export const SplitCriterionSchema = z.object({
+  id: z.string().regex(/^[IE][1-9]\d*$/),
+  section: CriterionSectionSchema,
+  text: z.string().min(1),
+  scope: z.string().min(1).optional(),
+});
+export type SplitCriterionRecord = z.infer<typeof SplitCriterionSchema>;
+
 export const CriterionRefSchema = z.object({ section: CriterionSectionSchema, n: z.number().int().positive() });
 export type CriterionRef = z.infer<typeof CriterionRefSchema>;
 
@@ -90,6 +102,14 @@ export type FactValue = z.infer<typeof FactValueSchema>;
 export const FactParamSchema = z.union([z.number(), z.string()]);
 export type FactParam = z.infer<typeof FactParamSchema>;
 
+/**
+ * Time-window / limited-scope params on excluded facts: "window", "limited", or "within_<n>_<unit>" (e.g. washout
+ * "within_28_days"). Such exclusions only apply inside the window, so they never act as a blanket exclusion. Numbers
+ * (thresholds, carve-out years) and "active_only" / "uncontrolled_only" are not scoped in this sense.
+ */
+export const SCOPED_PARAM_RE = /^(?:window|limited|within_\d+_(?:day|week|month|year)s?)$/;
+export const isScopedParam = (p: FactParam | undefined): boolean => typeof p === "string" && SCOPED_PARAM_RE.test(p);
+
 export const FactSchema = z.object({
   key: FactKeySchema,
   value: FactValueSchema,
@@ -143,6 +163,9 @@ export const TrialCardSchema = z.object({
   sex: z.enum(["ALL", "FEMALE", "MALE"]),
   inclusion: z.array(CriterionSchema),
   exclusion: z.array(CriterionSchema),
+  /** v6 split criteria (optional so pre-v6 data still loads); `criteriaVersion` names the splitter version. */
+  criteria: z.array(SplitCriterionSchema).optional(),
+  criteriaVersion: z.number().int().positive().optional(),
   contacts: z.array(ContactSchema),
   barriers: z.array(BarrierSchema),
   facts: z.array(FactSchema),

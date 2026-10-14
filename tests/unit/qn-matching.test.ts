@@ -123,7 +123,7 @@ describe("matching integration (rankTrials with a questionnaire)", () => {
 
   it("profile text is the chosen options' query terms in catalog order; unknown adds nothing", () => {
     const a = toIntakeAnswers(essentials("lung", { biomarkers: { EGFR: "positive" }, subtype: "nsclc_adeno", spread: "unknown" }));
-    expect(buildProfileText(a, TEST_CATALOG)).toBe("Lung cancer. NSCLC, SCLC, non-small cell, small cell, mesothelioma. Non-small cell lung adenocarcinoma. EGFR positive.");
+    expect(buildProfileText(a, TEST_CATALOG)).toBe("Lung cancer. Non-small cell lung adenocarcinoma. EGFR positive.");
     expect(buildProfileText({ ...a, cancerType: "other" }, TEST_CATALOG).startsWith("Cancer.")).toBe(true);
   });
 });

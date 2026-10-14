@@ -11,8 +11,16 @@ const BUDGETS = (JSON.parse(readFileSync("perf/budgets.json", "utf8")) as { byte
  */
 test("first-search and repeat-search latency", async ({ page }) => {
   const bytes: Record<string, number> = {};
+  // Transformers.js requests each model file twice while loading. A real browser serves the second request from its
+  // HTTP cache (the files are `immutable`), but Playwright's browser context does not, so count each model/wasm file once:
+  // that is the cold download a visitor actually pays.
+  const seenOnce = new Set<string>();
   page.on("response", async (r) => {
     const u = new URL(r.url()).pathname;
+    if (u.startsWith("/models/") || u.startsWith("/ort/")) {
+      if (seenOnce.has(u)) return;
+      seenOnce.add(u);
+    }
     const kind = u.startsWith("/models/") ? "model" : u.startsWith("/ort/") ? "wasm" : u.startsWith("/data/") ? "data" : u.startsWith("/_next/") ? "app" : "other";
     const len = (await r.request().sizes().catch(() => ({ responseBodySize: 0 }))).responseBodySize;
     bytes[kind] = (bytes[kind] ?? 0) + len;
