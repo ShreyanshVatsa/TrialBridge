@@ -23,6 +23,7 @@ export interface RawLoc {
 export interface OracleStudy {
   id: string;
   text: string; // conditions + keywords + titles, lowercased
+  ownText?: string; // conditions + titles only (no sponsor keywords), lowercased; defaults to text
   minAgeYears: number | null;
   maxAgeYears: number | null;
   sex: string;
@@ -42,9 +43,9 @@ const GROUP_TERMS: Record<string, RegExp> = {
   pancreatic: /pancrea|insulinoma/,
   ovarian: /ovar|fallopian|peritoneal (cancer|carcinoma|neoplasm)/,
   brain: /pituitary|schwannoma|craniopharyngioma|glioma|glioblastoma|astrocytoma|medulloblastoma|ependymoma|meningioma|brain (tumou?r|cancer|neoplasm|metasta)|central nervous system (tumou?r|neoplasm|cancer)|\bcns (tumou?r|lymphoma|neoplasm)|leptomeningeal/,
-  bladder: /bladder|urothelial|transitional cell|\bnmibc\b|\bmibc\b/,
+  bladder: /(?<!gall ?)bladder|urothelial|transitional cell|\bnmibc\b|\bmibc\b/,
   kidney: /kidney|renal (cell|carcinoma|neoplasm|tumou?r|cancer)|\brcc\b|wilms/,
-  liver: /liver|hepatocellular|\bhcc\b|cholangio|biliary|bile duct|gallbladder|hepatic (carcinoma|cancer|neoplasm)/,
+  liver: /liver|hepatocellular|\bhcc\b|cholangio|biliary|bile duct|gall ?bladder|hepatic (carcinoma|cancer|neoplasm)/,
   "head-neck": /head and neck|head & neck|head\/neck|\bhnscc\b|oral cavity|oropharyn|laryn|nasopharyn|hypopharyn|salivary|tongue|\bmouth\b/,
   gastroesophageal: /gastric|stomach|esophag|oesophag|gastroesophageal|gastro-oesophageal|\bgej\b|cardia/,
   "uterine-cervical": /endometri|uterine|uterus|cervical (cancer|carcinoma|neoplasm|intraepithelial)|\bcervix\b|vulvar|vaginal/,
@@ -55,17 +56,22 @@ const HEME_GROUPS = new Set(["leukemia", "lymphoma", "myeloma"]);
 const GENERIC_CANCER = /cancer|neoplasm|tumou?r|carcinoma|malignan|metasta|solid|oncolog/;
 const GENERIC_HEME = /hematolog|haematolog|blood (cancer|malignan)|myeloid|lymphoid|bone marrow/;
 
-/** Does the raw record say this patient's cancer group? "other" accepts any cancer trial; solid-tumor profiles also accept generic baskets. */
-export function oracleGroupOk(text: string, group: string): boolean {
+/**
+ * Does the raw record say this patient's cancer group? "other" accepts any cancer trial; solid-tumor profiles also
+ * accept generic baskets. A record is a basket when its conditions and titles (`ownText`) name no specific cancer:
+ * sponsor keywords often list example indications of a basket ("HER2+ breast cancer", "esophageal adenocarcinoma" on an
+ * "Advanced Solid Tumors" study), so they count as a positive match but do not stop a record from being a basket.
+ */
+export function oracleGroupOk(text: string, group: string, ownText: string = text): boolean {
   if (group === "other") return true;
   if (group === "solid-tumors") return GENERIC_CANCER.test(text) || Object.values(GROUP_TERMS).some((r) => r.test(text));
   const specific = GROUP_TERMS[group];
   if (specific?.test(text)) return true;
   // A basket / generic record that names no specific cancer applies to solid-tumor groups (not to blood cancers).
-  const namesSomething = Object.values(GROUP_TERMS).some((r) => r.test(text));
+  const namesSomething = Object.values(GROUP_TERMS).some((r) => r.test(ownText));
   if (namesSomething) return false;
-  if (HEME_GROUPS.has(group)) return GENERIC_HEME.test(text);
-  return GENERIC_CANCER.test(text);
+  if (HEME_GROUPS.has(group)) return GENERIC_HEME.test(ownText);
+  return GENERIC_CANCER.test(ownText);
 }
 
 // ---- age (independent parser) ----------------------------------------------------------------------------------
@@ -141,7 +147,7 @@ export function oracleVerdict(s: OracleStudy, p: OraclePatient): Verdict {
     }
   }
   const sexOk = !p.sex || s.sex === "ALL" || s.sex === "" || (p.sex === "female" ? s.sex === "FEMALE" : s.sex === "MALE");
-  return { group: oracleGroupOk(s.text, p.group), age: oracleAgeOk(s, p.age), sex: sexOk, distanceStrict, distance, distanceUnverifiable };
+  return { group: oracleGroupOk(s.text, p.group, s.ownText ?? s.text), age: oracleAgeOk(s, p.age), sex: sexOk, distanceStrict, distance, distanceUnverifiable };
 }
 
 // ---- loading raw records ----------------------------------------------------------------------------------------
@@ -157,10 +163,13 @@ export function toOracleStudy(raw: RawJson): OracleStudy | null {
   const ps = raw.protocolSection;
   const id = ps?.identificationModule?.nctId;
   if (!ps || !id) return null;
-  const text = [...(ps.conditionsModule?.conditions ?? []), ...(ps.conditionsModule?.keywords ?? []), ps.identificationModule?.briefTitle ?? "", ps.identificationModule?.officialTitle ?? ""].join(" | ").toLowerCase();
+  const titles = [ps.identificationModule?.briefTitle ?? "", ps.identificationModule?.officialTitle ?? ""];
+  const text = [...(ps.conditionsModule?.conditions ?? []), ...(ps.conditionsModule?.keywords ?? []), ...titles].join(" | ").toLowerCase();
+  const ownText = [...(ps.conditionsModule?.conditions ?? []), ...titles].join(" | ").toLowerCase();
   return {
     id,
     text,
+    ownText,
     minAgeYears: oracleAgeYears(ps.eligibilityModule?.minimumAge),
     maxAgeYears: oracleAgeYears(ps.eligibilityModule?.maximumAge),
     sex: ps.eligibilityModule?.sex ?? "",

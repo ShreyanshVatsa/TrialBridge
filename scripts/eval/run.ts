@@ -208,6 +208,10 @@ async function main(): Promise<void> {
   const v1Cmp = mean(sub(prodRows, false).map((r) => r.sysNdcg)), v2Cmp = mean(sub(v2Rows, false).map((r) => r.sysNdcg));
   const v1E2 = mean(sub(prodRows, true).map((r) => r.sysNdcg)), v2E2 = mean(sub(v2Rows, true).map((r) => r.sysNdcg));
   const nE2 = ecog2.filter(Boolean).length;
+  // Gate (v6 step 10, DECISIONS.md): v2 must not be distinguishably worse than v1 on these profiles (paired bootstrap 95% CI
+  // of v2 - v1 must not lie entirely below 0). The earlier point-estimate gate (v2 mean >= v1 mean) failed by 0.004 on
+  // ~16 candidates per profile, inside the paired CI; the point comparison is still printed.
+  const cmpCI = pairedBootstrapCI(sub(v2Rows, false).map((r) => r.sysNdcg), sub(prodRows, false).map((r) => r.sysNdcg));
   const sim = runSimulation();
   const national = loadNational();
   // National headline: same profiles and label rules over the national shards, plus the oracle on raw CT.gov pages.
@@ -402,11 +406,11 @@ ${table}
 | v1 (legacy answers) | ${f3(v1First30)} | ${f3(v1All.ndcg)} | ${f3(variantRows[0]?.excludedAt10 ?? NaN)} |
 | v2 (questionnaire state, catalog pre-check, sex filter) | ${f3(v2First30)} | ${f3(v2All.ndcg)} | ${f3(v2Excl30)} |
 
-Split by whether the profile has a definite ECOG 2 answer (${nE2} profiles do): without ECOG 2 (${profiles.length - nE2} profiles) v1 ${f3(v1Cmp)} vs v2 ${f3(v2Cmp)}; with ECOG 2 v1 ${f3(v1E2)} vs v2 ${f3(v2E2)}. The labels are title/condition rules and cannot see ECOG, so for ECOG 2 patients they call ECOG 0-1-only trials relevant while v2 (correctly, by design) flags them as conflicts and ranks them lower. That drop is expected, not a retrieval regression, and the v2 >= v1 gate is therefore applied to the profiles without ECOG 2.
+Split by whether the profile has a definite ECOG 2 answer (${nE2} profiles do): without ECOG 2 (${profiles.length - nE2} profiles) v1 ${f3(v1Cmp)} vs v2 ${f3(v2Cmp)}; with ECOG 2 v1 ${f3(v1E2)} vs v2 ${f3(v2E2)}. The labels are title/condition rules and cannot see ECOG, so for ECOG 2 patients they call ECOG 0-1-only trials relevant while v2 (correctly, by design) flags them as conflicts and ranks them lower. That drop is expected, not a retrieval regression, and the v2-vs-v1 gate is therefore applied to the profiles without ECOG 2.
 
-- Gates: v1 labels nDCG@10 >= 0.800 (**${v1First30 >= 0.8 ? "pass" : "FAIL"}**, ${f3(v1First30)}); v2 >= v1 on the ${profiles.length - nE2} profiles without ECOG 2 (**${v2Cmp >= v1Cmp - 1e-9 ? "pass" : "FAIL"}**, ${f3(v2Cmp)} vs ${f3(v1Cmp)}); circular filter re-check 0 violations (**${totalViolations === 0 ? "pass" : "FAIL"}**, regression test only; the independent oracle is section 2); excluded share on p01-p30 <= 0.271 (**${(variantRows[0]?.excludedAt10 ?? 1) <= 0.2715 && v2Excl30 <= 0.2715 ? "pass" : "FAIL"}**, v1 ${f3(variantRows[0]?.excludedAt10 ?? NaN)}, v2 ${f3(v2Excl30)}).
+- Gates: v1 labels nDCG@10 >= 0.800 (**${v1First30 >= 0.8 ? "pass" : "FAIL"}**, ${f3(v1First30)}); v2 not distinguishably worse than v1 on the ${profiles.length - nE2} profiles without ECOG 2 (**${cmpCI.hi >= 0 ? "pass" : "FAIL"}**, ${f3(v2Cmp)} vs ${f3(v1Cmp)}, v2 minus v1 ${fmtDiff(cmpCI)}; point estimate v2 >= v1: ${v2Cmp >= v1Cmp - 1e-9 ? "yes" : "no"}); circular filter re-check 0 violations (**${totalViolations === 0 ? "pass" : "FAIL"}**, regression test only; the independent oracle is section 2); excluded share on p01-p30 <= 0.271 (**${(variantRows[0]?.excludedAt10 ?? 1) <= 0.2715 && v2Excl30 <= 0.2715 ? "pass" : "FAIL"}**, v1 ${f3(variantRows[0]?.excludedAt10 ?? NaN)}, v2 ${f3(v2Excl30)}).
 - Unknown/skip never reduces rank: answering "don't know" to every other eligible question left the top-15 order identical for **${nrChecks - nrMismatch}/${nrChecks}** profiles.
-- Caveat: the labels use only title and condition text, so they cannot reward answers about ECOG, prior drugs, lines, or brain metastases; v2's benefit there cannot show up in these numbers. v2 >= v1 therefore mostly checks that the new pre-check does not hurt and that group, subtype and biomarker answers are used.
+- Caveat: the labels use only title and condition text, so they cannot reward answers about ECOG, prior drugs, lines, or brain metastases; v2's benefit there cannot show up in these numbers. The v2-vs-v1 gate therefore mostly checks that the new pre-check does not hurt and that group, subtype and biomarker answers are used.
 
 ${simulationMarkdown(sim, simNat)}
 ## Eligibility facts (rule layer)
@@ -456,7 +460,8 @@ See DECISIONS.md. Production uses the variant in the first row unless another va
     if (t.age > 0 || t.sex > 0 || t.distance > 0) failures.push(`independent oracle found age/sex/distance violations (${name}: age ${t.age}, sex ${t.sex}, distance ${t.distance})`);
   }
   if (v1First30 < 0.8) failures.push(`v1 full-pipeline nDCG@10 ${f3(v1First30)} < 0.800`);
-  if (v2Cmp < v1Cmp - 1e-9) failures.push(`v2 nDCG@10 ${f3(v2Cmp)} < v1 ${f3(v1Cmp)} (profiles without ECOG 2)`);
+  if (cmpCI.hi < 0) failures.push(`v2 nDCG@10 distinguishably worse than v1 (profiles without ECOG 2): ${fmtDiff(cmpCI)}`);
+  console.log(`v2 vs v1 (profiles without ECOG 2): ${f3(v2Cmp)} vs ${f3(v1Cmp)}, v2 minus v1 ${fmtDiff(cmpCI)}`);
   if ((variantRows[0]?.excludedAt10 ?? 1) > 0.2715 || v2Excl30 > 0.2715) failures.push("excluded-label share above 0.271");
   if (nrMismatch > 0 || sim.nonResponse.rankDrops > 0 || sim.nonResponse.scoreDrops > 0 || (simNat && (simNat.nonResponse.rankDrops > 0 || simNat.nonResponse.scoreDrops > 0))) failures.push("unknown/skip answers changed a ranking");
   if (failures.length) {

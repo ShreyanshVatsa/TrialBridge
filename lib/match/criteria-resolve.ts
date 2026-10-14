@@ -467,12 +467,38 @@ function markerList(text: string): boolean {
   return seen.size >= 3;
 }
 
+/**
+ * MSI status words. MSI-H, MSI-high and dMMR name the positive state of our "MSI-H / dMMR" marker on their own; MSS,
+ * microsatellite stable, pMMR and MSI-low name the negative state, which the shared extractor does not read (BUGS.md,
+ * step 9: an MSS trial ranked #1 for an MSI-high answer). Negative wording is matched first and removed, so
+ * "non-MSI-H" and "not MSI-H" read as negative.
+ */
+const MSI_NEG = /\b(?:non-?|not\s+)(?:MSI-?H(?:igh)?|dMMR)\b|\bMSS\b|\bmicrosatellite[- ]stab(?:le|ility)\b|\bpMMR\b|\bmismatch[- ]repair[- ]proficien\w*|\bproficient\s+mismatch[- ]repair\b|\bMMR[- ]proficien\w*|\bMSI-?L(?:ow)?\b/gi;
+const MSI_POS = /\bMSI-?H(?:igh)?\b|\bmicrosatellite[- ]instability[- ]high\b|\bhigh(?:[- ]level)?\s+microsatellite[- ]instability\b|\bdMMR\b|\bmismatch[- ]repair[- ]deficien\w*|\bdeficient\s+mismatch[- ]repair\b|\bMMR[- ]deficien\w*/i;
+/** "required" / "excluded" for biomarker:MSI-H from MSI status words; null when absent, mixed, optional or qualified. */
+export function msiDirection(section: "inclusion" | "exclusion", text: string): "required" | "excluded" | null {
+  const neg = MSI_NEG.test(text);
+  MSI_NEG.lastIndex = 0;
+  const pos = MSI_POS.test(text.replace(MSI_NEG, " "));
+  if (pos === neg) return null; // neither, or both ("MSI-H or MSS", "regardless of MSI-H/MSS status")
+  if (/\b(?:regardless|irrespective|independent of|any MSI|status (?:is )?(?:unknown|pending)|either|unless|except|other than)\b/i.test(text) || hasAlternatives(text.replace(/\bMSI-?H(?:igh)?\s*(?:\/|or|and\/or)\s*dMMR\b|\bdMMR\s*(?:\/|or|and\/or)\s*MSI-?H(?:igh)?\b|\bMSS\s*(?:\/|or|and\/or)\s*pMMR\b|\bpMMR\s*(?:\/|or|and\/or)\s*MSS\b/gi, "MSI"))) return null;
+  // inclusion: positive state required / negative state means positive patients are excluded; exclusion flips.
+  if (section === "inclusion") return pos ? "required" : "excluded";
+  return pos ? "excluded" : "required";
+}
+
 /** Label one criterion item. Pure. */
 export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: ResolveContext): ResolvedLabel {
   const incl = item.section === "inclusion";
   if (item.scope || cohortSpecific(item.text) || SUB_LABELS(item.text) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
   const text = normalizeMarkers(item.text);
   const facts = factsForCriterion(item.section, text, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
+  const msi = msiDirection(item.section, text);
+  if (msi) {
+    const i = facts.findIndex((f) => f.key === "biomarker:MSI-H");
+    if (i < 0) facts.push({ key: "biomarker:MSI-H", value: msi });
+    else if (facts[i]?.value === "mentioned") facts[i] = { ...facts[i], key: "biomarker:MSI-H", value: msi };
+  }
   const directional = facts.filter((f) => f.value !== "mentioned");
   const checks: Checked[] = [];
   for (const c of [checkAge(text, p, item.section), checkSex(text, p, item.section), incl ? checkCancerType(text, p, ctx.groups) : null]) if (c) checks.push(c);

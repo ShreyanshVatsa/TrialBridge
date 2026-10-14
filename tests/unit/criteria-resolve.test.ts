@@ -231,3 +231,24 @@ describe("resolveCriteria", () => {
     expect(resolveCriteria({ ...card, criteria: undefined, criteriaVersion: undefined }, profile("lung")).labels).toEqual([]);
   });
 });
+
+describe("MSI status wording (BUGS.md step 9: MSS trial ranked #1 for an MSI-high answer, NCT07284849)", () => {
+  const msiH = () => profile("colorectal", { biomarkers: { "MSI-H": "positive" } });
+  const mss = () => profile("colorectal", { biomarkers: { "MSI-H": "negative" } });
+  it("excludes an MSI-high patient on a bare 'MSI-H/dMMR' exclusion and keeps an MSS patient", () => {
+    expect(lab("exclusion", "MSI-H/dMMR per historical data in the medical record.", msiH())).toBe("excluded");
+    expect(lab("exclusion", "MSI-H/dMMR per historical data in the medical record.", mss())).not.toBe("excluded");
+  });
+  it("reads MSS / microsatellite stable / pMMR as the negative state of MSI-H", () => {
+    expect(lab("inclusion", "Histologically confirmed microsatellite stable (MSS) metastatic colorectal adenocarcinoma", msiH())).toBe("not_met");
+    expect(lab("inclusion", "pMMR/MSS tumor", msiH())).toBe("not_met");
+    expect(lab("inclusion", "Tumor must be mismatch repair proficient (not MSI-H)", msiH())).toBe("not_met");
+    expect(lab("exclusion", "Known microsatellite stable disease", msiH())).not.toBe("excluded");
+    expect(lab("exclusion", "Known microsatellite stable disease", mss())).toBe("excluded");
+  });
+  it("leaves mixed, optional or unanswered MSI wording unknown", () => {
+    expect(lab("inclusion", "MSI-H or MSS colorectal cancer", msiH())).toBe("unknown");
+    expect(lab("inclusion", "Any MSI status, regardless of MSI-H or MSS", msiH())).toBe("unknown");
+    expect(lab("inclusion", "pMMR/MSS tumor", profile("colorectal"))).toBe("unknown");
+  });
+});

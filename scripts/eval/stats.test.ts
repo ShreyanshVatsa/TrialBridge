@@ -51,6 +51,11 @@ describe("independent oracle", () => {
     expect(oracleGroupOk("advanced solid tumors", "leukemia")).toBe(false);
     expect(oracleGroupOk("acute myeloid leukemia", "leukemia")).toBe(true);
     expect(oracleGroupOk("anything", "other")).toBe(true);
+    // Sponsor keywords naming example indications do not stop a basket; the conditions/titles decide basket status.
+    expect(oracleGroupOk("advanced solid tumors | esophageal adenocarcinoma", "lung", "advanced solid tumors")).toBe(true);
+    expect(oracleGroupOk("advanced solid tumors | esophageal adenocarcinoma", "lung")).toBe(false);
+    expect(oracleGroupOk("gall bladder cancer | breast cancer", "liver")).toBe(true);
+    expect(oracleGroupOk("gall bladder cancer", "bladder")).toBe(false);
   });
   it("a record with no registry coordinates is unverifiable on distance, not a violation", () => {
     const noGeo = study({ locations: [{ status: "RECRUITING", country: "United States" }] });
