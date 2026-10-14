@@ -169,7 +169,7 @@ test.describe("guided intake polish", () => {
     }
     await page.getByRole("button", { name: "Show my matches now" }).click();
     await expect(page.getByRole("heading", { name: SUMMARY_HEADING })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "About you" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "About you", exact: true })).toBeVisible();
   });
 
   test("biomarker grid shows an answered count and the one-click unknown", async ({ page }) => {

@@ -31,7 +31,13 @@ test.describe("adaptive questionnaire", () => {
       expect(asked.length).toBeLessThanOrEqual(7); // quick mode
       await expect(page.getByText(RESULTS_HEADING)).toBeVisible({ timeout: 90_000 });
       await expect(page.getByRole("link", { name: /Full trial details/i }).first()).toBeVisible();
-      await expect(page.getByText(/\beligible\b|\bqualify\b|you can join/i)).toHaveCount(0);
+      // Our own wording never claims eligibility; verbatim trial criteria (blockquotes in the checklist) may use the word.
+      const ownText = await page.evaluate(() => {
+        const c = document.body.cloneNode(true) as HTMLElement;
+        c.querySelectorAll("blockquote").forEach((b) => b.remove());
+        return c.innerText || c.textContent || "";
+      });
+      expect(ownText).not.toMatch(/\beligible\b|\bqualify\b|you can join/i);
     });
   }
 
