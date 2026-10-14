@@ -72,14 +72,22 @@ function cleanReason(raw: string | undefined): string | undefined {
 
 /** Parse the first {...} span of raw model text. Throws ProviderError("invalid_output") on non-JSON or wrong shape. */
 export function parseMatchJson(raw: string): z.infer<typeof LooseOutput> {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
+  const obj = raw.indexOf("{");
+  const arr = raw.indexOf("[");
+  // A top-level array (of trial answers, or wrapping the whole object) is accepted too.
+  const isArray = arr >= 0 && arr < obj;
+  const start = isArray ? arr : obj;
+  const end = raw.lastIndexOf(isArray ? "]" : "}");
   if (start < 0 || end <= start) throw new ProviderError("invalid_output", "no JSON");
   let json: unknown;
   try {
     json = JSON.parse(raw.slice(start, end + 1));
   } catch {
     throw new ProviderError("invalid_output", "malformed JSON");
+  }
+  if (Array.isArray(json)) {
+    const only = json.length === 1 ? (json[0] as unknown) : undefined;
+    json = only && typeof only === "object" && "trials" in only ? only : { trials: json };
   }
   // A single-trial answer without the wrapper is accepted too.
   if (json && typeof json === "object" && !Array.isArray(json) && !("trials" in json) && "items" in json) json = { trials: [json] };

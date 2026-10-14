@@ -4,7 +4,7 @@ import { minimizeProfile } from "@/lib/privacy/minimize";
 import { MatchResponseSchema } from "@/lib/types/match-judge";
 import { MATCH_JUDGE } from "@/config/match-judge";
 import { MATCH_PROMPT_VERSION, MATCH_SYSTEM_PROMPT, buildMatchUserPrompt, numberAnswers } from "@/prompts/analyze-v3";
-import { DOWNGRADE_REASON, capWords, validateMatchOutput } from "@/functions/lib/ai/match-output";
+import { DOWNGRADE_REASON, capWords, parseMatchJson, validateMatchOutput } from "@/functions/lib/ai/match-output";
 import { chunkChars, handleMatch, judgeCacheKey, judgeCriteria, planBatches, type JudgeDeps, type JudgeTrialInput } from "@/functions/lib/match";
 import type { AnalyzeDeps } from "@/functions/lib/analyze";
 import { MemoryKvStore } from "@/functions/lib/store";
@@ -383,5 +383,19 @@ describe("POST /api/match", () => {
     const bad = fakeProvider("groq", () => "nope");
     const data = MatchResponseSchema.parse(await (await handleMatch(req(body()), deps([bad]))).json());
     expect(data).toMatchObject({ status: "degraded", degradedReason: "invalid_output", provider: null });
+  });
+});
+
+describe("parseMatchJson top-level arrays", () => {
+  const t1 = { trialId: "NCT1", items: [{ id: "I1", label: "met", reason: "r", answerIds: ["A1"] }] };
+  const t2 = { trialId: "NCT2", items: [] };
+  it("accepts an array of trial answers", () => {
+    expect(parseMatchJson(`Here: ${JSON.stringify([t1, t2])}`).trials.map((t) => t.trialId)).toEqual(["NCT1", "NCT2"]);
+  });
+  it("unwraps a one-element array around the full object", () => {
+    expect(parseMatchJson(JSON.stringify([{ trials: [t1] }])).trials[0]?.trialId).toBe("NCT1");
+  });
+  it("still accepts a plain object", () => {
+    expect(parseMatchJson(JSON.stringify({ trials: [t1] })).trials).toHaveLength(1);
   });
 });
