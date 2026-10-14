@@ -277,6 +277,10 @@ describe("single-marker requirement with specimen / extent / method 'or' (QA: AL
     expect(lab("inclusion", "Documented ALK rearrangement as detected by: (1) fluorescence in situ hybridization (FISH), (2) immuno-histochemistry (IHC), (3) tissue next-generation sequencing (NGS), or (4) circulating tumor DNA (ctDNA) NGS", alkNeg())).toBe("not_met");
     expect(lab("inclusion", "Locally advanced or metastatic NSCLC with a documented ALK rearrangement", alkNeg())).toBe("not_met");
   });
+  it("is not_met for a HER2-negative requirement with extent / therapy 'or' wording and a HER2-positive answer", () => {
+    const her2 = profile("breast", { biomarkers: { HER2: "positive" } });
+    expect(lab("inclusion", "Confirmed HER2-negative breast cancer with locally advanced or metastatic disease, not amenable to surgical resection or radiation therapy with curative intent.", her2)).toBe("not_met");
+  });
   it("stays unknown when markers are real alternatives or the answer is missing", () => {
     expect(lab("inclusion", "Documented ALK rearrangement or EGFR mutation", profile("lung", { biomarkers: { ALK: "negative" } }))).toBe("unknown");
     expect(lab("inclusion", "Documented ALK rearrangement via tissue or blood", profile("lung"))).toBe("unknown");

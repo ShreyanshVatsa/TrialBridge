@@ -86,5 +86,10 @@ describe("ResultCard tier A with a pre-check conflict the checklist could not se
     expect(out).toContain("HER2-negative breast cancer");
     // without the v6 checklist the v5 wording is unchanged
     expect(renderToStaticMarkup(<ResultCard trial={noAi} index={0} />)).toContain(en.card.ruleOut);
+    // the same holds when an AI/mock analysis flags the requirement as likely not met
+    const withAi: RankedTrial = { ...trial, analysis: { ...trial.analysis!, criteria: [{ section: "inclusion", number: 1, quote: "HER2-negative breast cancer", assessment: "likely_not_met", explanation: "This might rule you out." }] } };
+    const out2 = renderToStaticMarkup(<ResultCard trial={withAi} index={0} match={view("A")} />);
+    expect(out2).not.toContain(en.card.ruleOut);
+    expect(out2).toContain("HER2-negative breast cancer");
   });
 });

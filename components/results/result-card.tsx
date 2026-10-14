@@ -109,7 +109,7 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
   // pre-check conflict (a rule the checklist could not settle) is shown as something to check, not as a rule-out.
   const lists = tierB
     ? { why: why.filter(keep), ruleOut: ruleOut.filter(keep), needsDoctor: needsDoctor.filter(keep) }
-    : match && !analysis
+    : match
       ? { why, ruleOut: [], needsDoctor: [...needsDoctor, ...ruleOut.filter((p) => !needsDoctor.some((d) => d.key === p.key))] }
       : { why, ruleOut, needsDoctor };
   const hardId = `trial-${card.id}-hard`;
