@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * End-to-end tests run against the real static export + Worker API via `wrangler dev`
  * (local D1, mock AI provider, Turnstile test keys). Build first: `npm run build`.
+ * The Worker loads tests/e2e/keyless.env instead of .dev.vars, so real AI keys never reach e2e and
+ * the deterministic mock provider is always used (`npm run dev` / `wrangler dev` still read .dev.vars).
  */
 const PORT = Number(process.env.PW_PORT ?? 8788);
 const ASSETS = process.env.PW_ASSETS ?? ".wrangler/e2e-out";
@@ -23,9 +25,12 @@ export default defineConfig({
   ],
   webServer: {
     // Serves a snapshot of ./out (taken by `npm run test:e2e`) so a concurrent `next build` can't disturb the run.
-    command: `npx wrangler dev --port ${PORT} --assets ${ASSETS}`,
+    command: `npx wrangler dev --port ${PORT} --assets ${ASSETS} --env-file tests/e2e/keyless.env`,
     url: `http://localhost:${PORT}/api/health`,
-    reuseExistingServer: !process.env.CI,
+    // Never silently reuse a server already on the port: it may be an orphan with real keys (.dev.vars)
+    // or a stale asset snapshot. Playwright then fails fast with "port already used"; stop the old
+    // `wrangler dev`, pick another PW_PORT, or opt in with PW_REUSE_SERVER=1 when you started it yourself.
+    reuseExistingServer: process.env.PW_REUSE_SERVER === "1",
     timeout: 180_000,
     stdout: "ignore",
   },
