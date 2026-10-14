@@ -130,12 +130,13 @@ English, Spanish, Portuguese, and Haitian Creole (`components/i18n/`). Translati
 ## Evaluation
 
 ```
-npm run eval          # runs the evaluation, writes eval/RESULTS.md and eval/results.json
+npm run eval          # regression eval, writes eval/REGRESSION.md and eval/results.json
+npm run eval:matching # v6 criterion matching on TREC (eval/matching/)
 npm run eval:labels   # regenerates the synthetic labels
 npm run eval:vignettes  # graded vignette benchmark (eval/gold/)
 ```
 
-`eval/RESULTS.md` is the full report. Headline numbers (national data, 5,726 trials, 40 synthetic profiles, nDCG@10 against **title/condition regex labels**, 95% bootstrap CI over profiles):
+`eval/RESULTS.md` is the hand-written summary (v5 baseline vs v6 matching, with CIs); `eval/REGRESSION.md` is the generated regression report. Regression headline numbers (national data, 5,726 trials, 40 synthetic profiles, nDCG@10 against **title/condition regex labels**, 95% bootstrap CI over profiles):
 
 | System | nDCG@10 |
 |---|---|
@@ -149,7 +150,7 @@ The pipeline beats random by +0.41 and BM25 by +0.08 (paired CIs exclude 0). On 
 
 Rule-fact precision on a 50-item hand-labeled sample is 66%. Mock AI JSON validity / quote verification is 100% / 99.9%.
 
-**Limitations (honest):** profiles are synthetic, not real people. The regex labels are not clinician-reviewed and BM25 reads the same text, so they flatter keyword matching; they are not accuracy evidence. Graded, quote-backed evidence comes from the vignette benchmark (`eval/gold/`) and the TREC Clinical Trials cancer subset (`eval/trec/`). Labels ignore detailed eligibility (labs, performance status, prior lines). The pipeline's excluded-label share is not better than random. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim. Re-running `npm run eval` without the national data (a fresh clone has only the seed) rewrites `eval/RESULTS.md` with the headline section marked as skipped.
+**Limitations (honest):** profiles are synthetic, not real people. The regex labels are not clinician-reviewed and BM25 reads the same text, so they flatter keyword matching; they are not accuracy evidence. Graded, quote-backed evidence comes from the vignette benchmark (`eval/gold/`) and the TREC Clinical Trials cancer subset (`eval/trec/`). Labels ignore detailed eligibility (labs, performance status, prior lines). The pipeline's excluded-label share is not better than random. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim. Re-running `npm run eval` without the national data (a fresh clone has only the seed) rewrites `eval/REGRESSION.md` with the headline section marked as skipped.
 
 ## Security measures
 

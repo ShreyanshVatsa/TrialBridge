@@ -2,7 +2,7 @@
  * Offline evaluation (`npm run eval`): retrieval quality with random and BM25 baselines and bootstrap CIs,
  * hard-filter safety against an INDEPENDENT oracle (oracle.ts, computed from raw CT.gov fields), rule-fact precision,
  * and mock AI analysis checks. Seed: committed data/seed + eval/labels.json. National: public/data shards when present.
- * The title/condition-regex labels are a smoke test, not accuracy evidence. Writes eval/RESULTS.md and
+ * The title/condition-regex labels are a smoke test, not accuracy evidence. Writes eval/REGRESSION.md and
  * eval/results.json. Uses the mock AI provider only (`eval:live` is deferred).
  * Embedding variants compared: MiniLM vs bge-small, q8 vs fp32 weights, int8 vs float32 storage.
  */
@@ -437,7 +437,7 @@ See DECISIONS.md. Production uses the variant in the first row unless another va
 - Labels do not reflect detailed eligibility (labs, performance status, prior lines of therapy); on easy profiles most candidates are labelled relevant, which raises the random baseline.
 - The oracle's cancer-group term lists were written independently but by the same team; a shared blind spot is possible.
 `;
-  writeFileSync("eval/RESULTS.md", md);
+  writeFileSync("eval/REGRESSION.md", md);
   console.log(`\nKeyword recall@10 ${f3(kwRecall)} nDCG ${f3(kwNdcg)}`);
   for (const r of variantRows) console.log(`${r.name.padEnd(32)} emb ${f3(r.embNdcg)} hyb ${f3(r.hybNdcg)} sys ${f3(r.sysNdcg)} (recall ${f3(r.sysRecall)}) excl@10 ${f3(r.excludedAt10)} viol ${r.violations}`);
   console.log(`facts precision ${pc(results.facts.precision)}; mock AI json ${pc(results.mockAi.jsonValidRate)} quotes ${pc(results.mockAi.quotePassRate)} agreement ${pc(results.mockAi.agreement)}`);
