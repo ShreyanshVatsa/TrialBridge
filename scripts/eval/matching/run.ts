@@ -481,7 +481,7 @@ function writeMarkdown() {
       const c = (x: CI | null | undefined) => (x ? fmtCI(x) : "n/a");
       for (const [m, label] of [["ndcg10", "nDCG@10"], ["p10", "P@10"], ["missedExclusions", "missed exclusions"], ["unknownShare", "unknown share"]] as const) lines.push(`| ${label} | ${c(s.arms.baseline[m])} | ${c(s.arms.resolver[m])} | ${c(s.arms.llm[m])} | ${c(s.arms.resolverFull?.[m])} |`);
       lines.push("", "Paired difference vs baseline (bootstrap 95% CI):", "");
-      for (const [d, v] of Object.entries(s.deltas)) for (const [m, ci] of Object.entries(v)) if (ci) lines.push(`- ${d} ${m}: ${fmtDiff(ci)}`);
+      for (const [d, v] of Object.entries(s.deltas)) for (const [m, ci] of Object.entries(v)) if (ci) lines.push(`- ${d} ${m}: ${fmtDiff(ci, m === "missedExclusions" || m === "unknownShare")}`);
       lines.push("");
     }
     // v7 step 10: how often a Tier B demotion in the shown top 10 is right. TREC "excluded" (1) = correct,

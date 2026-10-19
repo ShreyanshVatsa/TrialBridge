@@ -61,47 +61,54 @@ LLM judge:
 
 ## test (TREC 2022 + 2023)
 
-Ran 2026-10-14T10:39:49.895Z. LLM arm evaluated on 2/2 topics (status: ok 0, degraded 2, quota 0, not_run 0; "degraded" = the judge failed and the app's resolver-only fallback is scored, "quota" = Groq daily cap reached, not scored).
+Ran 2026-10-19T23:44:51.835Z. LLM arm evaluated on 7/7 topics (status: ok 7, degraded 0, quota 0, not_run 0; "degraded" = the judge failed and the app's resolver-only fallback is scored, "quota" = Groq daily cap reached, not scored).
 
-### All 2 topics
+### All 7 topics
 
 | metric | baseline | resolver | resolver+LLM | resolver, full pool (exploratory) |
 | --- | --- | --- | --- | --- |
-| nDCG@10 | 0.842 [0.821, 0.864] | 0.908 [0.889, 0.927] | 0.908 [0.889, 0.927] | 0.718 [0.673, 0.762] |
-| P@10 | 0.800 [0.800, 0.800] | 0.850 [0.800, 0.900] | 0.850 [0.800, 0.900] | 0.600 [0.600, 0.600] |
-| missed exclusions | 0.100 [0.100, 0.100] | 0.050 [0.000, 0.100] | 0.050 [0.000, 0.100] | 0.100 [0.100, 0.100] |
-| unknown share | n/a | 0.960 [0.933, 0.988] | 0.960 [0.933, 0.988] | 0.835 [0.814, 0.855] |
+| nDCG@10 | 0.749 [0.648, 0.845] | 0.805 [0.710, 0.895] | 0.819 [0.723, 0.912] | 0.845 [0.780, 0.893] |
+| P@10 | 0.571 [0.357, 0.771] | 0.614 [0.429, 0.800] | 0.629 [0.429, 0.829] | 0.714 [0.643, 0.786] |
+| missed exclusions | 0.400 [0.186, 0.629] | 0.329 [0.171, 0.486] | 0.229 [0.086, 0.357] | 0.171 [0.086, 0.271] |
+| unknown share | n/a | 0.932 [0.920, 0.946] | 0.862 [0.826, 0.892] | 0.733 [0.710, 0.758] |
 
 Paired difference vs baseline (bootstrap 95% CI):
 
-- resolver-baseline ndcg10: +0.065 [0.025, 0.106] (excludes 0, better)
-- resolver-baseline p10: +0.050 [0.000, 0.100] (includes 0, not distinguishable)
-- resolver-baseline missedExclusions: -0.050 [-0.100, 0.000] (includes 0, not distinguishable)
-- llm-baseline ndcg10: +0.065 [0.025, 0.106] (excludes 0, better)
-- llm-baseline p10: +0.050 [0.000, 0.100] (includes 0, not distinguishable)
-- llm-baseline missedExclusions: -0.050 [-0.100, 0.000] (includes 0, not distinguishable)
-- resolverFull-baseline ndcg10: -0.125 [-0.191, -0.058] (excludes 0, worse)
-- resolverFull-baseline p10: -0.200 [-0.200, -0.200] (excludes 0, worse)
-- resolverFull-baseline missedExclusions: +0.000 [0.000, 0.000] (includes 0, not distinguishable)
+- resolver-baseline ndcg10: +0.056 [0.012, 0.107] (excludes 0, better)
+- resolver-baseline p10: +0.043 [0.014, 0.086] (excludes 0, better)
+- resolver-baseline missedExclusions: -0.071 [-0.157, -0.014] (excludes 0, better)
+- llm-baseline ndcg10: +0.069 [0.015, 0.120] (excludes 0, better)
+- llm-baseline p10: +0.057 [0.028, 0.086] (excludes 0, better)
+- llm-baseline missedExclusions: -0.171 [-0.286, -0.071] (excludes 0, better)
+- resolverFull-baseline ndcg10: +0.096 [-0.042, 0.212] (includes 0, not distinguishable)
+- resolverFull-baseline p10: +0.143 [-0.071, 0.329] (includes 0, not distinguishable)
+- resolverFull-baseline missedExclusions: -0.229 [-0.400, -0.071] (excludes 0, better)
 
 Tier B precision (top 10, pooled over topics; correct = TREC excluded, wrong = TREC eligible):
 
-- resolver: 0 tier B in top 10; 0 correct, 0 wrong (eligible), 0 not relevant; precision n/a
-- llm: 0 tier B in top 10; 0 correct, 0 wrong (eligible), 0 not relevant; precision n/a
+- resolver: 2 tier B in top 10; 2 correct, 0 wrong (eligible), 0 not relevant; precision 100% (2/2)
+- llm: 7 tier B in top 10; 7 correct, 0 wrong (eligible), 0 not relevant; precision 100% (7/7)
 
 LLM judge:
 
-- JSON validity: 1/5 completions (20.0%)
-- coverage (items judged / sent): 0/306 (0.0%)
-- tokens per patient: 11918 [7612, 16223]; total 23835
-- model latency per patient (ms, sum of calls, pacing waits excluded): 11250 [7529, 14971]
+- JSON validity: 10/10 completions (100.0%)
+- coverage (items judged / sent): 364/367 (99.2%)
+- tokens per patient: 6000 [5040, 7033]; total 41997
+- model latency per patient (ms, sum of calls, pacing waits excluded): 5862 [5049, 6755]
 - provider groq openai/gpt-oss-120b; eval request cap 16000 chars, max_tokens 3500, reasoning_effort low; calls over the app's 30 s timeout: 0 (Groq free-tier 8000 TPM per request; production now uses MATCH_JUDGE 16000 chars / 3500 / low)
 
 | topic | n | nDCG base | res | llm | missed excl base | res | llm | unknown res | llm | llm status | calls | tokens |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2022-6 | 175 | 0.821 | 0.927 | 0.927 | 0.100 | 0.000 | 0.000 | 0.933 | 0.933 | degraded | 2 | 7612 |
-| 2022-11 | 235 | 0.864 | 0.889 | 0.889 | 0.100 | 0.100 | 0.100 | 0.988 | 0.988 | degraded | 3 | 16223 |
+| 2022-6 | 175 | 0.754 | 0.876 | 0.867 | 0.100 | 0.100 | 0.000 | 0.925 | 0.916 | ok | 2 | 7524 |
+| 2022-11 | 235 | 0.931 | 0.953 | 0.953 | 0.100 | 0.100 | 0.100 | 0.968 | 0.776 | ok | 2 | 6526 |
+| 2023-16 | 841 | 0.812 | 0.803 | 0.748 | 0.400 | 0.300 | 0.300 | 0.906 | 0.863 | ok | 1 | 4832 |
+| 2023-17 | 708 | 0.709 | 0.696 | 0.788 | 0.500 | 0.500 | 0.400 | 0.923 | 0.901 | ok | 1 | 5004 |
+| 2023-18 | 773 | 0.609 | 0.782 | 0.782 | 0.700 | 0.600 | 0.300 | 0.941 | 0.876 | ok | 2 | 8063 |
+| 2023-19 | 833 | 0.539 | 0.582 | 0.592 | 0.900 | 0.600 | 0.500 | 0.928 | 0.816 | ok | 1 | 4145 |
+| 2023-20 | 852 | 0.890 | 0.945 | 1.000 | 0.100 | 0.100 | 0.000 | 0.935 | 0.889 | ok | 1 | 5903 |
 
 Test split runs recorded in eval/matching/test-runs.json (v6, TREC 2022 only): 2.
+
+Test split runs recorded in eval/matching/test-runs-v7.json (v7, TREC 2022 + 2023): 1.
 
 Vignettes: not run. The frozen vignette dev/test gold (eval/gold/vignettes-gold-v1.json) is absent in this checkout.

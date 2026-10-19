@@ -78,4 +78,6 @@ export function pairedBootstrapCI(a: readonly number[], b: readonly number[], se
 
 export const fmtCI = (c: CI): string => (c.n ? `${c.mean.toFixed(3)} [${c.lo.toFixed(3)}, ${c.hi.toFixed(3)}]` : "n/a");
 /** Signed difference with its interval, plus a plain-words verdict on whether the interval excludes 0. */
-export const fmtDiff = (c: CI): string => (c.n ? `${c.mean >= 0 ? "+" : ""}${c.mean.toFixed(3)} [${c.lo.toFixed(3)}, ${c.hi.toFixed(3)}] (${c.lo > 0 ? "excludes 0, better" : c.hi < 0 ? "excludes 0, worse" : "includes 0, not distinguishable"})` : "n/a");
+/** `lowerIsBetter` for metrics such as missed exclusions, where a negative difference is the improvement. */
+export const fmtDiff = (c: CI, lowerIsBetter = false): string =>
+  c.n ? `${c.mean >= 0 ? "+" : ""}${c.mean.toFixed(3)} [${c.lo.toFixed(3)}, ${c.hi.toFixed(3)}] (${c.lo > 0 ? `excludes 0, ${lowerIsBetter ? "worse" : "better"}` : c.hi < 0 ? `excludes 0, ${lowerIsBetter ? "better" : "worse"}` : "includes 0, not distinguishable"})` : "n/a";
