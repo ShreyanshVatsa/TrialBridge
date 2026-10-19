@@ -132,12 +132,11 @@ export const en = {
     browserItems: [
       "Your ZIP code and travel distance",
       "Your exact age",
-      "Health history answers (such as HIV, hepatitis, transplants, autoimmune or organ conditions, other cancers) and sex",
       "Your “find out at your next appointment” list and questions waiting for your doctor",
       "All of your answers in their original form",
     ],
     aiTitle: "What is sent for AI explanations",
-    aiBody: "To explain possible matches, a minimized, non-identifying profile is sent to our server and then to an AI provider. It contains only:",
+    aiBody: "To explain possible matches and check them against each trial's rules, a minimized, non-identifying profile is sent to our server and then to an AI provider. It contains only:",
     aiItems: [
       "Cancer type",
       "Age range by decade (for example, 50–59), never your exact age",
@@ -147,6 +146,7 @@ export const en = {
       "Pregnancy answer",
       "Whether you are in another trial",
       "Coarse answers about your cancer if you gave them, such as subtype, stage category, treatment history and daily activity level (“not sure” answers are left out)",
+      "Health history answers if you gave them, as the option you picked: sex in medical records, whether scans show a measurable tumor, other cancers, HIV, hepatitis B or C, transplant, autoimmune disease and serious organ problems (“not sure”, “prefer not to say” and “my doctor can fill this in” answers are never sent)",
       "Your preferred language for the explanation",
     ],
     aiNever: "Your ZIP code, exact age, location, name, or any free text are never sent.",
@@ -325,7 +325,7 @@ export const en = {
       sexHiddenChange: "Change this answer",
       studyLanguage: "Language you'd like to talk with the study team in",
       search: "Search trials",
-      privacyNote: "Your ZIP code, exact age and health history never leave this device. Your answers are kept only in this browser tab until you close it.",
+      privacyNote: "Your ZIP code and exact age never leave this device. Your answers are kept only in this browser tab until you close it.",
     },
     // Catalog text (English defaults from config/questionnaire/en-defaults.ts, WP1).
     common: {
@@ -492,7 +492,7 @@ export const en = {
     sex: {
       label: "What sex is listed in your medical records?",
       labelFor: "What sex is listed in their medical records?",
-      help: "Some studies list one sex. We only use this on your device.",
+      help: "Some studies list one sex.",
       why: "Some studies are only for women or only for men.",
       options: {
         female: "Female",
@@ -531,7 +531,7 @@ export const en = {
     },
     hiv: {
       label: "Do you have HIV?",
-      help: "This answer never leaves your device.",
+      help: "Used only to check study rules, never with your name, ZIP code or exact age. You can choose “Prefer not to say”.",
       why: "Some studies have rules about HIV. Many now include people whose HIV is controlled.",
       options: {
         no: "No",
@@ -541,7 +541,7 @@ export const en = {
     },
     hepatitis: {
       label: "Do you have hepatitis B or C?",
-      help: "This answer never leaves your device.",
+      help: "Used only to check study rules, never with your name, ZIP code or exact age. You can choose “Prefer not to say”.",
       why: "About 1 in 3 studies have a rule about hepatitis.",
       options: {
         no: "No",
@@ -551,7 +551,7 @@ export const en = {
     },
     transplant: {
       label: "Have you had a transplant?",
-      help: "Pick the one that fits. This stays on your device.",
+      help: "Pick the one that fits.",
       why: "About half of blood cancer studies have a rule about transplants.",
       options: {
         none: "No",
@@ -1261,7 +1261,7 @@ export const en = {
         },
         {
           title: "Information sent to our servers",
-          body: ["To provide AI explanations and answers, we receive a minimized profile (cancer type, age range by decade, spread status, treatments, biomarker answers, pregnancy answer, other-trial answer, and language), trial IDs, and questions you choose to ask. We process them to generate a response and do not log their contents."],
+          body: ["To provide AI explanations and answers, we receive a minimized profile (cancer type, age range by decade, spread status, treatments, biomarker answers, pregnancy answer, other-trial answer, coarse cancer and health-history answers you chose to give, and language), trial IDs, and questions you choose to ask. We process them to generate a response and do not log their contents."],
           items: [],
         },
         {

@@ -21,7 +21,15 @@ import type { SplitCriterion } from "@/lib/ingest/criteria-split";
 import type { MinimizedProfile } from "@/lib/types/analysis";
 import { ACTIVITY, BIOMARKER_LABEL, BIOMARKER_STATUS, BRAIN, LINES, PREGNANT, SPREAD, STAGE, STATUS, TREATMENT, YES_NO, word } from "./analyze-v2";
 
-export const MATCH_PROMPT_VERSION = "analyze-v3";
+/** analyze-v3.1 (v7): health-history answers added to the numbered list. */
+export const MATCH_PROMPT_VERSION = "analyze-v3.1";
+
+const OTHER_CANCER_TEXT = { no: "no", over_2y: "yes, treated more than 2 years ago", recent: "yes, in the last 2 years or still active" } as const;
+const HIV_TEXT = { no: "no", controlled: "yes, controlled with medicine", other: "yes, not controlled or not treated" } as const;
+const HEPATITIS_TEXT = { no: "no", hep_b: "hepatitis B", hep_c: "hepatitis C" } as const;
+const TRANSPLANT_TEXT = { none: "none", organ: "organ transplant", allo: "stem cell transplant from a donor (allogeneic)", auto: "stem cell transplant with own cells (autologous)" } as const;
+const AUTOIMMUNE_TEXT = { no: "no", yes_inactive: "yes, no treatment needed in the last 2 years", yes_active: "yes, needed treatment in the last 2 years" } as const;
+const ORGAN_TEXT = { kidney: "kidney disease or dialysis", liver: "liver disease or cirrhosis", heart: "heart failure or a recent heart attack", none: "none" } as const;
 
 /** One numbered patient answer the model may cite. */
 export interface NumberedAnswer {
@@ -62,6 +70,15 @@ export function numberAnswers(p: MinimizedProfile): NumberedAnswer[] {
   if (p.brainMets && p.brainMets !== "not_sure") facts.push(`Brain metastases: ${BRAIN[p.brainMets]}`);
   if (p.groupStatus) facts.push(`Disease status detail: ${word(p.groupStatus)}`);
   if (p.priorDrugClasses?.length) facts.push(`Prior drug classes received: ${p.priorDrugClasses.map(word).join(", ")}`);
+  // v7 health-history categories (closed enums; omitted when unanswered).
+  if (p.sexListed) facts.push(`Sex in medical records: ${p.sexListed}`);
+  if (p.measurableDisease) facts.push(`Scans show a tumor doctors can measure: ${p.measurableDisease}`);
+  if (p.otherCancer) facts.push(`Another, different cancer before: ${OTHER_CANCER_TEXT[p.otherCancer]}`);
+  if (p.hivStatus) facts.push(`HIV: ${HIV_TEXT[p.hivStatus]}`);
+  if (p.hepatitisStatus) facts.push(`Hepatitis B or C: ${HEPATITIS_TEXT[p.hepatitisStatus]}`);
+  if (p.transplantType) facts.push(`Transplant: ${TRANSPLANT_TEXT[p.transplantType]}`);
+  if (p.autoimmuneStatus) facts.push(`Autoimmune disease: ${AUTOIMMUNE_TEXT[p.autoimmuneStatus]}`);
+  if (p.organProblems) facts.push(`Serious organ problems named by a doctor: ${p.organProblems.map((o) => ORGAN_TEXT[o]).join(", ")}`);
   return facts.map((text, i) => ({ id: `A${i + 1}`, text }));
 }
 

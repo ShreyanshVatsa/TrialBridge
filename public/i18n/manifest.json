@@ -5,80 +5,80 @@
   "en": {
    "status": "reviewed",
    "coverage": 1,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "es": {
    "status": "partial",
-   "coverage": 0.4611,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.4488,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "pt": {
    "status": "partial",
-   "coverage": 0.4611,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.4488,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "ht": {
    "status": "partial",
-   "coverage": 0.4651,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.4526,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "zh-Hans": {
    "status": "partial",
-   "coverage": 0.5618,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5454,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "zh-Hant": {
    "status": "partial",
-   "coverage": 0.5618,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5454,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "vi": {
    "status": "partial",
-   "coverage": 0.5589,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5425,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "ko": {
    "status": "partial",
-   "coverage": 0.5608,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5444,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "tl": {
    "status": "partial",
-   "coverage": 0.5474,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5311,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "ar": {
    "status": "partial",
-   "coverage": 0.5495,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5338,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "ru": {
    "status": "partial",
-   "coverage": 0.5626,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.5466,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "fr": {
    "status": "partial",
-   "coverage": 0.9336,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.9137,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   },
   "hi": {
    "status": "partial",
-   "coverage": 0.9368,
-   "sourceHash": "gikbue",
-   "updated": "2026-10-14"
+   "coverage": 0.9167,
+   "sourceHash": "56zh44",
+   "updated": "2026-10-19"
   }
  }
 }

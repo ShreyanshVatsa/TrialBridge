@@ -40,7 +40,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 /**
  * Orchestrates intake -> on-device search -> AI explanations.
  * Questionnaire answers stay in the browser (memory + this tab's sessionStorage). Only `requestAnalysis` talks to
- * the backend, and it sends the minimized profile (no ZIP, no exact age, no health history) plus trial IDs.
+ * the backend, and it sends the minimized profile (no ZIP, no exact age, no free text) plus trial IDs.
  */
 export function FindFlow() {
   const m = useMessages();

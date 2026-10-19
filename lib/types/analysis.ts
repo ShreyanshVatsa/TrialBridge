@@ -25,10 +25,20 @@ export const ACTIVITY_BANDS = ["0-1", "2", "3-4", "not_sure"] as const;
 export const BRAIN_METS = ["none", "treated_stable", "active", "not_sure"] as const;
 export const AI_DRUG_CLASS_IDS = DRUG_CLASS_IDS;
 
+/** v7 health-history categories: the questionnaire's own closed option lists (config/questionnaire/common.ts). */
+export const SEX_LISTED = ["female", "male"] as const;
+export const OTHER_CANCER = ["no", "over_2y", "recent"] as const;
+export const HIV_STATUS = ["no", "controlled", "other"] as const;
+export const HEPATITIS_STATUS = ["no", "hep_b", "hep_c"] as const;
+export const TRANSPLANT_TYPE = ["none", "organ", "allo", "auto"] as const;
+export const AUTOIMMUNE_STATUS = ["no", "yes_inactive", "yes_active"] as const;
+export const ORGAN_PROBLEMS = ["kidney", "liver", "heart", "none"] as const;
+
 /**
- * Personal health history (HIV, hepatitis, transplant, autoimmune, organ problems, other cancers), sex,
- * measurable disease, phase preference, exact age, ZIP, travel and the deferred / find-out lists are NOT
- * here and therefore can never be sent: they stay in the browser for the local pre-check only (§4.3).
+ * Phase preference, exact age, ZIP, travel and the deferred / find-out lists are NOT here and therefore can never
+ * be sent: they stay in the browser (§4.3). v7 (owner decision, 2026-10-19): coarse health-history categories (sex,
+ * measurable disease, other cancer, HIV, hepatitis, transplant, autoimmune, organ problems) may now be sent so the
+ * criterion judge can check exclusion rules; still closed enums only, omitted when unanswered or "not sure".
  */
 export const MinimizedProfileSchema = z.strictObject({
   /** Absent = v1 payload (still accepted). */
@@ -50,6 +60,15 @@ export const MinimizedProfileSchema = z.strictObject({
   brainMets: z.enum(BRAIN_METS).optional(),
   groupStatus: z.enum(GROUP_STATUS_IDS).optional(),
   priorDrugClasses: z.array(z.enum(DRUG_CLASS_IDS)).min(1).max(12).optional(),
+  // v7 health-history categories, all optional.
+  sexListed: z.enum(SEX_LISTED).optional(),
+  measurableDisease: z.enum(["yes", "no"]).optional(),
+  otherCancer: z.enum(OTHER_CANCER).optional(),
+  hivStatus: z.enum(HIV_STATUS).optional(),
+  hepatitisStatus: z.enum(HEPATITIS_STATUS).optional(),
+  transplantType: z.enum(TRANSPLANT_TYPE).optional(),
+  autoimmuneStatus: z.enum(AUTOIMMUNE_STATUS).optional(),
+  organProblems: z.array(z.enum(ORGAN_PROBLEMS)).min(1).max(4).optional(),
 });
 export type MinimizedProfile = z.infer<typeof MinimizedProfileSchema>;
 

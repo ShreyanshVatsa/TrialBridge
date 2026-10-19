@@ -104,7 +104,7 @@ export interface QuestionDef {
   appliesTo: readonly CancerGroupId[] | "all"; excludeGroups?: readonly CancerGroupId[];
   prerequisites?: Prereq[];
   cost: 1 | 2 | 3;               // 1 = most patients know it, 2 = may need to think or check, 3 = usually needs a report
-  sensitive?: boolean;           // HIV, hepatitis, pregnancy: adds prefer_not and is never sent to AI
+  sensitive?: boolean;           // HIV, hepatitis, pregnancy: adds prefer_not (a prefer-not answer is never sent; v7: definite answers are sent as categories)
   effects: OptionEffect[];
   aiField?: AiFieldId;           // present only if the coarse answer may go to AI (§4)
   priors?: Partial<Record<CancerGroupId, Record<string, number>>>; // P(option), including unknown; used by the engine
@@ -239,7 +239,7 @@ Never exclude on facts. Hard filters remain: group, age, distance, and a definit
 ## 4. Data minimization (WP2 owns the schema; any change needs a privacy test)
 
 ### 4.1 Principle
-Only **coarse disease-describing categories** may go to AI providers. Personal health history (HIV, hepatitis, transplant, autoimmune, organ disease, other cancers), sex, pregnancy details beyond the existing enum, exact age, ZIP, travel, phase preference and the deferred list **stay in the browser** and are used only by the local precheck. There is still no free text (the questionnaire has none).
+Only **coarse disease-describing categories** may go to AI providers. **v7 change (owner decision, 2026-10-19):** coarse health-history categories (sex in records, measurable disease, other cancer, HIV, hepatitis, transplant, autoimmune, organ problems) may also be sent, as the option id the user picked, so the criterion judge can check exclusion rules (`sexListed`, `measurableDisease`, `otherCancer`, `hivStatus`, `hepatitisStatus`, `transplantType`, `autoimmuneStatus`, `organProblems` in `MinimizedProfileSchema`). Not sure, prefer-not and deferred answers are never sent. Pregnancy details beyond the existing enum, exact age, ZIP, travel, phase preference and the deferred list **stay in the browser**. There is still no free text (the questionnaire has none).
 
 ### 4.2 Updated schema (`lib/types/analysis.ts`)
 ```ts
@@ -270,7 +270,7 @@ export const MinimizedProfileSchema = z.strictObject({
 - Prompt `prompts/analyze-v2.ts` renders the fields as fixed English labels from a server-side map (never echoes enum ids raw beyond the closed set).
 
 ### 4.3 Stays in the browser (never in any request)
-ZIP, travel, exact age, sex, HIV, hepatitis, transplant, autoimmune, organ problems, other cancer, measurable disease, phase preference, deferred list, Find-out list, session state. The e2e network test is extended to assert none of these values or keys appears in any `/api/*` body.
+ZIP, travel, exact age, phase preference, deferred list, Find-out list, session state, the raw questionnaire answers, and any not-sure / prefer-not / deferred health-history answer. (Until v7 this list also held sex, HIV, hepatitis, transplant, autoimmune, organ problems, other cancer and measurable disease; see §4.2.) The e2e network test asserts none of these keys appears in any `/api/*` body and that the profile only carries allowed keys.
 
 ---
 
@@ -448,7 +448,7 @@ export function CrisisLine(): JSX.Element;
 | New fact extraction is imprecise (historical 66%), so new penalties hurt real fits | per-family precision gate (≥ 85%) before `penalize: true`; support-only otherwise; `mentioned` for lists and "or" clauses; LLM layer marks disagreements needsReview |
 | A mention rate overstates gating (the regex counts any mention) | IG uses directional facts only, so questions with weak facts self-demote; re-measure after WP1 |
 | Patients can't answer clinical questions (ECOG, lines, platinum timing) | plain-language options, cost weighting, P(unknown) priors, Find-out list; unknown is never penalized |
-| Sensitive questions (HIV, hepatitis) deter or upset users | Deep-dive only, prefer-not option, "never leaves your device" note inline, never sent to AI |
+| Sensitive questions (HIV, hepatitis) deter or upset users | Deep-dive only, prefer-not option, inline note on how the answer is used; v7: definite answers go to the AI judge as categories (prefer-not never) |
 | sessionStorage resume changes the privacy promise | copy update in all locales, Clear button, tab scope, zod validation, 12 h expiry |
 | More AI fields lower the cache hit rate and raise token use | coarse enums only, sorted arrays, optional fields omitted when unknown; monitor via eval:live later |
 | Lite "not sure" shard grows with more fact tuples | estimate +6 tuples/trial × 5.7k ≈ +0.5 MB raw; drop the low-value keys (organ, phase) from the lite card if gzip grows > 15% |

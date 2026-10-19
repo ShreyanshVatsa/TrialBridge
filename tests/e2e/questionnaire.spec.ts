@@ -181,7 +181,7 @@ test.describe("adaptive questionnaire", () => {
     await expect(page.locator(`section[data-question="${id}"]`)).toHaveCount(0);
   });
 
-  test("data minimization: ZIP, exact age and browser-only answers never reach the backend", async ({ page }) => {
+  test("data minimization: ZIP, exact age, raw answers and prefer-not health answers never reach the backend", async ({ page }) => {
     const sent: Request[] = [];
     page.on("request", (r) => {
       if (new URL(r.url()).pathname.startsWith("/api/")) sent.push(r);
@@ -200,6 +200,8 @@ test.describe("adaptive questionnaire", () => {
     const allowed = [
       "v", "cancerType", "ageBracket", "spread", "treatments", "biomarkers", "pregnant", "concurrentTrial", "language",
       "subtype", "stageCategory", "diseaseStatus", "priorLines", "activityBand", "brainMets", "groupStatus", "priorDrugClasses",
+      // v7: coarse health-history categories (closed enums) may be sent for the criterion judge.
+      "sexListed", "measurableDisease", "otherCancer", "hivStatus", "hepatitisStatus", "transplantType", "autoimmuneStatus", "organProblems",
     ];
     const browserOnly = ["zip", "age", "travel", "travelMiles", "sex", "hiv", "hepatitis", "transplant", "autoimmune", "organ_problems", "other_cancer", "measurable", "phase_pref", "deferred", "questionnaire", "answers", "history", "findOut"];
     for (const r of sent) {
@@ -212,6 +214,9 @@ test.describe("adaptive questionnaire", () => {
         for (const k of Object.keys(body.profile)) expect(allowed).toContain(k);
         for (const k of browserOnly) expect(Object.keys(body.profile)).not.toContain(k);
         expect(body.profile.ageBracket).toBe("50-59");
+        // Prefer-not answers are never sent.
+        expect(body.profile).not.toHaveProperty("hivStatus");
+        expect(body.profile).not.toHaveProperty("hepatitisStatus");
       }
     }
   });

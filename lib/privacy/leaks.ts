@@ -3,7 +3,11 @@
  * given the body of an outgoing /api/* request, list everything in it that must never leave the browser.
  */
 
-/** Keys that must never appear anywhere in a request body (questionnaire ids and v1 intake names). */
+/**
+ * Keys that must never appear anywhere in a request body (raw questionnaire ids and v1 intake names). v7: the
+ * health-history answers may be sent, but only under their minimized names (hivStatus, organProblems, ...), so the
+ * raw ids below still must not appear.
+ */
 export const BROWSER_ONLY_KEYS: readonly string[] = [
   "zip",
   "travel",

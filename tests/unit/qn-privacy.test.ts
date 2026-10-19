@@ -64,12 +64,28 @@ describe("minimized profile v2 (§4)", () => {
       brainMets: "treated_stable",
       groupStatus: "crpc",
       priorDrugClasses: ["checkpoint", "platinum"],
+      // v7 health-history categories: catalog ids only (hepatitis_b, organ_transplant, yes are not catalog ids and
+      // are dropped), deferred hiv is never sent.
+      sexListed: "female",
+      measurableDisease: "yes",
+      otherCancer: "recent",
+      organProblems: ["heart", "kidney"],
     });
+  });
+
+  it("v7: maps each health-history answer to its closed category, omitting not-sure, prefer-not and deferred", () => {
+    const p = minimizeProfile(toIntakeAnswers(essentials("lung", { sex: "male", measurable: "no", other_cancer: "over_2y", hiv: "controlled", hepatitis: "hep_c", transplant: "allo", autoimmune: "yes_active", organ_problems: ["none"] })));
+    expect(p).toMatchObject({ sexListed: "male", measurableDisease: "no", otherCancer: "over_2y", hivStatus: "controlled", hepatitisStatus: "hep_c", transplantType: "allo", autoimmuneStatus: "yes_active", organProblems: ["none"] });
+    const q = minimizeProfile(toIntakeAnswers({ ...essentials("lung", { hiv: "prefer_not", hepatitis: "unknown", sex: "not_sure", organ_problems: ["liver", "none"], transplant: "none" }), deferred: ["transplant"] }));
+    for (const k of ["hivStatus", "hepatitisStatus", "sexListed", "transplantType"]) expect(q).not.toHaveProperty(k);
+    expect(q.organProblems).toEqual(["liver"]);
   });
 
   it("never contains any browser-only key or value (enumerated §4.3 list)", () => {
     const json = JSON.stringify({ profile: minimizeProfile(full()), nctIds: ["NCT01234567"], turnstileToken: "t" });
-    const values = ["hepatitis_b", "organ_transplant", "kidney", "heart", "recent", "open_phase1", "controlled", "female", "10001"];
+    // v7: coarse health-history categories may be sent; the raw questionnaire keys, phase preference, ZIP, exact age
+    // and deferred answers (hiv here) may not.
+    const values = ["hepatitis_b", "organ_transplant", "open_phase1", "controlled", "10001"];
     expect(findPrivacyLeaks(json, { zip: "10001", age: 60, values })).toEqual([]);
     for (const k of Object.keys(SENSITIVE)) expect(json).not.toContain(`"${k}"`);
   });
@@ -94,7 +110,7 @@ describe("minimized profile v2 (§4)", () => {
     expect(v1).not.toHaveProperty("v");
     expect(MinimizedProfileSchema.safeParse(v1).success).toBe(true);
     const v2 = minimizeProfile(full());
-    for (const extra of [{ sex: "female" }, { hiv: "yes" }, { hepatitis: "b" }, { transplant: "x" }, { organProblems: ["kidney"] }, { phasePref: "x" }, { zip: "10001" }, { age: 60 }, { measurable: "yes" }]) {
+    for (const extra of [{ sex: "female" }, { hiv: "yes" }, { hepatitis: "b" }, { transplant: "x" }, { organProblems: ["lungs"] }, { hivStatus: "yes" }, { phasePref: "x" }, { zip: "10001" }, { age: 60 }, { measurable: "yes" }]) {
       expect(MinimizedProfileSchema.safeParse({ ...v2, ...extra }).success).toBe(false);
     }
     expect(MinimizedProfileSchema.safeParse({ ...v2, v: 3 }).success).toBe(false);

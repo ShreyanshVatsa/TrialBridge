@@ -2,7 +2,14 @@ import type { IntakeAnswers } from "@/lib/types/intake";
 import {
   ACTIVITY_BANDS,
   AI_TREATMENTS,
+  AUTOIMMUNE_STATUS,
   BRAIN_METS,
+  HEPATITIS_STATUS,
+  HIV_STATUS,
+  ORGAN_PROBLEMS,
+  OTHER_CANCER,
+  SEX_LISTED,
+  TRANSPLANT_TYPE,
   DISEASE_STATUSES,
   MinimizedProfileSchema,
   PRIOR_LINES,
@@ -43,9 +50,8 @@ function oneOf<T extends string>(v: AnswerValue | undefined, allowed: readonly T
 }
 
 /**
- * The coarse v2 fields (QUESTIONNAIRE_SPEC §4.2), copied one by one from the questionnaire state. Nothing
- * else in the state (HIV, hepatitis, transplant, autoimmune, organ problems, other cancer, sex, measurable
- * disease, phase preference, deferred and find-out lists) is ever read here.
+ * The coarse v2 fields (QUESTIONNAIRE_SPEC §4.2) and the v7 health-history categories, copied one by one from the
+ * questionnaire state. Nothing else in the state (phase preference, deferred and find-out lists) is ever read here.
  */
 function v2Fields(state: QuestionnaireState): Partial<MinimizedProfile> {
   const a = state.answers;
@@ -69,6 +75,36 @@ function v2Fields(state: QuestionnaireState): Partial<MinimizedProfile> {
   if (Array.isArray(drugs)) {
     const classes = [...new Set(drugs.filter((d): d is (typeof DRUG_CLASS_IDS)[number] => (DRUG_CLASS_IDS as readonly string[]).includes(d)))].sort();
     if (classes.length > 0) out.priorDrugClasses = classes;
+  }
+  return { ...out, ...historyFields(state) };
+}
+
+/** v7 health-history categories (owner decision 2026-10-19): closed option ids only, unanswered ones omitted. */
+function historyFields(state: QuestionnaireState): Partial<MinimizedProfile> {
+  // A question left for the doctor is never sent, even if an earlier answer is still stored.
+  const a = Object.fromEntries(Object.entries(state.answers).filter(([k]) => !state.deferred.includes(k as (typeof state.deferred)[number])));
+  const out: Partial<MinimizedProfile> = {};
+  const sex = oneOf(a["sex"], SEX_LISTED);
+  if (sex) out.sexListed = sex;
+  const measurable = oneOf(a["measurable"], ["yes", "no"] as const);
+  if (measurable) out.measurableDisease = measurable;
+  const other = oneOf(a["other_cancer"], OTHER_CANCER);
+  if (other) out.otherCancer = other;
+  const hiv = oneOf(a["hiv"], HIV_STATUS);
+  if (hiv) out.hivStatus = hiv;
+  const hep = oneOf(a["hepatitis"], HEPATITIS_STATUS);
+  if (hep) out.hepatitisStatus = hep;
+  const tx = oneOf(a["transplant"], TRANSPLANT_TYPE);
+  if (tx) out.transplantType = tx;
+  const auto = oneOf(a["autoimmune"], AUTOIMMUNE_STATUS);
+  if (auto) out.autoimmuneStatus = auto;
+  const organs = a["organ_problems"];
+  if (Array.isArray(organs)) {
+    const known = [...new Set(organs.filter((o): o is (typeof ORGAN_PROBLEMS)[number] => (ORGAN_PROBLEMS as readonly string[]).includes(o)))].sort();
+    // "none" is exclusive in the catalog; a mixed answer keeps only the named problems.
+    const named = known.filter((o) => o !== "none");
+    if (named.length > 0) out.organProblems = named;
+    else if (known.includes("none")) out.organProblems = ["none"];
   }
   return out;
 }
