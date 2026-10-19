@@ -594,6 +594,12 @@ const ECOG_EXACT = /(?:^|[^<>=\u2264\u2265])=\s*[1-4]\b(?!\s*-)/;
 const TREATED_KEYS = new Set(["previously_treated", "newly_diagnosed", "min_prior_lines", "max_prior_lines"]);
 const UNTREATED_NON_CANCER = /\buntreated\s+(?:\w+\s+){0,2}(?:brain|cns|metasta\w*|lesions?|infections?|spinal|cord compression|leptomeningeal|hypertension|thyroid|disease of)\b/i;
 const CARVE_OUT = /\b(?:unless|except|other than|with the exception of|permitted|allowed|acceptable|may (?:be|have)|eligible if|are eligible)\b/i;
+/**
+ * v7: a rule addressed to a subgroup ("ER/PR+ patients must be refractory to...", "Patients with brain metastases
+ * must be stable..."): it sets a condition for that subgroup, so the subgroup's own fact never fails the patient
+ * (TREC 2021-61, NCT01677455: an HR-negative patient was excluded by an ER/PR+ condition).
+ */
+const SUBGROUP_RULE = /\b[A-Za-z0-9/-]*[A-Za-z0-9][+-]\s+(?:patients?|participants?|subjects?|women|men|tumou?rs?|disease)\s+(?:must|should|need|are required|will need|have to)\b|\b(?:patients?|participants?|subjects?)\s+(?:with|who (?:are|have))\s+[^.;,]{1,50}?\s+(?:must|should|need to|will need to|are required to)\b/i;
 /** Inclusion wording that says who MAY join, not who must. */
 const PERMISSIVE_ITEM = /\b(?:allowed|permitted|acceptable|may (?:be|have|enroll|participate)|eligible if|are (?:also )?eligible|will (?:also )?be (?:equally )?considered|can be enrolled)\b/i;
 /** Sub-bullets labeled by a population ("- NSCLC: ...", "- Cohort B: ..."). */
@@ -651,7 +657,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     if (!allowedKey(f.key)) continue;
     // "untreated brain metastases / lesion / infection" is not about treatment history; carve-outs ("unless",
     // "adjuvant therapy is permitted") are not modeled for treated status and line counts.
-    const loose = (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
+    const loose = SUBGROUP_RULE.test(text) || (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
     // Health-history facts settle exclusion items only (inclusion wording about them is conditional, and inclusion
     // pregnancy items ask for a test or contraception that "not pregnant" alone does not meet).
     checks.push({ key: f.key, verdict: loose || (incl && isHistoryKey(f.key)) ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
@@ -665,7 +671,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
 
   const alternatives = hasAlternatives(text) || markerList(text);
   // Policy gate: families below the precision gate never create a hard failure.
-  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || factPolicy(c.key).penalize || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text))));
+  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || (factPolicy(c.key).penalize && !factPolicy(c.key).belowGate) || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text))));
   // Inclusion alternatives: one failing option does not fail the item. Exclusion alternatives are a list of
   // excluding conditions, so any one of them that applies excludes.
   if (fails.length > 0 && !(incl && (alternatives || PERMISSIVE_ITEM.test(text)))) {

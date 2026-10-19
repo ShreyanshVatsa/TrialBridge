@@ -81,9 +81,9 @@ describe("precision gate", () => {
     expect(gate({ ...base, enabled: true, disabledReason: undefined, families: [] } as QuestionDef).enabled).toBe(true);
     expect(gate({ ...base, enabled: true, disabledReason: undefined, legacyFacts: true } as QuestionDef).enabled).toBe(true);
   });
-  it("FACT_POLICY penalizes only gated families and gated v1 keys (v7: eval/facts-labels-v3.json)", () => {
-    expect(factPolicy("metastatic").penalize).toBe(V1_KEY_PRECISION.metastatic?.passes === true);
-    expect(factPolicy("prior_radiation")).toEqual({ penalize: false, weight: 1, supportOnly: true });
+  it("FACT_POLICY penalizes only gated families; v1 keys below the gate keep a half-weight soft penalty (v7)", () => {
+    expect(factPolicy("metastatic").belowGate === true).toBe(V1_KEY_PRECISION.metastatic?.passes !== true);
+    expect(factPolicy("prior_radiation")).toEqual({ penalize: true, weight: 0.5, belowGate: true });
     expect(factPolicy("pregnancy")).toEqual({ penalize: true, weight: 1 });
     expect(factPolicy("concurrent_trial")).toEqual({ penalize: true, weight: 1 });
     expect(factPolicy("biomarker:HER2")).toEqual({ penalize: true, weight: 1.2 });

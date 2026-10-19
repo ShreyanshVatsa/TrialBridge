@@ -231,13 +231,17 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     }
     // The marker's own suffix ("HER2-", "HER2+", "HER2-negative", "EGFR mutation") is decisive;
     // otherwise look at nearby words. This keeps "HR+/HER2-" from reading as HER2-positive.
-    const suffix = text.slice(m.index + m[0].length, m.index + m[0].length + 16);
+    // v7 (rules 5): "HR-positive" / "ER-negative": the pattern's own "[+-]" ate the hyphen of a joined word, which
+    // read "HR-positive" as HR-negative (inverted rule). A sign followed by a letter is a hyphen; re-read the word.
+    const joined = /[+-]$/.test(m[0]) && /^[a-z]/i.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1));
+    const token = joined ? m[0].slice(0, -1) : m[0];
+    const suffix = text.slice(m.index + token.length, m.index + token.length + 16);
     let pos: boolean;
     let neg: boolean;
-    if (m[0].endsWith("+")) {
+    if (token.endsWith("+")) {
       pos = true;
       neg = false;
-    } else if (m[0].endsWith("-")) {
+    } else if (token.endsWith("-")) {
       pos = false;
       neg = true;
     } else if (/^\s*(\+|-?\s*positive|-?\s*pos\b|amplif|overexpress|mutat|mutant|fusion|rearrang|-?\s*high\b|(promoter |gene )?methylat|-(associated|related|driven|mediated)\b)/i.test(suffix)) {
@@ -253,7 +257,7 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     }
     let value: FactValue = "mentioned";
     // v2 markers: test-status or permissive wording without a decisive suffix stays "mentioned".
-    const decisive = m[0].endsWith("+") || m[0].endsWith("-") || /^\s*(\+|\(\+\)|-?\s*positive|-?\s*negative|amplif|mutat|fusion|rearrang|(promoter )?(un)?methylat|-?\s*high\b|-?\s*low\b)/i.test(suffix);
+    const decisive = token.endsWith("+") || token.endsWith("-") || /^\s*(\+|\(\+\)|-?\s*positive|-?\s*negative|amplif|mutat|fusion|rearrang|(promoter )?(un)?methylat|-?\s*high\b|-?\s*low\b)/i.test(suffix);
     // v2 markers offered as one of several alternatives ("MET or RET", lists) are never required/excluded.
     if (V2_BIOMARKERS.has(b.id) && (OR_NEAR.test(text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)) || LIST_CONTEXT.test(text) || /,\s*$/.test(text.slice(Math.max(0, m.index - 3), m.index)) || /^\s*,/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 3)))) pos = neg = false;
     // v2 markers: permissive/procedural/conditional wording, specimen-testing text, sub-group clauses and bare list bullets never decide.

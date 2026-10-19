@@ -191,3 +191,14 @@ describe("rule facts v7 (rules 5): labeled false facts (eval/facts-labels.json) 
     expect(v("inclusion", "Relapsed or refractory disease", "previously_treated")).toBe("required");
   });
 });
+
+describe("rule facts v7: joined marker words", () => {
+  const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
+  it("reads HR-positive / ER-positive as positive and HR-negative as negative (was inverted)", () => {
+    expect(v("inclusion", "HR-positive breast cancer", "biomarker:HR")).toBe("required");
+    expect(v("inclusion", "ER-positive breast cancer", "biomarker:HR")).toBe("required");
+    expect(v("inclusion", "HR-negative breast cancer", "biomarker:HR")).toBe("excluded");
+    expect(v("inclusion", "Locally advanced HR+/HER2- breast cancer", "biomarker:HR")).toBe("required");
+    expect(v("inclusion", "HR- and HER2+ disease", "biomarker:HR")).toBe("excluded");
+  });
+});

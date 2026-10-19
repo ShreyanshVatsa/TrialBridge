@@ -341,3 +341,14 @@ describe("v7 health-history answers (exclusion items only)", () => {
     expect(lab("exclusion", "Pregnant or breastfeeding women", profile("lung", { age: 65, sex: "female", pregnancy: "no" }))).toBe("unknown");
   });
 });
+
+describe("v7: rules addressed to a subgroup", () => {
+  it("do not fail the patient on the subgroup's own fact", () => {
+    const hrNeg = profile("breast", { biomarkers: { HER2: "positive", HR: "negative" } });
+    expect(lab("inclusion", "Documented HER2 and hormonal receptor status per protocol, ER/PR+ patients must be refractory to at least one prior hormonal treatment.", hrNeg)).toBe("unknown");
+    expect(lab("inclusion", "Patients with treated brain metastases must be stable for at least 4 weeks", profile("lung", { brain_mets: "none" }))).toBe("unknown");
+  });
+  it("plain requirements still fail", () => {
+    expect(lab("inclusion", "HR-positive breast cancer", profile("breast", { biomarkers: { HR: "negative" } }))).toBe("not_met");
+  });
+});

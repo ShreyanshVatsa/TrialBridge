@@ -127,4 +127,9 @@ export interface FactPolicy {
   weight: number;
   /** Only supports count (no penalties). */
   supportOnly?: boolean;
+  /**
+   * v7: below the precision gate but kept as a soft ranking signal (v1 keys, eval/facts-labels-v3.json). Such a fact
+   * may lower the score at its weight, but never creates a hard failure (Tier B) in the per-criterion resolver.
+   */
+  belowGate?: boolean;
 }

@@ -1,8 +1,8 @@
 /**
  * Matching policy per fact key (contract C1, QUESTIONNAIRE_SPEC §3.2, §7.3). A v2 fact family may
  * penalize (create conflicts) only when its hand-labeled precision is >= 85%; otherwise its facts are
- * support-only. v7: the v1 keys go through the same gate (held-out labels, eval/facts-labels-v3.json); a v1 key
- * without labels keeps its v1 behavior (penalize, weight 1).
+ * support-only. v7: the v1 keys are measured too (held-out labels, eval/facts-labels-v3.json); a v1 key below the
+ * gate keeps a half-weight penalty but never a hard failure (`belowGate`); one without labels keeps penalize, weight 1.
  */
 import { BASE_FACT_KEYS } from "@/lib/types/trial";
 import { FACT_FAMILIES, familyOf, type FactFamily } from "@/lib/ingest/eligibility-facts";
@@ -34,7 +34,9 @@ const V1_KEYS = BASE_FACT_KEYS.filter((k) => familyOf(k) === null);
 function v1Policy(key: string): FactPolicy {
   const p = V1_KEY_PRECISION[key];
   if (!p || p.passes) return { penalize: true, weight: 1 };
-  return { penalize: false, weight: 1, supportOnly: true };
+  // Below the gate on held-out labels, yet removing the penalty lowered TREC 2021 dev nDCG@10 (baseline 0.484 ->
+  // 0.451): kept as a half-weight ranking signal that never makes a hard failure (DECISIONS.md, v7 step 7b).
+  return { penalize: true, weight: 0.5, belowGate: true };
 }
 
 /**

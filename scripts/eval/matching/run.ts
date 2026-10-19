@@ -356,7 +356,10 @@ async function main() {
       console.log(`${t.key}: ${inputs.length} trials, ${itemsSent} unknown items, ${batches.length} requests at ${EVAL_MAX_INPUT_CHARS} chars (overhead ${overhead})`);
     } else if (groq && inputs.length) {
       calls = [];
-      const judged = await judgeCriteria(profile, inputs, { store: new MemoryKvStore(), providers: [groq], breakerFor: () => new CircuitBreaker(), consumeBudget: async () => true, log: (e) => { if (e.status !== "ok") console.warn("judge", JSON.stringify(e)); } });
+      // v7: no request deadline here. The eval paces itself to the free tier (waits that production would not make in
+      // one request), and with the 45 s production deadline those waits cut later batches short (first v7 dev run:
+      // coverage 52.9%). The eval measures judge quality on full coverage; production coverage is checked live.
+      const judged = await judgeCriteria(profile, inputs, { store: new MemoryKvStore(), providers: [groq], breakerFor: () => new CircuitBreaker(), consumeBudget: async () => true, deadlineMs: 30 * 60_000, log: (e) => { if (e.status !== "ok") console.warn("judge", JSON.stringify(e)); } });
       const quota = dailyLimitHit && !judged.ok;
       const response: MatchResponse = judged.ok
         ? { status: "ok", provider: judged.provider, results: judged.results, cachedIds: judged.cachedIds, skippedIds: [] }
