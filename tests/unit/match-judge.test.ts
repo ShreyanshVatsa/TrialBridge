@@ -342,7 +342,12 @@ describe("judgeCriteria", () => {
     const twiceFetch = (async () => (k++, limited("0"))) as unknown as typeof fetch;
     await expect(createOpenAiCompatibleProvider(cfg, "k", twiceFetch).complete({ messages: [], trials: [] })).rejects.toMatchObject({ kind: "rate_limited" });
     expect(k).toBe(2);
-  });
+    // With a deadline signal it keeps waiting out short limits (the token bucket refills gradually).
+    let j = 0;
+    const thriceFetch = (async () => (j++ < 3 ? limited("0") : ok())) as unknown as typeof fetch;
+    expect(await createOpenAiCompatibleProvider(cfg, "k", thriceFetch).complete({ messages: [], trials: [], signal: AbortSignal.timeout(20_000) })).toBe("{}");
+    expect(j).toBe(4);
+  }, 20_000);
 
   it("re-asks a batch once after malformed output before failing over", async () => {
     let n = 0;

@@ -9,6 +9,8 @@ const TIMEOUT_MS = 30_000;
  * or hours and fails over at once.
  */
 export const MAX_RETRY_AFTER_MS = 40_000;
+/** Rate-limit retries per request when the caller passes a deadline signal. */
+export const MAX_RATE_RETRIES = 6;
 
 /** `retry-after` in ms (seconds or an HTTP date); null when absent or unreadable. */
 export function retryAfterMs(headers: Headers, now = Date.now()): number | null {
@@ -67,9 +69,11 @@ export function createOpenAiCompatibleProvider(config: AiProviderConfig, apiKey:
           throw new ProviderError(timeout.aborted ? "timeout" : "network", `${config.name}: request failed`);
         }
         if (res.status === 429) {
-          // One wait-and-retry for a short (per-minute) limit, within the caller's own deadline.
+          // Wait and retry a short (per-minute) limit while the caller's deadline allows: the token bucket refills
+          // gradually, so a large request can need several waits (v7 live check). Without a deadline, retry once.
           const ms = retryAfterMs(res.headers);
-          if (attempt === 0 && ms !== null && ms <= MAX_RETRY_AFTER_MS && (await wait(ms, req.signal))) continue;
+          const again = req.signal ? attempt < MAX_RATE_RETRIES : attempt === 0;
+          if (again && ms !== null && ms <= MAX_RETRY_AFTER_MS && (await wait(Math.max(ms, 1000), req.signal))) continue;
           throw new ProviderError("rate_limited", `${config.name}: 429`);
         }
         if (res.status >= 500) throw new ProviderError("server", `${config.name}: ${res.status}`);
