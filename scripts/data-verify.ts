@@ -2,7 +2,9 @@
  * `npm run data:verify`: prove the inputs behind the built dataset are intact.
  *  - every pinned embedding model file is present with the pinned sha256;
  *  - data/data-lock.json parses, its snapshot pages exist with the recorded hashes, and its query/field list match the code;
- *  - when public/data holds national data, its manifest's dataVersion equals the lock's.
+ *  - when public/data holds national data, its manifest's dataVersion equals the lock's;
+ *  - v7: the D1 seed (data/build/criteria.sql) carries the same dataVersion as public/data and the current
+ *    CRITERIA_VERSION on every row, since /api/match silently skips trials whose criteriaVersion differs.
  * Exit 1 on any problem (prints each one). Used by CI and the refresh workflow.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -12,6 +14,7 @@ import { CTGOV_FIELDS } from "../lib/ingest/raw";
 import { DATA_LOCK_FILE, readDataLock, sha256Hex, verifyModelFiles } from "../lib/ingest/snapshot";
 import { NATIONAL_QUERY } from "./ingest/ctgov";
 import { ManifestSchema } from "../lib/types/trial";
+import { CRITERIA_VERSION } from "../lib/ingest/criteria-split";
 
 const problems: string[] = [];
 const notes: string[] = [];
@@ -51,6 +54,18 @@ else {
       else notes.push(`public/data ${manifest.dataVersion} matches the lock (${lock.totalTrials} trials)`);
     } else notes.push(`public/data holds ${manifest.dataVersion} (seed); lock not compared`);
   }
+}
+
+const seedFile = "data/build/criteria.sql";
+if (existsSync(seedFile) && existsSync("public/data/manifest.json")) {
+  const manifest = ManifestSchema.parse(JSON.parse(readFileSync("public/data/manifest.json", "utf8")));
+  const sql = readFileSync(seedFile, "utf8");
+  const versions = new Set([...sql.matchAll(/VALUES \('NCT\d{8}', '([^']+)'/g)].map((m) => m[1]));
+  const rows = (sql.match(/^INSERT INTO trials/gm) ?? []).length;
+  const stale = (sql.match(/"criteriaVersion":(\d+)/g) ?? []).filter((x) => x !== `"criteriaVersion":${CRITERIA_VERSION}`).length;
+  if (versions.size !== 1 || !versions.has(manifest.dataVersion)) problems.push(`${seedFile} data versions [${[...versions].join(", ")}] differ from public/data ${manifest.dataVersion} (re-run \`npm run ingest\`)`);
+  else if (stale > 0) problems.push(`${seedFile}: ${stale} rows have a criteriaVersion other than ${CRITERIA_VERSION}`);
+  else notes.push(`${seedFile}: ${rows} rows, ${manifest.dataVersion}, criteriaVersion ${CRITERIA_VERSION}`);
 }
 
 for (const n of notes) console.log(`ok   ${n}`);
