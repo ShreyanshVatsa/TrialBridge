@@ -244,6 +244,8 @@ interface ArmMetrics {
   /** null for the baseline (no per-criterion labels). */
   unknownShare: number | null;
   top10: { id: string; grade: number; tier: "A" | "B" | null }[];
+  /** v7: for Tier B trials in the top 10, the failing criterion ids with label, source and reason (error analysis). */
+  hardFailures?: { id: string; grade: number; items: { id: string; label: string; source: string; reason?: string }[] }[];
 }
 
 interface LlmTopic {
@@ -270,7 +272,7 @@ interface TopicOut {
   llm: LlmTopic;
 }
 
-function armMetrics(order: readonly string[], gains: Readonly<Record<string, number>>, labels: Record<string, { labels: CriterionLabel[]; score: { tier: "A" | "B" } }> | null): ArmMetrics {
+function armMetrics(order: readonly string[], gains: Readonly<Record<string, number>>, labels: Record<string, { labels: CriterionLabel[]; score: { tier: "A" | "B"; hardFailures?: CriterionLabel[] } }> | null): ArmMetrics {
   const top = order.slice(0, 10);
   const n = Math.max(1, top.length);
   const tierOf = (id: string) => (labels ? (labels[id]?.score.tier ?? "A") : null);
@@ -289,6 +291,13 @@ function armMetrics(order: readonly string[], gains: Readonly<Record<string, num
     missedExclusions: top.filter((id) => gains[id] === 1 && (tierOf(id) ?? "A") === "A").length / n,
     unknownShare: labels ? (total ? unknown / total : 0) : null,
     top10: top.map((id) => ({ id, grade: gains[id] ?? 0, tier: tierOf(id) })),
+    ...(labels
+      ? {
+          hardFailures: top
+            .filter((id) => tierOf(id) === "B")
+            .map((id) => ({ id, grade: gains[id] ?? 0, items: (labels[id]?.score.hardFailures ?? []).map((l) => ({ id: l.id, label: l.label, source: l.source, ...(l.reason ? { reason: l.reason } : {}) })) })),
+        }
+      : {}),
   };
 }
 
