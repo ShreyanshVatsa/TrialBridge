@@ -288,3 +288,56 @@ describe("single-marker requirement with specimen / extent / method 'or' (QA: AL
     expect(hasAlternatives("ALK fusion by FISH or EGFR mutation")).toBe(true);
   });
 });
+
+describe("v7 health-history answers (exclusion items only)", () => {
+  const healthy = () => profile("lung", { age: 45, sex: "female", hiv: "no", hepatitis: "no", transplant: "none", autoimmune: "no", organ_problems: ["none"], pregnancy: "no", in_other_trial: "no" });
+  const sick = () => profile("lung", { age: 45, sex: "female", hiv: "other", hepatitis: "hep_b", transplant: "organ", autoimmune: "yes_active", organ_problems: ["kidney", "heart"], pregnancy: "yes", in_other_trial: "yes" });
+  it("settles plain exclusions both ways", () => {
+    const cases: [string, string, string][] = [
+      ["Known human immunodeficiency virus (HIV) infection", "not_excluded", "excluded"],
+      ["Prior solid organ transplant", "not_excluded", "excluded"],
+      ["History of autoimmune disease", "not_excluded", "excluded"],
+      ["Pregnant or breastfeeding women", "not_excluded", "excluded"],
+      ["Concurrent participation in another interventional clinical trial", "not_excluded", "excluded"],
+      ["Patients on dialysis", "not_excluded", "excluded"],
+      ["History of congestive heart failure.", "not_excluded", "excluded"],
+    ];
+    for (const [text, h, s] of cases) {
+      expect(lab("exclusion", text, healthy())).toBe(h);
+      expect(lab("exclusion", text, sick())).toBe(s);
+    }
+  });
+  it("uses the catalog carve-outs: controlled HIV, active-only autoimmune and hepatitis", () => {
+    const controlled = profile("lung", { hiv: "controlled" });
+    expect(lab("exclusion", "Known HIV infection with detectable viral load", controlled)).toBe("not_excluded");
+    expect(lab("exclusion", "Known HIV infection with detectable viral load", profile("lung", { hiv: "other" }))).toBe("excluded");
+    expect(lab("exclusion", "Active autoimmune disease", profile("lung", { autoimmune: "yes_inactive" }))).toBe("not_excluded");
+    expect(lab("exclusion", "Active autoimmune disease", profile("lung", { autoimmune: "yes_active" }))).toBe("excluded");
+    // The answer does not say whether hepatitis B is active; and the hepatitis family is below the precision gate.
+    expect(lab("exclusion", "Active hepatitis B or C infection", profile("lung", { hepatitis: "hep_b" }))).toBe("unknown");
+    expect(lab("exclusion", "Active hepatitis B or C infection", profile("lung", { hepatitis: "no" }))).toBe("not_excluded");
+  });
+  it("a different transplant or organ answer does not exclude", () => {
+    expect(lab("exclusion", "Prior allogeneic stem cell transplantation", profile("lung", { transplant: "organ" }))).toBe("not_excluded");
+    expect(lab("exclusion", "Known liver cirrhosis", profile("lung", { organ_problems: ["kidney", "heart"] }))).toBe("not_excluded");
+  });
+  it("never fails or meets inclusion items about health history (they are conditional)", () => {
+    for (const text of ["HIV-infected participants must have well-controlled HIV on ART", "DONOR: The donor must be HIV negative", "Patients with relapsed disease after prior allogeneic SCT must have no active GVHD"]) {
+      expect(lab("inclusion", text, healthy())).toBe("unknown");
+      expect(lab("inclusion", text, sick())).toBe("unknown");
+    }
+    expect(lab("inclusion", "Women of childbearing potential must have a negative pregnancy test", healthy())).toBe("unknown");
+  });
+  it("lab and broad cardiac rules stay unknown with a 'none of these' organ answer", () => {
+    expect(lab("inclusion", "Adequate liver function", healthy())).toBe("unknown");
+    expect(lab("exclusion", "Have active cardiac disease, defined as:", healthy())).toBe("unknown");
+    expect(lab("exclusion", "Clinically significant cardiovascular disease", healthy())).toBe("unknown");
+  });
+  it("does not read brain-metastasis wording as distant spread", () => {
+    expect(lab("exclusion", "Presence of central nervous system (CNS) metastases.", profile("lung", { spread: "distant" }))).toBe("unknown");
+  });
+  it("men are read as not pregnant; the pregnancy question is not asked over 59", () => {
+    expect(lab("exclusion", "Pregnant or breastfeeding women", profile("lung", { age: 45, sex: "male" }))).toBe("not_excluded");
+    expect(lab("exclusion", "Pregnant or breastfeeding women", profile("lung", { age: 65, sex: "female", pregnancy: "no" }))).toBe("unknown");
+  });
+});

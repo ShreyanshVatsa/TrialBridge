@@ -38,6 +38,13 @@ function state(card: TrialCard, full: boolean): QuestionnaireState {
       sex: card.sex === "MALE" ? "male" : "female",
       measurable: "yes",
       other_cancer: "no",
+      // v7 health history (the resolver reads these since v7).
+      hiv: "no",
+      hepatitis: "no",
+      transplant: "none",
+      autoimmune: "no",
+      organ_problems: ["none"],
+      in_other_trial: "no",
       ...(sub?.options?.[0] ? { subtype: sub.options[0].id } : {}),
       biomarkers: Object.fromEntries(BIOMARKERS_BY_GROUP[g].map((m) => [m, "negative"])),
       ...(DEEP_BIOMARKERS_BY_GROUP[g]?.length ? { deep_biomarkers: Object.fromEntries((DEEP_BIOMARKERS_BY_GROUP[g] ?? []).map((m) => [m, "negative"])) } : {}),

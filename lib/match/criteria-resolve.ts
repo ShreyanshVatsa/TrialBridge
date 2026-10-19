@@ -3,8 +3,9 @@
  * through the rule fact extractor ON ITS OWN, and the facts are compared with the patient's questionnaire answers:
  *   inclusion -> "met" | "not_met" | "unknown";  exclusion -> "excluded" | "not_excluded" | "unknown".
  * Only these facts settle an item: age, sex, cancer group/subtype (histology), ECOG, prior lines / treated status,
- * brain metastases, measurable disease, biomarkers and other malignancy. Everything else stays "unknown" for the LLM
- * judge, and so does:
+ * brain metastases, measurable disease, biomarkers, other malignancy and (v7) the health-history answers: HIV,
+ * hepatitis B/C, organ transplant, donor stem cell transplant, autoimmune disease, kidney/liver/heart disease,
+ * pregnancy and another treatment trial (exclusion items only). Everything else stays "unknown" for the LLM judge, and so does:
  *  - any fact whose question was answered "don't know", skipped, deferred or never asked (never "not_met");
  *  - items with a cohort/arm scope, real alternatives ("X or Y") in inclusion, or a time window the answers can't settle;
  *  - positive labels (met / not_excluded) when the item says more than the facts we checked (residual content).
@@ -47,6 +48,15 @@ export interface ResolverProfile {
   brainMets?: "none" | "treated_stable" | "active";
   measurable?: boolean;
   otherCancer?: "no" | "over_2y" | "recent";
+  // v7 health history (definite answers only).
+  hiv?: "no" | "controlled" | "other";
+  hepatitis?: "no" | "hep_b" | "hep_c";
+  transplant?: "none" | "organ" | "allo" | "auto";
+  autoimmune?: "no" | "yes_inactive" | "yes_active";
+  /** Serious organ problems named by a doctor; empty = "none of these". */
+  organs?: ReadonlySet<"kidney" | "liver" | "heart">;
+  pregnant?: boolean;
+  inOtherTrial?: boolean;
   biomarkers?: Readonly<Partial<Record<BiomarkerId, "positive" | "negative">>>;
   /** Profile field -> question ids its value rests on. */
   sources: Readonly<Record<string, readonly string[]>>;
@@ -152,6 +162,46 @@ export function profileFromState(state: QuestionnaireState, catalog: readonly Qu
     note("otherCancer", "other_cancer");
   }
 
+  const hiv = a("hiv");
+  if (hiv === "no" || hiv === "controlled" || hiv === "other") {
+    p.hiv = hiv;
+    note("hiv", "hiv");
+  }
+  const hep = a("hepatitis");
+  if (hep === "no" || hep === "hep_b" || hep === "hep_c") {
+    p.hepatitis = hep;
+    note("hepatitis", "hepatitis");
+  }
+  const tx = a("transplant");
+  if (tx === "none" || tx === "organ" || tx === "allo" || tx === "auto") {
+    p.transplant = tx;
+    note("transplant", "transplant");
+  }
+  const auto = a("autoimmune");
+  if (auto === "no" || auto === "yes_inactive" || auto === "yes_active") {
+    p.autoimmune = auto;
+    note("autoimmune", "autoimmune");
+  }
+  const organs = a("organ_problems");
+  if (Array.isArray(organs) && organs.length > 0 && !organs.some(isNonResponseId)) {
+    // A multi-select answer: an organ not picked is one the patient does not report.
+    p.organs = new Set(organs.filter((o): o is "kidney" | "liver" | "heart" => o === "kidney" || o === "liver" || o === "heart"));
+    note("organs", "organ_problems");
+  }
+  const preg = a("pregnancy");
+  if (preg === "yes" || preg === "no") {
+    p.pregnant = preg === "yes";
+    note("pregnant", "pregnancy");
+  } else if (p.sex === "male") {
+    p.pregnant = false;
+    note("pregnant", "sex");
+  }
+  const trial = a("in_other_trial");
+  if (trial === "yes" || trial === "no") {
+    p.inOtherTrial = trial === "yes";
+    note("inOtherTrial", "in_other_trial");
+  }
+
   const markers: Partial<Record<BiomarkerId, "positive" | "negative">> = {};
   for (const qid of ["biomarkers", "deep_biomarkers"]) {
     const grid = a(qid);
@@ -180,12 +230,45 @@ interface Checked {
   questions: readonly string[];
 }
 
-/** Fact keys the resolver may settle (spec STEP 3). */
-const ALLOWED_KEYS = new Set(["ecog_max", "min_prior_lines", "max_prior_lines", "previously_treated", "newly_diagnosed", "brain_mets", "measurable_disease", "other_malignancy"]);
+/**
+ * v7: health-history fact keys, settled from the deep-dive answers, on exclusion items only: inclusion items naming
+ * them are conditional ("HIV-infected participants must have controlled HIV", "the donor must be HIV negative").
+ * "metastatic" is not here: the rule extractor also fires on brain-metastasis and radiosurgery wording.
+ */
+const HISTORY_KEYS = ["hiv", "hepatitis_b", "hepatitis_c", "organ_transplant", "allo_sct", "autoimmune", "kidney_disease", "liver_disease", "heart_disease", "pregnancy", "concurrent_trial"] as const;
+const isHistoryKey = (k: string) => (HISTORY_KEYS as readonly string[]).includes(k);
+/** Fact keys the resolver may settle (spec STEP 3, plus the v7 health-history keys). */
+const ALLOWED_KEYS = new Set<string>(["ecog_max", "min_prior_lines", "max_prior_lines", "previously_treated", "newly_diagnosed", "brain_mets", "measurable_disease", "other_malignancy", ...HISTORY_KEYS]);
 const allowedKey = (k: string) => ALLOWED_KEYS.has(k) || k.startsWith("biomarker:") || k.startsWith("histology:");
 
 /** Does the patient HAVE the attribute? true / false / undefined (unknown). */
 function hasAttr(key: string, p: ResolverProfile): boolean | undefined {
+  const organ = (o: "kidney" | "liver" | "heart") => (p.organs ? p.organs.has(o) : undefined);
+  switch (key) {
+    case "hiv":
+      return p.hiv === undefined ? undefined : p.hiv !== "no";
+    // A single-choice answer names one infection; it says nothing about the other one.
+    case "hepatitis_b":
+      return p.hepatitis === undefined ? undefined : p.hepatitis === "hep_b" ? true : p.hepatitis === "no" ? false : undefined;
+    case "hepatitis_c":
+      return p.hepatitis === undefined ? undefined : p.hepatitis === "hep_c" ? true : p.hepatitis === "no" ? false : undefined;
+    case "organ_transplant":
+      return p.transplant === undefined ? undefined : p.transplant === "organ";
+    case "allo_sct":
+      return p.transplant === undefined ? undefined : p.transplant === "allo";
+    case "autoimmune":
+      return p.autoimmune === undefined ? undefined : p.autoimmune !== "no";
+    case "kidney_disease":
+      return organ("kidney");
+    case "liver_disease":
+      return organ("liver");
+    case "heart_disease":
+      return organ("heart");
+    case "pregnancy":
+      return p.pregnant;
+    case "concurrent_trial":
+      return p.inOtherTrial;
+  }
   if (key === "previously_treated") return p.treated;
   if (key === "newly_diagnosed") return p.treated === undefined ? undefined : !p.treated;
   if (key === "measurable_disease") return p.measurable;
@@ -241,9 +324,23 @@ export function checkFact(f: { key: string; value: FactValue; param?: FactParam 
       if (o === "over_2y") return n <= 2 ? "ok" : "open";
       return n >= 2 ? "fail" : "open";
     }
+    // Carve-outs the answers settle (catalog effects in config/questionnaire/common.ts use the same params).
+    case "hiv":
+      if (f.value === "excluded" && f.param === "uncontrolled_only") return p.hiv === undefined ? "open" : p.hiv === "other" ? "fail" : "ok";
+      return f.param === undefined ? fromBool(hasAttr(f.key, p), f.value) : "open";
+    case "hepatitis_b":
+    case "hepatitis_c":
+      // "Active hepatitis only": the answer does not say whether the infection is active.
+      if (f.param === "active_only") return hasAttr(f.key, p) === false ? "ok" : "open";
+      return f.param === undefined ? fromBool(hasAttr(f.key, p), f.value) : "open";
+    case "autoimmune":
+      if (f.value === "excluded" && f.param === "active_only") return p.autoimmune === undefined ? "open" : p.autoimmune === "yes_active" ? "fail" : "ok";
+      return f.param === undefined ? fromBool(hasAttr(f.key, p), f.value) : "open";
     default:
-      if (allowedKey(f.key)) return fromBool(hasAttr(f.key, p), f.value);
-      return "open";
+      if (!allowedKey(f.key)) return "open";
+      // A carve-out param the answers do not model ("controlled", "within 5 years", ...) keeps a history fact open.
+      if (f.param !== undefined && isHistoryKey(f.key)) return "open";
+      return fromBool(hasAttr(f.key, p), f.value);
   }
 }
 
@@ -256,6 +353,17 @@ const SOURCE_FIELD: Record<string, string> = {
   brain_mets: "brainMets",
   measurable_disease: "measurable",
   other_malignancy: "otherCancer",
+  hiv: "hiv",
+  hepatitis_b: "hepatitis",
+  hepatitis_c: "hepatitis",
+  organ_transplant: "transplant",
+  allo_sct: "transplant",
+  autoimmune: "autoimmune",
+  kidney_disease: "organs",
+  liver_disease: "organs",
+  heart_disease: "organs",
+  pregnancy: "pregnant",
+  concurrent_trial: "inOtherTrial",
 };
 const sourcesOf = (key: string, p: ResolverProfile): readonly string[] => p.sources[key.startsWith("histology:") ? "histology" : (SOURCE_FIELD[key] ?? key)] ?? [];
 
@@ -361,6 +469,9 @@ const BENIGN_OR = [
   /\b(?:tissue|blood|plasma|serum|archival|fresh|liquid)\s+(?:biopsy\s+)?(?:or|and\/or)\s+(?:tissue|blood|plasma|serum|archival|fresh|liquid)\b/gi,
   /\b(?:locally advanced|advanced|metastatic|unresectable)\s+(?:or|and\/or)\s+(?:metastatic|unresectable|recurrent)\b/gi,
   /\b(?:surgical resection|surgery|resection)\s+(?:or|and\/or)\s+(?:radiation(?: therapy)?|radiotherapy)\b/gi,
+  // v7: one excluding condition named two ways, or two infections both settled by one answer.
+  /\b(?:pregnant|pregnancy)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:(?:are|is)\s+)?(?:breast-?\s?feeding|lactating|nursing)\b/gi,
+  /\b(?:hepatitis\s*B|HBV)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:hepatitis\s*)?(?:C|HCV)\b/gi,
   /\b(?:FISH|IHC|NGS|PCR|ctDNA|cfDNA|CISH)\b[^.;]{0,60}?\b(?:or|and\/or)\s*(?:\(\d\)\s*)?(?:a |an |the )?(?:fluorescence|immuno\w*|next|tissue|circulating|cell-free|cfDNA|ctDNA|FISH|IHC|NGS|PCR|CISH|blood|plasma|polymerase|sequencing|in situ)/gi,
 ];
 /** True when the item offers alternatives that a fact-by-fact check would misread. Exported for tests. */
@@ -376,12 +487,32 @@ const FILLER = new Set(
 );
 const TOKEN = /[A-Za-z][A-Za-z0-9-]*/g;
 
+/**
+ * v7: words that name a health-history fact. They count as explained only when that fact was checked, so
+ * "adequate liver function" (a lab rule) is never read as settled by the organ answer.
+ */
+const HISTORY_WORDS: Record<string, string> = {
+  hiv: "hiv human immunodeficiency virus infection infections seropositive seropositivity aids viral load detectable undetectable uncontrolled",
+  hepatitis_b: "hepatitis hbv viral infection infections chronic hbsag",
+  hepatitis_c: "hepatitis hcv viral infection infections chronic",
+  organ_transplant: "organ solid transplant transplantation recipient recipients allograft",
+  allo_sct: "allogeneic stem cell hematopoietic transplant transplantation hsct sct bone marrow",
+  autoimmune: "autoimmune disease diseases disorder disorders",
+  kidney_disease: "kidney renal disease dialysis failure",
+  liver_disease: "liver hepatic disease cirrhosis failure",
+  // Not "cardiac": the question asks about heart failure or a recent heart attack, not any cardiac disease.
+  heart_disease: "heart disease failure congestive myocardial infarction",
+  pregnancy: "pregnant pregnancy breastfeeding breast-feeding breast feeding lactating nursing women woman",
+  concurrent_trial: "concurrent concurrently enrolled enrollment participation participating another clinical trial trials study studies interventional",
+};
+
 /** Content words the checked facts do not account for (marker names and the patient's cancer-type words excluded). */
-function residualWords(text: string, p: ResolverProfile): string[] {
+function residualWords(text: string, p: ResolverProfile, checkedKeys: readonly string[] = []): string[] {
+  const explained = new Set(checkedKeys.flatMap((k) => (HISTORY_WORDS[k] ?? "").split(" ").filter(Boolean)));
   let t = text;
   for (const b of BIOMARKERS) t = t.replace(new RegExp(b.pattern.source, `${b.pattern.flags.replace("g", "")}g`), " ");
   if (p.group) for (const re of groupTerms(p.group)) t = t.replace(new RegExp(re.source, `${re.flags.replace("g", "")}g`), " ");
-  return (t.match(TOKEN) ?? []).map((w) => w.toLowerCase()).filter((w) => !FILLER.has(w) && !/^\d/.test(w) && w.length > 1);
+  return (t.match(TOKEN) ?? []).map((w) => w.toLowerCase()).filter((w) => !FILLER.has(w) && !explained.has(w) && !/^\d/.test(w) && w.length > 1);
 }
 /** Positive labels need the item to be about the checked facts: at most this many unexplained content words. */
 const MAX_RESIDUAL = 2;
@@ -442,6 +573,17 @@ const FAIL_REASON: Record<string, string> = {
   brain_mets: "Your answer about cancer in the brain does not fit this rule.",
   measurable_disease: "Your answer about measurable disease does not fit this rule.",
   other_malignancy: "Your answer about other cancers does not fit this rule.",
+  hiv: "Your answer about HIV does not fit this rule.",
+  hepatitis_b: "Your answer about hepatitis does not fit this rule.",
+  hepatitis_c: "Your answer about hepatitis does not fit this rule.",
+  organ_transplant: "Your answer about transplants does not fit this rule.",
+  allo_sct: "Your answer about transplants does not fit this rule.",
+  autoimmune: "Your answer about autoimmune disease does not fit this rule.",
+  kidney_disease: "Your answer about kidney problems does not fit this rule.",
+  liver_disease: "Your answer about liver problems does not fit this rule.",
+  heart_disease: "Your answer about heart problems does not fit this rule.",
+  pregnancy: "This rule is about pregnancy or breastfeeding.",
+  concurrent_trial: "This rule is about being in another treatment study.",
 };
 const failReason = (key: string) => FAIL_REASON[key] ?? (key.startsWith("biomarker:") ? `Your ${key.slice(10)} test result does not fit this rule.` : "Your cancer subtype does not fit this rule.");
 
@@ -510,7 +652,9 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     // "untreated brain metastases / lesion / infection" is not about treatment history; carve-outs ("unless",
     // "adjuvant therapy is permitted") are not modeled for treated status and line counts.
     const loose = (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
-    checks.push({ key: f.key, verdict: loose ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
+    // Health-history facts settle exclusion items only (inclusion wording about them is conditional, and inclusion
+    // pregnancy items ask for a test or contraception that "not pregnant" alone does not meet).
+    checks.push({ key: f.key, verdict: loose || (incl && isHistoryKey(f.key)) ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
   }
   const outside = directional.filter((f) => !allowedKey(f.key));
   if (checks.length === 0) return label(item, "unknown", "Our questions do not cover this rule.");
@@ -533,8 +677,10 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
   // Positive labels: every directional fact is one we checked and fits, nothing else is asked, no drug is named.
   const allOk = checks.every((c) => c.verdict === "ok");
   const mentionedAllowed = facts.some((f) => f.value === "mentioned" && allowedKey(f.key));
-  const maxResidual = checks.some((c) => c.key === "cancer_type") ? 0 : MAX_RESIDUAL;
-  if (allOk && outside.length === 0 && !mentionedAllowed && !carveOut && !mentionsDrug(text) && residualWords(text, p).length <= maxResidual) {
+  // v7: health-history items allow one unexplained word ("significant", "uncontrolled"); an item ending in ":"
+  // introduces a list we do not see, so it never gets a positive label.
+  const maxResidual = checks.some((c) => c.key === "cancer_type") ? 0 : checks.some((c) => isHistoryKey(c.key)) ? 1 : MAX_RESIDUAL;
+  if (allOk && !/:\s*$/.test(text) && outside.length === 0 && !mentionedAllowed && !carveOut && !mentionsDrug(text) && residualWords(text, p, checks.map((c) => c.key)).length <= maxResidual) {
     return label(item, incl ? "met" : "not_excluded", incl ? "Your answers fit this rule." : "Your answers say this does not apply to you.", checks.flatMap((c) => c.questions), ctx);
   }
   return label(item, "unknown", "Your answers do not settle this rule.");
