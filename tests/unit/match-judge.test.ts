@@ -243,7 +243,7 @@ describe("judgeCriteria", () => {
     expect(r.results[0]?.coverage).toBe(1);
   });
 
-  it("stops starting model calls once the request deadline has passed and degrades (no unbounded sequential batches)", async () => {
+  it("stops starting model calls once the request deadline has passed, keeps the batches already judged (no unbounded sequential batches)", async () => {
     const many = Array.from({ length: 90 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs and organ function`));
     const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
     const slow = fakeProvider("groq", labelAll, overhead + 900);
@@ -254,8 +254,10 @@ describe("judgeCriteria", () => {
     };
     const backup = fakeProvider("cerebras", labelAll, overhead + 900);
     const r = await judgeCriteria(profile, [input(T1, many)], jdeps([slow, backup], { deadlineMs: 100 }));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe("ai_unavailable");
+    expect(r.ok && r.provider).toBe("groq");
+    expect(r.results[0]?.labels).toHaveLength(90);
+    expect(r.results[0]?.coverage).toBeGreaterThan(0);
+    expect(r.results[0]?.coverage).toBeLessThan(1);
     expect(slow.calls.length).toBeLessThan(5);
     expect(slow.calls.every((c) => c.signal !== undefined)).toBe(true);
     expect(backup.calls).toHaveLength(0);
@@ -286,6 +288,34 @@ describe("judgeCriteria", () => {
     expect(bodies[0]).toMatchObject({ max_tokens: 3500, reasoning_effort: "low" });
     expect(bodies[1]?.max_tokens).toBe(6000);
     expect(bodies[1]).not.toHaveProperty("reasoning_effort");
+  });
+
+  it("keeps the batches that passed when one batch stays malformed, and does not cache the partial trial", async () => {
+    const many = Array.from({ length: 30 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs and organ function`));
+    const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
+    let call = 0;
+    // Batch 2 (calls 2 and 3: first try and its re-ask) is malformed; every other call answers.
+    const p = fakeProvider("groq", (req) => (++call === 2 || call === 3 ? "not json" : labelAll(req)), overhead + 900);
+    const r = await judgeCriteria(profile, [input(T1, many), input(T2)], jdeps([p]));
+    expect(r.ok && r.provider).toBe("groq");
+    const t1 = r.results.find((x) => x.trialId === T1);
+    expect(t1?.labels).toHaveLength(30);
+    expect(t1?.coverage).toBeGreaterThan(0);
+    expect(t1?.coverage).toBeLessThan(1);
+    expect(t1?.labels.some((l) => l.source === "default")).toBe(true);
+    expect(t1?.labels.some((l) => l.source === "llm")).toBe(true);
+    const again = await judgeCriteria(profile, [input(T1, many), input(T2)], jdeps([fakeProvider("groq", labelAll, overhead + 900)]));
+    expect(again.cachedIds).not.toContain(T1);
+  });
+
+  it("fails over only when no batch produced a usable answer", async () => {
+    const many = Array.from({ length: 30 }, (_, i) => inc(i + 1, `Synthetic inclusion criterion ${i + 1} about labs and organ function`));
+    const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
+    const bad = fakeProvider("groq", () => "not json", overhead + 900);
+    const good = fakeProvider("cerebras", labelAll, overhead + 900);
+    const r = await judgeCriteria(profile, [input(T1, many)], jdeps([bad, good]));
+    expect(r.ok && r.provider).toBe("cerebras");
+    expect(r.results[0]?.coverage).toBe(1);
   });
 
   it("re-asks a batch once after malformed output before failing over", async () => {
@@ -416,5 +446,28 @@ describe("parseMatchJson top-level arrays", () => {
   });
   it("still accepts a plain object", () => {
     expect(parseMatchJson(JSON.stringify({ trials: [t1] })).trials).toHaveLength(1);
+  });
+  // Shapes from the cached gpt-oss-120b failures (data/cache/matching-llm, v7 replay).
+  const items = t1.items;
+  it("keeps trials that follow an early-closed wrapper: [{trials:[T1,T2]}, T3]", () => {
+    const raw = JSON.stringify([{ trials: [t1, t2] }, { trialId: "NCT3", items }]);
+    expect(parseMatchJson(raw).trials.map((t) => t.trialId)).toEqual(["NCT1", "NCT2", "NCT3"]);
+  });
+  it("rebuilds a trial written as loose tokens inside the trials array", () => {
+    const raw = JSON.stringify({ trials: [t1, "trialId", ":", "NCT4", "items", ":", items] });
+    const out = parseMatchJson(raw).trials;
+    expect(out.map((t) => t.trialId)).toEqual(["NCT1", "NCT4"]);
+    expect(out[1]?.items).toHaveLength(1);
+  });
+  it("rebuilds loose-token trials at the top level after the wrapper", () => {
+    const raw = JSON.stringify([{ trials: [t1, "trialId", ":", "NCT4", "items", ":", items] }, "trialId", ":", "NCT5", "items", ":", items]);
+    expect(parseMatchJson(raw).trials.map((t) => t.trialId)).toEqual(["NCT1", "NCT4", "NCT5"]);
+  });
+  it("drops a token run that does not name its trial id", () => {
+    const raw = JSON.stringify({ trials: [t1, "trialId", ":", "items", ":", items] });
+    expect(parseMatchJson(raw).trials.map((t) => t.trialId)).toEqual(["NCT1"]);
+  });
+  it("an empty trials list parses (the judge then re-asks: no criterion judged)", () => {
+    expect(parseMatchJson(JSON.stringify({ trials: [] })).trials).toEqual([]);
   });
 });

@@ -21,7 +21,7 @@ import { checkRateLimit, hashIp } from "./ratelimit";
 import { tryConsumeBudget } from "./budget";
 import { dailyBudget } from "./ai/providers";
 import { BudgetExhaustedError, runWithFailover, type FailoverDeps, type FailoverResult, type Reserve } from "./ai/failover";
-import { validateMatchOutput, type ValidatedTrial } from "./ai/match-output";
+import { MISSING_REASON, validateMatchOutput, type ValidatedTrial } from "./ai/match-output";
 import { ProviderError, type AiProvider, type ChatMessage } from "./ai/types";
 
 /** Input contract: per trial, the criterion items the resolver left unknown (plus optional title/summary context). */
@@ -115,39 +115,87 @@ function mergeChunks(input: JudgeTrialInput, chunks: readonly ValidatedTrial[], 
   };
 }
 
-/** One provider attempt over every batch. A batch with zero coverage counts as invalid output (fail over). */
-async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[], inputs: readonly JudgeTrialInput[], reserve: Reserve, promptVersion: string, deadline: number): Promise<TrialCriteriaLabels[]> {
+/** Default labels for the items of a batch piece that got no usable answer. */
+function unjudged(t: MatchPromptTrial): ValidatedTrial {
+  return {
+    trialId: t.trialId,
+    labels: t.items.map((c) => ({ id: c.id, section: c.section, label: "unknown" as const, source: "default" as const, reason: MISSING_REASON, answerIds: [] })),
+    sent: t.items.length,
+    judged: 0,
+    downgraded: 0,
+    dropped: 0,
+  };
+}
+
+interface JudgeRun {
+  results: TrialCriteriaLabels[];
+  /** Trials with at least one batch that got no usable answer (kept as unknown, never cached). */
+  partialIds: Set<string>;
+}
+
+/**
+ * One provider attempt over every batch. Batches fail independently: a batch that stays malformed after its re-ask
+ * leaves only its own items unknown, and the next batch still runs. Once a batch has succeeded, a deadline, 429,
+ * budget or network error stops further batches and the answers so far are kept. The attempt fails (fail over) only
+ * when no batch produced a usable answer.
+ */
+async function judgeWith(provider: AiProvider, answers: readonly NumberedAnswer[], inputs: readonly JudgeTrialInput[], reserve: Reserve, promptVersion: string, deadline: number): Promise<JudgeRun> {
   const answerIds = new Set(answers.map((a) => a.id));
   const prompt: MatchPromptTrial[] = inputs.map((t) => ({ trialId: t.trialId, items: t.items, ...(t.title ? { title: t.title } : {}), ...(t.summary ? { summary: t.summary } : {}) }));
   const overhead = MATCH_SYSTEM_PROMPT.length + buildMatchUserPrompt(answers, []).length;
   const chunks = new Map<string, ValidatedTrial[]>();
-  for (const batch of planBatches(prompt, Math.min(provider.maxInputChars, MATCH_JUDGE.maxBatchChars), overhead)) {
-    const messages: ChatMessage[] = [
-      { role: "system", content: MATCH_SYSTEM_PROMPT },
-      { role: "user", content: buildMatchUserPrompt(answers, batch) },
-    ];
+  const partialIds = new Set<string>();
+  const add = (v: ValidatedTrial) => chunks.set(v.trialId, [...(chunks.get(v.trialId) ?? []), v]);
+  const batches = planBatches(prompt, Math.min(provider.maxInputChars, MATCH_JUDGE.maxBatchChars), overhead);
+  let succeeded = 0;
+  let lastInvalid: unknown = null;
+  for (let b = 0; b < batches.length; b++) {
+    const batch = batches[b] ?? [];
     let validated: ValidatedTrial[] | null = null;
-    // A malformed or empty batch is re-asked (MATCH_JUDGE.invalidOutputRetries) before the provider counts as failed:
-    // on the step-8 dev run about one in four 16k-char Groq batches came back with a broken shape.
-    for (let attempt = 0; validated === null; attempt++) {
-      // Batches run one after another and each model call may take up to its own 30 s timeout, so the request as a
-      // whole has a deadline: past it no further call starts, and a running call is aborted when it passes.
-      const remaining = deadline - Date.now();
-      if (remaining <= 0) throw new ProviderError("timeout", `${provider.name}: judge deadline`);
-      await reserve();
-      const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort, signal: AbortSignal.timeout(remaining) });
-      try {
-        const v = validateMatchOutput(raw, batch, answerIds);
-        const sent = v.reduce((s, x) => s + x.sent, 0);
-        if (sent > 0 && v.every((x) => x.judged === 0)) throw new ProviderError("invalid_output", "no criterion judged");
-        validated = v;
-      } catch (err) {
-        if (!(err instanceof ProviderError && err.kind === "invalid_output") || attempt >= MATCH_JUDGE.invalidOutputRetries) throw err;
+    try {
+      validated = await judgeBatch(provider, answers, answerIds, batch, reserve, deadline);
+    } catch (err) {
+      const invalid = err instanceof ProviderError && err.kind === "invalid_output";
+      if (!invalid && succeeded === 0) throw err;
+      if (invalid) lastInvalid = err;
+      // This batch (and, when the error is not about the output, every later one) stays unknown.
+      for (const rest of invalid ? [batch] : batches.slice(b)) for (const t of rest) {
+        add(unjudged(t));
+        partialIds.add(t.trialId);
       }
+      if (!invalid) break;
+      continue;
     }
-    for (const v of validated) chunks.set(v.trialId, [...(chunks.get(v.trialId) ?? []), v]);
+    succeeded++;
+    for (const v of validated) add(v);
   }
-  return inputs.map((t) => mergeChunks(t, chunks.get(t.trialId) ?? [], provider.name, promptVersion));
+  if (succeeded === 0 && lastInvalid) throw lastInvalid;
+  return { results: inputs.map((t) => mergeChunks(t, chunks.get(t.trialId) ?? [], provider.name, promptVersion)), partialIds };
+}
+
+/** One batch, re-asked after malformed or empty output (MATCH_JUDGE.invalidOutputRetries). */
+async function judgeBatch(provider: AiProvider, answers: readonly NumberedAnswer[], answerIds: ReadonlySet<string>, batch: MatchPromptTrial[], reserve: Reserve, deadline: number): Promise<ValidatedTrial[]> {
+  const messages: ChatMessage[] = [
+    { role: "system", content: MATCH_SYSTEM_PROMPT },
+    { role: "user", content: buildMatchUserPrompt(answers, batch) },
+  ];
+  // On the step-8 dev run about one in four 16k-char Groq batches came back with a broken shape.
+  for (let attempt = 0; ; attempt++) {
+    // Batches run one after another and each model call may take up to its own 30 s timeout, so the request as a
+    // whole has a deadline: past it no further call starts, and a running call is aborted when it passes.
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new ProviderError("timeout", `${provider.name}: judge deadline`);
+    await reserve();
+    const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort, signal: AbortSignal.timeout(remaining) });
+    try {
+      const v = validateMatchOutput(raw, batch, answerIds);
+      const sent = v.reduce((s, x) => s + x.sent, 0);
+      if (sent > 0 && v.every((x) => x.judged === 0)) throw new ProviderError("invalid_output", "no criterion judged");
+      return v;
+    } catch (err) {
+      if (!(err instanceof ProviderError && err.kind === "invalid_output") || attempt >= MATCH_JUDGE.invalidOutputRetries) throw err;
+    }
+  }
 }
 
 /**
@@ -195,10 +243,12 @@ export async function judgeCriteria(profile: MinimizedProfile, inputs: readonly 
   );
   if (!outcome.ok) return { ok: false, reason: outcome.reason, results: ordered(), cachedIds };
   const isMock = deps.providers.find((p) => p.name === outcome.provider)?.isMock ?? false;
-  for (const r of outcome.value) {
+  const { partialIds } = outcome.value;
+  if (partialIds.size > 0) deps.log?.({ route: "match", provider: outcome.provider, status: "partial", trials: partialIds.size });
+  for (const r of outcome.value.results) {
     results.set(r.trialId, r);
     const key = keys.get(r.trialId);
-    if (key && !isMock) await deps.store.put(key, JSON.stringify(r), ANALYSIS_TTL_SECONDS);
+    if (key && !isMock && !partialIds.has(r.trialId)) await deps.store.put(key, JSON.stringify(r), ANALYSIS_TTL_SECONDS);
   }
   return { ok: true, provider: outcome.provider, results: ordered(), cachedIds };
 }

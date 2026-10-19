@@ -70,7 +70,46 @@ function cleanReason(raw: string | undefined): string | undefined {
   return violatesWording(t) ? NEUTRAL_NOTE.en : t;
 }
 
-/** Parse the first {...} span of raw model text. Throws ProviderError("invalid_output") on non-JSON or wrong shape. */
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * Collect trial answers from whatever shape came back. Seen on gpt-oss-120b (v7 replay of data/cache/matching-llm):
+ *  - the wrapper closed early and later trials follow it: [{"trials":[T1,T2]}, T3]
+ *  - a trial written as loose tokens inside an array: "trialId", ":", "NCT…", "items", ":", [items]
+ * Wrappers ({trials}) are flattened, objects with a trialId are taken as they are, and a token run is rebuilt
+ * only when it names the trial id itself (never matched by position).
+ */
+function collectTrials(v: unknown, out: unknown[]): void {
+  if (isObj(v)) {
+    if ("trialId" in v) out.push(v);
+    else if (Array.isArray(v.trials)) collectTrials(v.trials, out);
+    return;
+  }
+  if (!Array.isArray(v)) return;
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
+    if (x !== "trialId") {
+      collectTrials(x, out);
+      continue;
+    }
+    let j = i + 1;
+    const skipColon = () => {
+      if (v[j] === ":") j++;
+    };
+    skipColon();
+    const trialId = v[j];
+    if (typeof trialId !== "string") continue;
+    j++;
+    if (v[j] !== "items") continue;
+    j++;
+    skipColon();
+    if (!Array.isArray(v[j])) continue;
+    out.push({ trialId, items: v[j] });
+    i = j;
+  }
+}
+
+/** Parse the first JSON span of raw model text. Throws ProviderError("invalid_output") on non-JSON or wrong shape. */
 export function parseMatchJson(raw: string): z.infer<typeof LooseOutput> {
   const obj = raw.indexOf("{");
   const arr = raw.indexOf("[");
@@ -85,12 +124,13 @@ export function parseMatchJson(raw: string): z.infer<typeof LooseOutput> {
   } catch {
     throw new ProviderError("invalid_output", "malformed JSON");
   }
-  if (Array.isArray(json)) {
-    const only = json.length === 1 ? (json[0] as unknown) : undefined;
-    json = only && typeof only === "object" && "trials" in only ? only : { trials: json };
-  }
   // A single-trial answer without the wrapper is accepted too.
-  if (json && typeof json === "object" && !Array.isArray(json) && !("trials" in json) && "items" in json) json = { trials: [json] };
+  if (isObj(json) && !("trials" in json) && "items" in json) json = { trials: [json] };
+  if (Array.isArray(json) || (isObj(json) && Array.isArray(json.trials))) {
+    const trials: unknown[] = [];
+    collectTrials(json, trials);
+    json = { trials };
+  }
   const p = LooseOutput.safeParse(json);
   if (!p.success) throw new ProviderError("invalid_output", "schema");
   return p.data;
