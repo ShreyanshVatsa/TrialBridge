@@ -67,11 +67,19 @@ describe("provider budget counts every request (M7)", () => {
     expect(r).toMatchObject({ ok: true });
     expect(consume).not.toHaveBeenCalled();
   });
-  it("still maps provider errors to failures", async () => {
-    const r = await runWithFailover([provider()], async () => {
-      throw new ProviderError("rate_limited", "429");
+  it("still maps provider errors to failures; a rate limit is reported as such and never opens the circuit", async () => {
+    const breaker = new CircuitBreaker();
+    for (let i = 0; i < 5; i++) {
+      const r = await runWithFailover([provider()], async () => {
+        throw new ProviderError("rate_limited", "429");
+      }, { breakerFor: () => breaker, consumeBudget: async () => true });
+      expect(r).toMatchObject({ ok: false, reason: "rate_limited" });
+    }
+    expect(breaker.canRequest()).toBe(true);
+    const s = await runWithFailover([provider()], async () => {
+      throw new ProviderError("server", "500");
     }, { breakerFor: () => new CircuitBreaker(), consumeBudget: async () => true });
-    expect(r).toMatchObject({ ok: false, reason: "ai_unavailable" });
+    expect(s).toMatchObject({ ok: false, reason: "ai_unavailable" });
   });
 });
 

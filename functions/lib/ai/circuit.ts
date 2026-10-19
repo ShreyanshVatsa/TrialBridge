@@ -31,6 +31,11 @@ export class CircuitBreaker {
     this.probeStartedAt = null;
   }
 
+  /** v7: the provider answered but refused for its rate limit: not a failure, but a claimed probe slot is freed. */
+  releaseProbe(): void {
+    this.probeStartedAt = null;
+  }
+
   recordFailure(): void {
     this.failures++;
     this.probeStartedAt = null;

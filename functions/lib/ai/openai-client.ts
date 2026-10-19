@@ -3,11 +3,12 @@ import { ProviderError, type AiProvider, type CompletionRequest } from "./types"
 
 const TIMEOUT_MS = 30_000;
 /**
- * Longest `retry-after` worth waiting for on a 429 before failing over. Groq's free tier also caps tokens per minute
- * (8000), so a patient's second judge batch often gets a 429 that clears within seconds; a daily-cap 429 asks for
- * minutes or hours and fails over at once.
+ * Longest `retry-after` worth waiting for on a 429 before failing over. Groq's free tier caps tokens per minute
+ * (8000) and one judged patient costs about 7k, so a second patient within the same minute gets a 429 that clears in
+ * under a minute (v7 live check); the caller's deadline signal still ends the wait. A daily-cap 429 asks for minutes
+ * or hours and fails over at once.
  */
-export const MAX_RETRY_AFTER_MS = 20_000;
+export const MAX_RETRY_AFTER_MS = 40_000;
 
 /** `retry-after` in ms (seconds or an HTTP date); null when absent or unreadable. */
 export function retryAfterMs(headers: Headers, now = Date.now()): number | null {

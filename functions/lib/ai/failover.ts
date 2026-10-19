@@ -3,7 +3,7 @@ import type { CircuitBreaker } from "./circuit";
 
 export type FailoverResult<T> =
   | { ok: true; provider: string; value: T }
-  | { ok: false; reason: "budget_exhausted" | "ai_unavailable" | "invalid_output"; lastError: ProviderErrorKind | null };
+  | { ok: false; reason: "budget_exhausted" | "rate_limited" | "ai_unavailable" | "invalid_output"; lastError: ProviderErrorKind | null };
 
 /** Thrown by `reserve()` when the provider's daily budget is used up; never counts as a provider failure. */
 export class BudgetExhaustedError extends Error {
@@ -50,10 +50,13 @@ export async function runWithFailover<T>(providers: readonly AiProvider[], attem
         continue;
       }
       lastError = err instanceof ProviderError ? err.kind : "server";
-      breaker.recordFailure();
+      // v7: a free-tier rate limit (8000 tokens/minute on Groq) is expected under load, not a broken provider: it
+      // does not count toward opening the circuit.
+      if (lastError === "rate_limited") breaker.releaseProbe();
+      else breaker.recordFailure();
       deps.log?.({ provider: p.name, status: lastError, latencyMs: Date.now() - t0 });
     }
   }
   if (lastError === null && budgetSkips > 0) return { ok: false, reason: "budget_exhausted", lastError };
-  return { ok: false, reason: lastError === "invalid_output" ? "invalid_output" : "ai_unavailable", lastError };
+  return { ok: false, reason: lastError === "invalid_output" ? "invalid_output" : lastError === "rate_limited" ? "rate_limited" : "ai_unavailable", lastError };
 }

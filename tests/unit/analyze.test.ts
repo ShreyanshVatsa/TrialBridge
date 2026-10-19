@@ -113,7 +113,7 @@ describe("POST /api/analyze", () => {
     const data = await read(await handleAnalyze(req(body()), deps({ providers: [failing, good] })));
     expect(data.provider).toBe("cerebras");
     const degraded = await read(await handleAnalyze(req(body({ nctIds: ids.slice(0, 2) })), deps({ providers: [failing] })));
-    expect(degraded).toMatchObject({ status: "degraded", degradedReason: "ai_unavailable" } satisfies Partial<AnalyzeResponse>);
+    expect(degraded).toMatchObject({ status: "degraded", degradedReason: "rate_limited" } satisfies Partial<AnalyzeResponse>);
   });
 
   it("retries once with a repair prompt when most quotes are fabricated, then accepts a good answer", async () => {

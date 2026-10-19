@@ -16,6 +16,8 @@ Order: index.json order, skipping valid files.
 |---|---|---|---|
 | 0 (before v7) | 113 | 113 | v003-1 |
 | 1 | 41 (v003-1 .. v033-5: vignettes v003 v004 v006 v012 v013 v014 v020 v022 v026 v028 v029 v033) | 154 | v039-1 |
+| 2 | 9 (v039-1..4, v042-1..5) | 163 | v043-1 |
+| 3 | 10 (v043-1..3, v046-1, v048-1..6) | 173 | v049-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -48,3 +50,21 @@ Order: index.json order, skipping valid files.
 - Consistency calls this run: bone-only disease after prostatectomy fails trials that require a fresh soft-tissue
   biopsy (excluded); MSI-H counts as a known actionable alteration where a trial excludes those (possibly).
 - Validation: `npx tsx <scratchpad>/vcheck.ts [vNNN]` (read-only; judge-check.ts would rewrite judgedAt).
+
+### Run 3 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v043-1..3, v046-1, v048-1..6 (10 chunks; vignettes v043, v046, v048 complete).
+  v044-1, v045-1..5 and v047-1..4 already existed (pre-v7) and were skipped.
+- Totals after run 3: 173 / 545 valid, 52 / 164 vignettes complete. Next chunk: v049-1.
+- Consistency calls this run:
+  - Hormone-sensitive mPC on ADT + ARPI: mCRPC-only trials excluded on the numbered CRPC criterion; a trial whose
+    numbered criteria never state castration resistance (v043-3 NCT06785636) is "possibly" (title rule).
+  - PSA exactly 0.2 counts as meeting ">= 0.2" and as failing an exclusion at "<= 0.2" (v043-2 NCT06592924 eligible,
+    NCT07190300 excluded).
+  - Relapsed ALL after allo-HCT with mild chronic skin GVHD on topical steroid only: trials that require
+    "no evidence of GVHD" are excluded; trials that only bar GVHD needing systemic therapy pass that criterion;
+    "active GVHD" with no qualifier is unknown (possibly). Prior-allo trials with E "prior myeloablative allo-HCT"
+    plus I "RIC allo-HCT must have no ongoing GVHD" are excluded either way.
+  - Transplant protocols that require morphologic remission now (no "at time of transplant" wording) are excluded
+    for a patient with 15% blasts; ones that say "at time of transplant" for a planned second transplant are possibly.
+  - Supportive-services observational study (NCT05745285) kept "possibly", as in v047-2.
+
