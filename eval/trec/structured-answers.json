@@ -143,5 +143,53 @@
     "transplant": "none",
     "organ_problems": ["none"],
     "rationale": "63M with weight loss and postprandial epigastric discomfort; upper endoscopy shows diffuse-type gastric adenocarcinoma with signet ring cells, newly diagnosed and untreated; 'no known medical problems'. Stage/spread and biomarkers (HER2, PD-L1, MSI, CLDN18) not stated."
+  },
+  "2023-16": {
+    "group": "breast",
+    "age": 50,
+    "sex": "female",
+    "treatments": ["none"],
+    "biomarkers": { "HER2": "positive" },
+    "daily_activity": "0-1",
+    "rationale": "Breast cancer, HER2-positive, hormone receptors not given, no prior chemotherapy, radiotherapy or mastectomy (read as untreated), ECOG 1; stage not given. Template topic (TREC 2023) gives no age or sex: age 50 and female are fixed assumptions for every 2023 topic."
+  },
+  "2023-17": {
+    "group": "breast",
+    "age": 50,
+    "sex": "female",
+    "spread": "nearby",
+    "treatments": ["chemotherapy", "radiation", "surgery"],
+    "biomarkers": { "HER2": "negative", "HR": "positive" },
+    "daily_activity": "2",
+    "rationale": "Stage III (locally advanced), HER2-negative, ER+/PR- (HR-positive), neoadjuvant chemotherapy, stereotactic radiotherapy and mastectomy, ECOG 2. Template topic (TREC 2023) gives no age or sex: age 50 and female are fixed assumptions for every 2023 topic."
+  },
+  "2023-18": {
+    "group": "breast",
+    "age": 50,
+    "sex": "female",
+    "treatments": ["radiation"],
+    "biomarkers": { "HER2": "positive", "HR": "negative" },
+    "daily_activity": "2",
+    "rationale": "Stage 2 (node status not given, so spread left unanswered), HER2-positive, ER-/PR-, prior radiotherapy only (no chemotherapy, no mastectomy), Karnofsky 70% (= ECOG 2). Template topic (TREC 2023) gives no age or sex: age 50 and female are fixed assumptions for every 2023 topic."
+  },
+  "2023-19": {
+    "group": "breast",
+    "age": 50,
+    "sex": "female",
+    "spread": "distant",
+    "disease_status": "recurrent",
+    "treatments": ["chemotherapy", "radiation", "surgery"],
+    "biomarkers": { "HER2": "positive", "HR": "positive" },
+    "daily_activity": "3-4",
+    "rationale": "Stage IV after neoadjuvant chemotherapy and mastectomy (read as recurrent), HER2-positive, PR-positive (HR-positive), prior chemotherapy and radiotherapy, ECOG 3 / Karnofsky 50%. Template topic (TREC 2023) gives no age or sex: age 50 and female are fixed assumptions for every 2023 topic."
+  },
+  "2023-20": {
+    "group": "breast",
+    "age": 50,
+    "sex": "female",
+    "treatments": ["none"],
+    "biomarkers": { "HER2": "negative" },
+    "daily_activity": "0-1",
+    "rationale": "Breast cancer, HER2-negative, hormone receptors not given, no prior chemotherapy, radiotherapy or mastectomy (read as untreated), ECOG 1; stage not given. Template topic (TREC 2023) gives no age or sex: age 50 and female are fixed assumptions for every 2023 topic."
   }
 }

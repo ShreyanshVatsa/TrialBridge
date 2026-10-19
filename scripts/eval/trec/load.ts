@@ -8,6 +8,7 @@
  * lives here in `withPlaceholderSite`.
  */
 import { existsSync, readFileSync } from "node:fs";
+import type { TrecYear } from "./select-topics";
 import path from "node:path";
 import MiniSearch from "minisearch";
 import { RawStudySchema, type RawLocation, type RawStudy } from "../../../lib/ingest/raw";
@@ -43,7 +44,7 @@ export interface TrecTrial {
 }
 
 export interface TrecTopic {
-  year: 2021 | 2022;
+  year: TrecYear;
   topicId: number;
   /** `${year}-${topicId}`, the key used in structured-answers.json. */
   key: string;

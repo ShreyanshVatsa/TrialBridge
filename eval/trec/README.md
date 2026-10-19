@@ -127,3 +127,7 @@ npx tsx scripts/eval/trec/report.ts
 NIST's server sits behind Cloudflare and rejects non-browser User-Agent strings with 403, hence the `-A`. Compare
 checksums with the table in TERMS.md. The study fetch uses the same field list as ingestion (`CTGOV_FIELDS`), stays
 under 45 requests per minute, sends a descriptive User-Agent and retries 429/5xx with backoff.
+
+## v7: TREC 2023 breast-cancer topics (test split)
+
+TREC 2023 replaced free-text cases with **templates** per disorder (40 topics, 8 disorders). The 5 "breast cancer" topics (16-20) are the only cancer ones and join TREC 2022 as the v7 test split (7 topics), held out from all v7 tuning. Their text in `topics-cancer.json` is one "field: value" line per filled template field. The templates give **no age or sex**: the structured answers assume age 50 and female for all five (stated in each rationale), and stage is left unanswered where the template does not give it. Judged trials (about 1,000 per topic) were fetched on 2026-10-19 into separate `batch-extra-*` files, so the 2021/2022 records fetched on 2026-10-09 are unchanged (`index.json` `extraFetchedAt`). Even with 2023, TREC Clinical Trials has only 17 cancer topics in total.

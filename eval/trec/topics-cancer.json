@@ -58,5 +58,30 @@
     "year": 2022,
     "topicId": 11,
     "text": "A 63-year-old man comes to the clinic for recent unintentional weight loss. The patient also has epigastric discomfort after meals. He has no known medical problems and takes no medications. His blood pressure is 130/75 and pulse rate is 88/min. He is not febrile. Upper endoscopy shows a lesion in the stomach that shows typical features of diffuse-type adenocarcinoma presenting with signet ring cells that do not form glands."
+  },
+  {
+    "year": 2023,
+    "topicId": 16,
+    "text": "template: breast cancer\ndefinitive diagnosis: yes\nHER2: positive\nprior chemotherapy: no\nprior radiotherapy: no\nprior mastectomy: no\nperformance status: ECOG 1"
+  },
+  {
+    "year": 2023,
+    "topicId": 17,
+    "text": "template: breast cancer\ndefinitive diagnosis: stage III\nHER2: negative\nhormone receptors: ER+, PR-\nprior chemotherapy: neoadjuvant chemotherapy\nprior radiotherapy: stereotactic radiotherapy\nprior mastectomy: yes\nsurgery-related therapy: neoadjuvant chemotherapy\nperformance status: ECOG 2"
+  },
+  {
+    "year": 2023,
+    "topicId": 18,
+    "text": "template: breast cancer\ndefinitive diagnosis: stage 2\nHER2: positive\nhormone receptors: PR-, ER-\nprior chemotherapy: no\nprior radiotherapy: yes\nprior mastectomy: no\nperformance status: Karnofsky 70%"
+  },
+  {
+    "year": 2023,
+    "topicId": 19,
+    "text": "template: breast cancer\ndefinitive diagnosis: stage IV\nHER2: positive\nhormone receptors: PR positive\nprior chemotherapy: yes\nprior radiotherapy: yes\nprior mastectomy: yes\nsurgery-related therapy: neoadjuvant chemotherapy\nperformance status: ECOG 3, Karnofsky 50%"
+  },
+  {
+    "year": 2023,
+    "topicId": 20,
+    "text": "template: breast cancer\ndefinitive diagnosis: yes\nHER2: negative\nprior chemotherapy: no\nprior radiotherapy: no\nprior mastectomy: no\nperformance status: ECOG 1"
   }
 ]

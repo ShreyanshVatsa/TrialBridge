@@ -11,7 +11,7 @@ import path from "node:path";
 import { CTGOV_FIELDS } from "../../../lib/ingest/raw";
 import { TREC_CACHE_DIR, TREC_EVAL_DIR, TREC_STUDIES_DIR } from "./paths";
 import { readQrels } from "./qrels";
-import type { TrecTopicText } from "./select-topics";
+import { TREC_YEARS, type TrecTopicText } from "./select-topics";
 
 const BASE = "https://clinicaltrials.gov/api/v2/studies";
 const USER_AGENT = "TrialBridge-eval/0.1 (TREC Clinical Trials benchmark; cancer trial matching research)";
@@ -22,6 +22,8 @@ const BATCH_SIZE = 150; // ids per request; keeps the URL under ~3 KB
 
 export interface StudiesIndex {
   fetchedAt: string;
+  /** v7: when judged ids missing from the earlier batches (TREC 2023) were fetched into "extra" batches. */
+  extraFetchedAt?: string;
   fields: string;
   batchSize: number;
   requested: number;
@@ -75,7 +77,7 @@ const nctIdOf = (s: unknown): string | undefined => (s as { protocolSection?: { 
 export function judgedIds(): string[] {
   const topics = JSON.parse(readFileSync(path.join(TREC_EVAL_DIR, "topics-cancer.json"), "utf8")) as TrecTopicText[];
   const ids = new Set<string>();
-  for (const year of [2021, 2022] as const) {
+  for (const year of TREC_YEARS) {
     const wanted = new Set(topics.filter((t) => t.year === year).map((t) => t.topicId));
     if (wanted.size === 0) continue;
     const qrels = readQrels(path.join(TREC_CACHE_DIR, `qrels${year}.txt`));
@@ -90,12 +92,32 @@ async function main(): Promise<void> {
   const ids = judgedIds();
   console.log(`${ids.length} judged NCT ids for the cancer topics; ${Math.ceil(ids.length / BATCH_SIZE)} batches of ${BATCH_SIZE}`);
 
-  const index: StudiesIndex = { fetchedAt: new Date().toISOString(), fields: CTGOV_FIELDS, batchSize: BATCH_SIZE, requested: ids.length, found: 0, missing: [], batches: [] };
+  // v7: batches already fetched stay as they are (the 2021/2022 pools keep their 2026-10-09 records); judged ids
+  // not in them (TREC 2023) go to new "extra" batches. --refresh refetches everything.
+  const indexFile = path.join(TREC_STUDIES_DIR, "index.json");
+  const prevIndex = !refresh && existsSync(indexFile) ? (JSON.parse(readFileSync(indexFile, "utf8")) as StudiesIndex) : null;
+  const kept: StudiesIndex["batches"] = [];
+  const covered = new Set<string>();
+  for (const b of prevIndex?.batches ?? []) {
+    const f = path.join(TREC_STUDIES_DIR, b.file);
+    if (!existsSync(f)) continue;
+    const prev = JSON.parse(readFileSync(f, "utf8")) as { ids: string[]; fields?: string };
+    if (prev.fields !== CTGOV_FIELDS) continue;
+    kept.push(b);
+    for (const id of prev.ids) covered.add(id);
+  }
+  const todo = ids.filter((id) => !covered.has(id));
+  const extra = kept.length > 0;
+  const index: StudiesIndex = { fetchedAt: prevIndex && extra ? prevIndex.fetchedAt : new Date().toISOString(), ...(extra && todo.length ? { extraFetchedAt: new Date().toISOString() } : {}), fields: CTGOV_FIELDS, batchSize: BATCH_SIZE, requested: ids.length, found: 0, missing: [], batches: [...kept] };
   const found = new Set<string>();
-  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-    const batch = ids.slice(i, i + BATCH_SIZE);
+  for (const b of kept) for (const s of (JSON.parse(readFileSync(path.join(TREC_STUDIES_DIR, b.file), "utf8")) as { studies: unknown[] }).studies) {
+    const id = nctIdOf(s);
+    if (id) found.add(id);
+  }
+  for (let i = 0; i < todo.length; i += BATCH_SIZE) {
+    const batch = todo.slice(i, i + BATCH_SIZE);
     const n = String(i / BATCH_SIZE + 1).padStart(4, "0");
-    const file = path.join(TREC_STUDIES_DIR, `batch-${n}.json`);
+    const file = path.join(TREC_STUDIES_DIR, extra ? `batch-extra-${n}.json` : `batch-${n}.json`);
     let saved: { ids: string[]; studies: unknown[] } | undefined;
     if (!refresh && existsSync(file)) {
       const prev = JSON.parse(readFileSync(file, "utf8")) as { ids: string[]; fields?: string; studies: unknown[] };
@@ -117,7 +139,7 @@ async function main(): Promise<void> {
   }
   index.found = found.size;
   index.missing = ids.filter((id) => !found.has(id));
-  writeFileSync(path.join(TREC_STUDIES_DIR, "index.json"), `${JSON.stringify(index, null, 2)}\n`);
+  writeFileSync(indexFile, `${JSON.stringify(index, null, 2)}\n`);
   console.log(`found ${index.found}/${index.requested}; missing ${index.missing.length}. Index: ${path.join(TREC_STUDIES_DIR, "index.json")}`);
 }
 

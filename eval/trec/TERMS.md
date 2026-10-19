@@ -47,3 +47,12 @@ Courtesy citation, as is customary for TREC collections:
 The judged trials are retrieved from the live ClinicalTrials.gov API v2 (https://clinicaltrials.gov/api/v2/studies). ClinicalTrials.gov's terms and conditions are at https://clinicaltrials.gov/about-site/terms-conditions; the data are U.S. government public information. The fetch is throttled to under 45 requests per minute with a descriptive User-Agent, following the same client conventions as the project's ingestion (`scripts/ingest/ctgov.ts`).
 
 Note that the TREC collection is an April 2021 snapshot of ClinicalTrials.gov. Trials fetched today may have changed status, sites or eligibility text since the assessors judged them, and some judged NCT ids may no longer be served by the API. `data/cache/trec/studies/index.json` records which judged ids were found and which were missing.
+
+## v7 addition: TREC Clinical Trials 2023 (checked 2026-10-19)
+
+| File | URL | Size | MD5 |
+| --- | --- | --- | --- |
+| `topics2023.xml` (40 template topics, 8 disorders) | https://trec.nist.gov/data/trials/topics2023.xml | 19,307 B | `438daadef3068d3837e26e14965b18b7` |
+| `qrels2023.txt` (33,870 lines) | https://trec.nist.gov/data/trials/qrels2023.txt | 636,340 B | `f0eaa370a653792af94879a1f913ff79` |
+
+Linked from https://trec.nist.gov/data/trials2023.html; same 0/1/2 scale (not relevant / excluded / eligible). Same NIST terms as above: no licence or usage restriction stated; offline research use permitted with acknowledgement of NIST.
