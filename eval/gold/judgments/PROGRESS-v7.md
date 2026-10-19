@@ -20,6 +20,7 @@ Order: index.json order, skipping valid files.
 | 3 | 10 (v043-1..3, v046-1, v048-1..6) | 173 | v049-1 |
 | 4 | 10 (v049-1, v053-1, v055-1/2/5/6, v056-1..3, v057-1) | 183 | v057-2 |
 | 5 | 9 (v057-2/3, v058-1..3, v059-1..4) | 192 | v060-1 |
+| 6 | 12 (v060-1..5, v061-1..3, v062-1, v063-1..3) | 204 | v064-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -110,4 +111,28 @@ Order: index.json order, skipping valid files.
     v059-3 NCT05544019) are possibly, not eligible.
   - Disease stated "on both sides of the diaphragm" fails stage I-II-only criteria (v059-3 NCT07029217 excluded).
   - MZL vs FL trials are different entities (not_relevant), consistent with the lymphoma-entity rule from run 4.
+
+### Run 6 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v060-1..5, v061-1..3, v062-1, v063-1..3 (12 chunks; vignettes v060, v061,
+  v062, v063 complete). v060-6/7 already existed (pre-v7) and were skipped.
+- Totals after run 6: 204 / 545 valid (full vcheck: 204 ok, 0 invalid), 63 / 164 vignettes complete. Next chunk: v064-1.
+- Consistency calls this run:
+  - Hodgkin vs any NHL (B- or T-cell) are different entities (not_relevant), extending the lymphoma-entity rule.
+    A trial whose numbered criteria never name the disease but whose title/conditions are NHL-only
+    (v060-5 NCT07121946) is not_relevant, citing a generic criterion with a note.
+  - "No standard therapy available or considered unsuitable per Investigator" (no prior-lines prong) is unknown, not
+    not_met, when the team is still weighing transplant vs trial (v060-1 NCT04999384 possibly); a "refusal of standard
+    therapy" alternative is likewise unknown (v060-4 NCT04752826).
+  - BV + nivolumab given together counts as both prior brentuximab and prior anti-PD-1: fails "NO prior checkpoint
+    inhibitors" / "NO prior brentuximab" cohorts and anti-PD-1 exclusions; a 2nd-line BV+nivo study capped at 1 prior
+    line is excluded.
+  - Patient mid first-line chemo and responding: R/R-only and "no prior systemic therapy" trials are both excluded;
+    CR1-consolidation ASCT trials are possibly (end-of-induction CR unknown).
+  - ECOG 3-4 ("mostly in a chair or bed") fails every ECOG 0-2 / 0-1 / Zubrod 0-2 criterion (excluded).
+  - Controlled HIV fails "known history of HIV" / "seronegative for HIV" / "HIV infection" criteria (excluded); passes
+    "uncontrolled HIV" and "undetectable viral load" variants (as in run 4).
+  - Allo-HCT transplant protocols requiring CR/PR are excluded for a patient whose latest scan shows progression.
+  - The target of a current investigational antibody is unknown: a BAFF-R-directed-therapy exclusion is unknown
+    (v063-2 NCT07101328 possibly).
+  - GCB DLBCL fails "non-GCB DLBCL" criteria and GCB-DLBCL exclusions (excluded).
 
