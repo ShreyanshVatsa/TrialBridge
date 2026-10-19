@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { CriterionAssessment, RankedTrial } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BarrierBadge, Badge, FitBadge, LanguageWarning, Quote, TierBBadge } from "./badges";
-import { CriteriaChecklist, HardFailureNote, WhyRankedLine, type TrialMatchView } from "./match-checklist";
+import { CriteriaChecklist, HardFailureNote, WhyRankedLine, screeningIds, type TrialMatchView } from "./match-checklist";
 
 interface Point {
   key: string;
@@ -172,7 +172,7 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
 
       {match && (
         <div id={hardId} className="scroll-mt-28">
-          <WhyRankedLine score={match.score} position={index + 1} className="mt-3" />
+          <WhyRankedLine score={match.score} position={index + 1} screening={screeningIds(match.labels, card.criteria).size} className="mt-3" />
           {tierB && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} className="mt-4" />}
         </div>
       )}

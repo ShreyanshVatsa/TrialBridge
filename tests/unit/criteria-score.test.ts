@@ -177,7 +177,8 @@ describe("resolver-backed ranking", () => {
     const resolver = resolverLabels(results, answersOf(state({})), catalog);
     const req = judgeRequests(results, resolver, 3);
     expect(req.map((r) => r.nctId)).toEqual(["NCT00000011"]);
-    expect(req[0]?.unknownIds).toEqual(["I2", "I3", "E1"]);
+    // I3 "Adequate organ function" is checked at screening (lib/match/screening.ts) and is not sent to the judge.
+    expect(req[0]?.unknownIds).toEqual(["I2", "E1"]);
   });
 
   it("unknown items feed the Find-out list priority (questions answered 'not sure')", () => {

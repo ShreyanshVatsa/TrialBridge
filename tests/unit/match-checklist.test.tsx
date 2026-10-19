@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CriteriaChecklist, DegradedMatchBanner, HardFailureNote, TierBHeader, WhyRankedLine, markOf } from "@/components/results/match-checklist";
+import { CriteriaChecklist, DegradedMatchBanner, HardFailureNote, TierBHeader, WhyRankedLine, markOf, screeningIds } from "@/components/results/match-checklist";
 import { en } from "@/components/i18n/en";
 import type { CriterionLabel, SplitCriterionRecord, TrialMatchScore } from "@/lib/types";
 
@@ -129,5 +129,31 @@ describe("HardFailureNote / TierBHeader / DegradedMatchBanner", () => {
   it("tier B header and degraded banner use the English copy", () => {
     expect(html(<TierBHeader />)).toContain(en.match.tierBTitle);
     expect(html(<DegradedMatchBanner />)).toContain(en.match.degraded);
+  });
+});
+
+describe("checked at screening (v7)", () => {
+  const crit: SplitCriterionRecord[] = [
+    { id: "I1", section: "inclusion", text: "ECOG 0-1" },
+    { id: "I2", section: "inclusion", text: "Signed informed consent" },
+    { id: "I3", section: "inclusion", text: "Platelets >= 100,000/mcL" },
+    { id: "E1", section: "exclusion", text: "Uncontrolled hypertension" },
+  ];
+  const labs: CriterionLabel[] = crit.map((c) => ({ id: c.id, section: c.section, label: c.id === "I1" ? "met" : "unknown", source: c.id === "I1" ? "rule" : "default" }));
+  it("finds the unknown screening items only", () => {
+    expect([...screeningIds(labs, crit)].sort()).toEqual(["I2", "I3"]);
+  });
+  it("groups them apart and leaves them out of the unknown tally", () => {
+    const out = html(<CriteriaChecklist labels={labs} criteria={crit} />);
+    expect(out).toContain("? 1 unknown");
+    expect(out).toContain("2 checked at screening");
+    expect(out).toContain('data-group="screening"');
+    expect(out).toContain(en.match.screeningHeading);
+    expect(out.split(en.match.screeningStatus).length - 1).toBe(2);
+  });
+  it("the why-line does not count them as checkable or still unknown", () => {
+    const out = html(<WhyRankedLine score={score({ counts: { met: 1, notMet: 0, excluded: 0, unknown: 3, notApplicable: 0 } })} position={1} screening={2} />);
+    expect(out).toContain("looks to meet 1 of 2 requirements we could check");
+    expect(out).toContain("1 requirement is still unknown.");
   });
 });

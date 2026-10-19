@@ -4,6 +4,7 @@ import { AlertTriangle, ChevronDown, CircleCheck, CircleHelp, CircleX } from "lu
 import type { ReactNode } from "react";
 import { format, useMessages, useT } from "@/components/i18n";
 import type { CriterionLabel, CriterionLabelValue, SplitCriterionRecord as SplitCriterion, TrialMatchScore } from "@/lib/types";
+import { isScreeningItem } from "@/lib/match/screening";
 import { cn } from "@/lib/utils";
 
 /** What the results UI needs per trial from step 5 (score + per-criterion labels). */
@@ -29,6 +30,12 @@ export function markOf(label: CriterionLabelValue): Mark {
   }
 }
 
+/** Unknown items the study team checks at screening (labs, consent, contraception): shown apart, never "open questions". */
+export function screeningIds(labels: readonly CriterionLabel[], criteria: readonly SplitCriterion[] | undefined): Set<string> {
+  const lookup = byId(criteria);
+  return new Set(labels.filter((l) => l.label === "unknown" && lookup.has(l.id) && isScreeningItem(lookup.get(l.id)!)).map((l) => l.id));
+}
+
 /** Our stored criterion text by id; the model's text is never shown. */
 function byId(criteria: readonly SplitCriterion[] | undefined): Map<string, SplitCriterion> {
   return new Map((criteria ?? []).map((c) => [c.id, c]));
@@ -44,7 +51,7 @@ const markIcon: Record<Exclude<Mark, "na">, ReactNode> = {
   unknown: <CircleHelp className="size-5 text-muted-foreground" aria-hidden />,
 };
 
-function CriterionRow({ label, criterion }: { label: CriterionLabel; criterion: SplitCriterion }) {
+function CriterionRow({ label, criterion, screening = false }: { label: CriterionLabel; criterion: SplitCriterion; screening?: boolean }) {
   const m = useMessages();
   const mark = markOf(label.label) as Exclude<Mark, "na">;
   return (
@@ -52,7 +59,7 @@ function CriterionRow({ label, criterion }: { label: CriterionLabel; criterion: 
       <span className="pt-0.5">{markIcon[mark]}</span>
       <div className="min-w-0 space-y-1">
         <p className={cn("text-sm font-semibold", mark === "fail" ? "text-warn-foreground" : mark === "pass" ? "text-success-foreground" : "text-foreground")}>
-          {m.match.status[label.label]}
+          {screening ? m.match.screeningStatus : m.match.status[label.label]}
           <span className="font-normal text-muted-foreground">
             {" · "}
             {format(m.card.criterionRef[criterion.section], { n: criterionNumber(criterion.id) })}
@@ -67,7 +74,7 @@ function CriterionRow({ label, criterion }: { label: CriterionLabel; criterion: 
         <blockquote lang="en" className="border-s-2 border-primary/40 ps-3 whitespace-pre-line text-foreground/90">
           {criterion.text}
         </blockquote>
-        {label.reason && <p className="text-sm text-muted-foreground">{label.reason}</p>}
+        {label.reason && !screening && <p className="text-sm text-muted-foreground">{label.reason}</p>}
       </div>
     </li>
   );
@@ -91,9 +98,12 @@ export function CriteriaChecklist({
   const m = useMessages();
   const { t } = useT();
   const lookup = byId(criteria);
-  const shown = labels.filter((l) => markOf(l.label) !== "na" && lookup.has(l.id));
+  const screening = screeningIds(labels, criteria);
+  const visible = labels.filter((l) => markOf(l.label) !== "na" && lookup.has(l.id));
+  const shown = visible.filter((l) => !screening.has(l.id));
+  const atScreening = visible.filter((l) => screening.has(l.id));
   const naCount = labels.filter((l) => markOf(l.label) === "na" && lookup.has(l.id)).length;
-  if (shown.length === 0 && naCount === 0) return null;
+  if (visible.length === 0 && naCount === 0) return null;
 
   const tally = { pass: 0, fail: 0, unknown: 0 };
   for (const l of shown) tally[markOf(l.label) as keyof typeof tally]++;
@@ -109,6 +119,7 @@ export function CriteriaChecklist({
           <span>✓ {format(m.match.counts.met, { n: tally.pass })}</span>
           <span>✗ {format(m.match.counts.fail, { n: tally.fail })}</span>
           <span>? {format(m.match.counts.unknown, { n: tally.unknown })}</span>
+          {atScreening.length > 0 && <span>{format(m.match.counts.screening, { n: atScreening.length })}</span>}
         </span>
         <ChevronDown className="ms-auto size-5 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
       </summary>
@@ -126,17 +137,34 @@ export function CriteriaChecklist({
             </ul>
           </section>
         ))}
+        {atScreening.length > 0 && (
+          <details data-group="screening" className="mt-4 rounded-xl border border-border/70 px-3">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 font-sans text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              {m.match.screeningHeading} ({atScreening.length})
+              <ChevronDown className="ms-auto size-4 shrink-0" aria-hidden />
+            </summary>
+            <p className="text-sm text-muted-foreground">{m.match.screeningIntro}</p>
+            <ul className="divide-y divide-border/70">
+              {atScreening.map((l) => (
+                <CriterionRow key={l.id} label={l} criterion={lookup.get(l.id)!} screening />
+              ))}
+            </ul>
+          </details>
+        )}
         {naCount > 0 && <p className="mt-3 text-sm text-muted-foreground">{t("match.notApplicable", { count: naCount })}</p>}
       </div>
     </details>
   );
 }
 
-/** One-line "why ranked here": tier, how many checkable requirements look met, and what is still unknown. */
-export function WhyRankedLine({ score, position, className }: { score: TrialMatchScore; position: number; className?: string }) {
+/**
+ * One-line "why ranked here": tier, how many checkable requirements look met, and what is still unknown.
+ * `screening` = unknown items the study team checks at screening; they are neither "checkable" nor "still unknown".
+ */
+export function WhyRankedLine({ score, position, screening = 0, className }: { score: TrialMatchScore; position: number; screening?: number; className?: string }) {
   const m = useMessages();
   const { t } = useT();
-  const { counts } = score;
+  const counts = { ...score.counts, unknown: Math.max(0, score.counts.unknown - screening) };
   const checked = counts.met + counts.notMet + counts.unknown;
   let text: string;
   if (score.tier === "B") {

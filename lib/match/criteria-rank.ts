@@ -14,6 +14,7 @@ import type { QuestionDef } from "@/lib/types/questionnaire";
 import type { TrialCard } from "@/lib/types/trial";
 import type { UnknownCriteria } from "@/lib/api/match";
 import { normalizeMarkers, profileFromState, resolveCriteria, unresolved, type ResolverProfile } from "./criteria-resolve";
+import { isScreeningItem } from "./screening";
 import { orderResults, rankByCriteria, type JudgeLabels } from "./rank";
 
 export type CriteriaCard = Pick<TrialCard, "id" | "groups" | "conditions" | "criteria" | "criteriaVersion">;
@@ -34,11 +35,15 @@ export function resolverLabels(results: readonly Entry[], answers: Pick<IntakeAn
   return new Map(results.map((r) => [r.card.id, resolveCriteria(r.card, profile).labels]));
 }
 
-/** What the judge is asked: the top N trials that have split criteria and at least one unknown item. */
+/**
+ * What the judge is asked: the top N trials that have split criteria and at least one unknown item. Items the study
+ * team checks at screening (labs, consent, contraception; lib/match/screening.ts) are not sent: no answer settles them.
+ */
 export function judgeRequests(results: readonly Entry[], resolver: ReadonlyMap<string, readonly CriterionLabel[]>, topN: number = MATCH_JUDGE.topN): UnknownCriteria[] {
   const out: UnknownCriteria[] = [];
   for (const r of results.slice(0, topN)) {
-    const ids = unresolved(resolver.get(r.card.id) ?? []);
+    const screening = new Set((r.card.criteria ?? []).filter(isScreeningItem).map((c) => c.id));
+    const ids = unresolved(resolver.get(r.card.id) ?? []).filter((id) => !screening.has(id));
     if (ids.length && r.card.criteriaVersion) out.push({ nctId: r.card.id, criteriaVersion: r.card.criteriaVersion, unknownIds: ids });
   }
   return out;

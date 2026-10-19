@@ -990,7 +990,10 @@ export const en = {
     checklistIntro: "Each line is the trial's own requirement text. Unknown never lowers a trial: ask your care team about those.",
     inclusionHeading: "To take part",
     exclusionHeading: "Things that may rule people out",
-    counts: { met: "{n} look met", fail: "{n} may not fit", unknown: "{n} unknown" },
+    counts: { met: "{n} look met", fail: "{n} may not fit", unknown: "{n} unknown", screening: "{n} checked at screening" },
+    screeningHeading: "Checked by the study team at screening",
+    screeningIntro: "Lab tests, consent and other steps the study team checks with you. Your answers can't settle these, and they never lower a trial.",
+    screeningStatus: "Checked at screening",
     notApplicable: { one: "1 requirement did not apply to you and is hidden.", other: "{count} requirements did not apply to you and are hidden." },
     status: {
       met: "Looks met",
