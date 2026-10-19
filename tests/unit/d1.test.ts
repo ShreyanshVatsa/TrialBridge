@@ -16,6 +16,8 @@ describe("D1 stores (SQLite-backed)", () => {
     expect(await s.get("a")).toBe("y");
     expect(await s.incr("c", 60)).toBe(1);
     expect(await s.incr("c", 60)).toBe(2);
+    expect(await s.incr("c", 60, 4500)).toBe(4502);
+    expect(await s.incr("t", 60, 3000)).toBe(3000);
     await s.put("old", "1", -1);
     expect(await s.get("old")).toBeNull();
     expect(await s.incr("old", 60)).toBe(1); // expired counter restarts

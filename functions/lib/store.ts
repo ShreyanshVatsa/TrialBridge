@@ -6,8 +6,8 @@
 export interface KvStore {
   get(key: string): Promise<string | null>;
   put(key: string, value: string, ttlSeconds: number): Promise<void>;
-  /** Atomically increment a counter (creating it with the TTL if absent/expired); returns the new value. */
-  incr(key: string, ttlSeconds: number): Promise<number>;
+  /** Atomically add `by` (default 1) to a counter (creating it with the TTL if absent/expired); returns the new value. */
+  incr(key: string, ttlSeconds: number, by?: number): Promise<number>;
 }
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -27,19 +27,20 @@ export class D1KvStore implements KvStore {
       .run();
   }
 
-  async incr(key: string, ttlSeconds: number): Promise<number> {
+  async incr(key: string, ttlSeconds: number, by = 1): Promise<number> {
     const now = nowSec();
+    const step = Math.max(0, Math.floor(by));
     const row = await this.db
       .prepare(
-        `INSERT INTO kv (key, value, expires_at) VALUES (?1, '1', ?2)
+        `INSERT INTO kv (key, value, expires_at) VALUES (?1, CAST(?4 AS TEXT), ?2)
          ON CONFLICT(key) DO UPDATE SET
-           value = CASE WHEN kv.expires_at <= ?3 THEN '1' ELSE CAST(CAST(kv.value AS INTEGER) + 1 AS TEXT) END,
+           value = CASE WHEN kv.expires_at <= ?3 THEN CAST(?4 AS TEXT) ELSE CAST(CAST(kv.value AS INTEGER) + ?4 AS TEXT) END,
            expires_at = CASE WHEN kv.expires_at <= ?3 THEN ?2 ELSE kv.expires_at END
          RETURNING value`,
       )
-      .bind(key, now + ttlSeconds, now)
+      .bind(key, now + ttlSeconds, now, step)
       .first<{ value: string }>();
-    return Number(row?.value ?? 1);
+    return Number(row?.value ?? step);
   }
 
   /** Remove expired rows (called occasionally via waitUntil). */
@@ -67,9 +68,9 @@ export class MemoryKvStore implements KvStore {
   async put(key: string, value: string, ttlSeconds: number) {
     this.map.set(key, { value, expires: this.clock() + ttlSeconds * 1000 });
   }
-  async incr(key: string, ttlSeconds: number) {
+  async incr(key: string, ttlSeconds: number, by = 1) {
     const e = this.live(key);
-    const next = (e ? Number(e.value) : 0) + 1;
+    const next = (e ? Number(e.value) : 0) + Math.max(0, Math.floor(by));
     this.map.set(key, { value: String(next), expires: e?.expires ?? this.clock() + ttlSeconds * 1000 });
     return next;
   }

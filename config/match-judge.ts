@@ -3,8 +3,11 @@
  * the criterion items the deterministic resolver left "unknown".
  */
 export const MATCH_JUDGE = {
-  /** Trials judged per request (top N after retrieval). */
-  topN: 10,
+  /**
+   * Trials judged per request (top N after retrieval). v7: 5 (was 10). One patient cost about 20k tokens at 10
+   * (eval/matching/RESULTS.md), against Groq's free tier of 8000 tokens/minute and 200k/day.
+   */
+  topN: 5,
   /** Unknown criterion items accepted per trial (a long trial is chunked across requests, never truncated silently). */
   maxItemsPerTrial: 120,
   /** Plain-language reason length cap, in words. */

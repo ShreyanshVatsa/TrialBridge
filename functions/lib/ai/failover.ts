@@ -12,13 +12,16 @@ export class BudgetExhaustedError extends Error {
   }
 }
 
-/** Reserve one unit of the provider's daily budget; call it before EVERY provider request (repair retries included). */
-export type Reserve = () => Promise<void>;
+/**
+ * Reserve one request (and, when given, the estimated tokens) of the provider's daily budget; call it before EVERY
+ * provider request (repair retries included).
+ */
+export type Reserve = (tokens?: number) => Promise<void>;
 
 export interface FailoverDeps {
   breakerFor(name: string): CircuitBreaker;
-  /** Reserve one request from the provider's daily budget; false = exhausted. Called once per provider request via `reserve`. */
-  consumeBudget(provider: AiProvider): Promise<boolean>;
+  /** Reserve one request (plus `tokens`, when the caller estimates them) from the provider's daily budget; false = exhausted. Called once per provider request via `reserve`. */
+  consumeBudget(provider: AiProvider, tokens?: number): Promise<boolean>;
   log?: (event: { provider: string; status: string; latencyMs: number }) => void;
 }
 
@@ -32,8 +35,8 @@ export async function runWithFailover<T>(providers: readonly AiProvider[], attem
   for (const p of providers) {
     const breaker = deps.breakerFor(p.name);
     if (!breaker.canRequest()) continue;
-    const reserve: Reserve = async () => {
-      if (!p.isMock && !(await deps.consumeBudget(p))) throw new BudgetExhaustedError();
+    const reserve: Reserve = async (tokens) => {
+      if (!p.isMock && !(await deps.consumeBudget(p, tokens))) throw new BudgetExhaustedError();
     };
     const t0 = Date.now();
     try {

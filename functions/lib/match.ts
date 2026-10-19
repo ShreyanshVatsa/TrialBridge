@@ -18,8 +18,8 @@ import { ANALYSIS_TTL_SECONDS } from "./cache";
 import { sha256Hex, stableStringify } from "./crypto";
 import { apiError, devCorsHeaders, isSameOrigin, json, readJsonBody } from "./http";
 import { checkRateLimit, hashIp } from "./ratelimit";
-import { tryConsumeBudget } from "./budget";
-import { dailyBudget } from "./ai/providers";
+import { estimateTokens, tryConsumeBudget, tryConsumeTokens } from "./budget";
+import { dailyBudget, dailyTokenBudget } from "./ai/providers";
 import { BudgetExhaustedError, runWithFailover, type FailoverDeps, type FailoverResult, type Reserve } from "./ai/failover";
 import { MISSING_REASON, validateMatchOutput, type ValidatedTrial } from "./ai/match-output";
 import { ProviderError, type AiProvider, type ChatMessage } from "./ai/types";
@@ -185,7 +185,7 @@ async function judgeBatch(provider: AiProvider, answers: readonly NumberedAnswer
     // whole has a deadline: past it no further call starts, and a running call is aborted when it passes.
     const remaining = deadline - Date.now();
     if (remaining <= 0) throw new ProviderError("timeout", `${provider.name}: judge deadline`);
-    await reserve();
+    await reserve(estimateTokens(messages.reduce((s, m) => s + m.content.length, 0)) + MATCH_JUDGE.maxTokens);
     const raw = await provider.complete({ messages, trials: [], match: { trials: batch }, maxTokens: MATCH_JUDGE.maxTokens, reasoningEffort: MATCH_JUDGE.reasoningEffort, signal: AbortSignal.timeout(remaining) });
     try {
       const v = validateMatchOutput(raw, batch, answerIds);
@@ -291,7 +291,7 @@ export async function handleMatch(request: Request, deps: AnalyzeDeps): Promise<
     store: deps.store,
     providers: deps.providers,
     breakerFor: deps.breakerFor,
-    consumeBudget: (p) => tryConsumeBudget(deps.store, p.name, dailyBudget(env, p.name)),
+    consumeBudget: async (p, tokens = 0) => (await tryConsumeBudget(deps.store, p.name, dailyBudget(env, p.name))) && tryConsumeTokens(deps.store, p.name, tokens, dailyTokenBudget(env, p.name)),
     log: (e) => deps.log({ requestId, ...e }),
   });
   const res: MatchResponse = outcome.ok

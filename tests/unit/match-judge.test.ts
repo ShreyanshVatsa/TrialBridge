@@ -318,6 +318,32 @@ describe("judgeCriteria", () => {
     expect(r.results[0]?.coverage).toBe(1);
   });
 
+  it("reserves the estimated tokens of every request (prompt + completion cap)", async () => {
+    const reserved: (number | undefined)[] = [];
+    const p = fakeProvider("groq", labelAll);
+    await judgeCriteria(profile, [input(T1)], jdeps([p], { consumeBudget: async (_p, tokens) => (reserved.push(tokens), true) }));
+    const chars = p.calls[0]?.messages.reduce((s, m) => s + m.content.length, 0) ?? 0;
+    expect(reserved).toEqual([Math.ceil(chars / 3.5) + MATCH_JUDGE.maxTokens]);
+  });
+
+  it("client waits out a short 429 retry-after once, and fails fast on a long one", async () => {
+    const cfg = { name: "groq", baseUrl: "https://example.invalid", model: "m", keyEnv: "GROQ_API_KEY", budgetEnv: "DAILY_BUDGET_GROQ", dataTermsVerified: true, maxInputChars: 60_000 } as const;
+    const ok = () => new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 });
+    const limited = (secs: string) => new Response("", { status: 429, headers: { "retry-after": secs } });
+    let n = 0;
+    const shortFetch = (async () => (n++ === 0 ? limited("0.05") : ok())) as unknown as typeof fetch;
+    expect(await createOpenAiCompatibleProvider(cfg, "k", shortFetch).complete({ messages: [], trials: [] })).toBe("{}");
+    expect(n).toBe(2);
+    let m = 0;
+    const longFetch = (async () => (m++, limited("3600"))) as unknown as typeof fetch;
+    await expect(createOpenAiCompatibleProvider(cfg, "k", longFetch).complete({ messages: [], trials: [] })).rejects.toMatchObject({ kind: "rate_limited" });
+    expect(m).toBe(1);
+    let k = 0;
+    const twiceFetch = (async () => (k++, limited("0"))) as unknown as typeof fetch;
+    await expect(createOpenAiCompatibleProvider(cfg, "k", twiceFetch).complete({ messages: [], trials: [] })).rejects.toMatchObject({ kind: "rate_limited" });
+    expect(k).toBe(2);
+  });
+
   it("re-asks a batch once after malformed output before failing over", async () => {
     let n = 0;
     const flaky = fakeProvider("groq", (req) => (n++ === 0 ? '[{"trials":[]},"trialId"]' : labelAll(req)));

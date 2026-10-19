@@ -20,3 +20,9 @@ export function dailyBudget(env: Env, providerName: string, registry: readonly A
   const cfg = registry.find((p) => p.name === providerName);
   return cfg ? Number(env[cfg.budgetEnv] ?? 0) : 0;
 }
+
+/** Daily token budget (0 = no token cap). */
+export function dailyTokenBudget(env: Env, providerName: string, registry: readonly AiProviderConfig[] = AI_PROVIDERS): number {
+  const cfg = registry.find((p) => p.name === providerName);
+  return cfg?.tokenBudgetEnv ? Number(env[cfg.tokenBudgetEnv] ?? 0) : 0;
+}

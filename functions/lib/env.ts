@@ -12,6 +12,8 @@ export interface Env {
   DAILY_BUDGET_GROQ?: string;
   DAILY_BUDGET_CEREBRAS?: string;
   DAILY_BUDGET_OPENROUTER?: string;
+  /** Daily token budget for Groq (criterion judge), below the free tier's 200k tokens/day. */
+  DAILY_TOKENS_GROQ?: string;
   /** Comma-separated extra allowed origins for local development (e.g. http://localhost:3000). */
   DEV_ALLOWED_ORIGINS?: string;
 }

@@ -28,7 +28,9 @@
     // Global daily request budget per provider (kept below each free tier's daily limit).
     "DAILY_BUDGET_GROQ": "800",
     "DAILY_BUDGET_CEREBRAS": "800",
-    "DAILY_BUDGET_OPENROUTER": "40"
+    "DAILY_BUDGET_OPENROUTER": "40",
+    // Daily Groq token budget for the criterion judge (free tier: 200k tokens/day for gpt-oss-120b).
+    "DAILY_TOKENS_GROQ": "180000"
   },
   "observability": { "enabled": true }
 }

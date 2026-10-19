@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CircuitBreaker } from "@/functions/lib/ai/circuit";
 import { MemoryKvStore } from "@/functions/lib/store";
 import { checkRateLimit, hashIp } from "@/functions/lib/ratelimit";
-import { tryConsumeBudget } from "@/functions/lib/budget";
+import { tryConsumeBudget, tryConsumeTokens } from "@/functions/lib/budget";
 import { analysisCacheKey } from "@/functions/lib/cache";
 import { stableStringify } from "@/functions/lib/crypto";
 import { TURNSTILE_TEST_SECRET, verifyTurnstile } from "@/functions/lib/turnstile";
@@ -74,6 +74,14 @@ describe("store, rate limit, budget, cache", () => {
     expect(await tryConsumeBudget(s, "groq", 2)).toBe(false);
     expect(await tryConsumeBudget(s, "x", 0)).toBe(false);
     expect(await tryConsumeBudget(s, "x", Number.NaN)).toBe(false);
+  });
+  it("token budget guard adds the estimate and allows everything when unset", async () => {
+    const s = new MemoryKvStore();
+    expect(await tryConsumeTokens(s, "groq", 6000, 10_000)).toBe(true);
+    expect(await tryConsumeTokens(s, "groq", 4000, 10_000)).toBe(true);
+    expect(await tryConsumeTokens(s, "groq", 1, 10_000)).toBe(false);
+    expect(await tryConsumeTokens(s, "groq", 99_999, 0)).toBe(true);
+    expect(await tryConsumeTokens(s, "groq", 99_999, Number.NaN)).toBe(true);
   });
   it("cache key is order-insensitive and version-sensitive", async () => {
     const p = minimizeProfile(makeAnswers());
