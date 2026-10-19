@@ -5,6 +5,7 @@ import { FACT_POLICY, factPolicy, findOutFor, gate, getCatalog, getFindOutItems,
 import { validateCatalog } from "@/config/questionnaire/validate";
 import { QUESTIONNAIRE_EN_ALL } from "@/config/questionnaire/en-defaults";
 import { FAMILY_PRECISION } from "@/config/questionnaire/precision.generated";
+import { V1_KEY_PRECISION } from "@/config/questionnaire/precision-v1.generated";
 import { priors } from "@/config/questionnaire/build";
 import { summarizePrecision, PRECISION_GATE, type LabelFile } from "@/lib/ingest/precision";
 import { FACT_FAMILIES } from "@/lib/ingest/eligibility-facts";
@@ -80,8 +81,11 @@ describe("precision gate", () => {
     expect(gate({ ...base, enabled: true, disabledReason: undefined, families: [] } as QuestionDef).enabled).toBe(true);
     expect(gate({ ...base, enabled: true, disabledReason: undefined, legacyFacts: true } as QuestionDef).enabled).toBe(true);
   });
-  it("FACT_POLICY penalizes only gated families, v1 keys keep v1 behavior", () => {
-    expect(factPolicy("metastatic")).toEqual({ penalize: true, weight: 1 });
+  it("FACT_POLICY penalizes only gated families and gated v1 keys (v7: eval/facts-labels-v3.json)", () => {
+    expect(factPolicy("metastatic").penalize).toBe(V1_KEY_PRECISION.metastatic?.passes === true);
+    expect(factPolicy("prior_radiation")).toEqual({ penalize: false, weight: 1, supportOnly: true });
+    expect(factPolicy("pregnancy")).toEqual({ penalize: true, weight: 1 });
+    expect(factPolicy("concurrent_trial")).toEqual({ penalize: true, weight: 1 });
     expect(factPolicy("biomarker:HER2")).toEqual({ penalize: true, weight: 1.2 });
     expect(factPolicy("ecog_max").penalize).toBe(FAMILY_PRECISION.performance?.passes === true);
     expect(factPolicy("histology:sclc")).toMatchObject({ weight: 1.2 });

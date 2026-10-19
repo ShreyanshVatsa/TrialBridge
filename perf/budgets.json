@@ -41,8 +41,8 @@
     "searchCosines": 20,
     "searchBm25Searches": 2,
     "searchFactRelations": 250,
-    "questionnaireFactRelations": 900000,
-    "questionnaireRescores": 22000,
+    "questionnaireFactRelations": 1090000,
+    "questionnaireRescores": 30000,
     "questionnaireTrialScores": 1900
   },
   "headroom": 1.1,

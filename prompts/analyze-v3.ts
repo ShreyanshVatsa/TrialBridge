@@ -24,6 +24,13 @@ import { ACTIVITY, BIOMARKER_LABEL, BIOMARKER_STATUS, BRAIN, LINES, PREGNANT, SP
 /** analyze-v3.1 (v7): health-history answers added to the numbered list. */
 export const MATCH_PROMPT_VERSION = "analyze-v3.1";
 
+/**
+ * Subtypes whose plain label misleads the model. "Lower-grade glioma" (TCGA/WHO usage) spans grades 2 and 3, and
+ * many trials call grade 3 "high-grade": a grade 3 patient was labeled "not high-grade" on TREC 2021-1 (v7 audit).
+ */
+const SUBTYPE_TEXT: Partial<Record<string, string>> = {
+  lower_grade_glioma: "lower-grade glioma (astrocytoma or oligodendroglioma, WHO grade 2 or 3; the grade was not given, and many trials count grade 3 as high-grade)",
+};
 const OTHER_CANCER_TEXT = { no: "no", over_2y: "yes, treated more than 2 years ago", recent: "yes, in the last 2 years or still active" } as const;
 const HIV_TEXT = { no: "no", controlled: "yes, controlled with medicine", other: "yes, not controlled or not treated" } as const;
 const HEPATITIS_TEXT = { no: "no", hep_b: "hepatitis B", hep_c: "hepatitis C" } as const;
@@ -62,7 +69,7 @@ export function numberAnswers(p: MinimizedProfile): NumberedAnswer[] {
   }
   if (p.pregnant === "yes" || p.pregnant === "no") facts.push(`Pregnant: ${PREGNANT[p.pregnant]}`);
   if (p.concurrentTrial !== "not_sure") facts.push(`In another clinical trial now: ${YES_NO[p.concurrentTrial]}`);
-  if (p.subtype) facts.push(`Cancer subtype: ${word(p.subtype)}`);
+  if (p.subtype) facts.push(`Cancer subtype: ${SUBTYPE_TEXT[p.subtype] ?? word(p.subtype)}`);
   if (p.stageCategory && p.stageCategory !== "not_sure") facts.push(`Stage: ${STAGE[p.stageCategory]}`);
   if (p.diseaseStatus && p.diseaseStatus !== "not_sure") facts.push(`Disease status: ${STATUS[p.diseaseStatus]}`);
   if (p.priorLines && p.priorLines !== "not_sure") facts.push(`Number of prior treatment plans (lines): ${LINES[p.priorLines]}`);

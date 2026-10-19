@@ -24,7 +24,11 @@ import {
   PREGNANCY,
   PREVIOUSLY_TREATED,
   PRIOR_CONTEXT,
+  THERAPY_NOT_HISTORY,
   THERAPY_PATTERNS,
+  THERAPY_PLANNED_LEAD,
+  THERAPY_SPECIMEN_AFTER,
+  THERAPY_SPECIMEN_LEAD,
   TRIPLE_NEGATIVE,
   WASHOUT,
 } from "@/config/criteria";
@@ -92,6 +96,16 @@ const NOT_RECEIVED_PRIOR = /\b(?:not|never)\s+(?:have\s+|has\s+)?(?:previously\s
 const WINDOW_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, eight: 8, twelve: 12 };
 
 /**
+ * v7: the two narrow "previously treated is excluded" patterns ("prior systemic therapy for metastatic disease",
+ * "have not received any prior therapy"). The previously_treated key as a whole is below the precision gate
+ * (eval/facts-labels-v3.json, 6/10), but none of its labeled errors came from these, so the resolver may still settle
+ * them.
+ */
+export function preciseTreatedExclusion(section: CriterionSection, text: string): boolean {
+  return section === "exclusion" ? PRIOR_SYSTEMIC_FOR_STAGE.test(text) : NOT_RECEIVED_PRIOR.test(text) && !ALLOWED.test(text) && !UNLESS.test(text);
+}
+
+/**
  * Washout window of an exclusion clause as a scoped param ("within 4 weeks" -> "within_4_weeks", "28 days prior to"
  * -> "within_28_days"; half-lives or an unparsed window -> "window"); null when the clause states no window.
  */
@@ -127,6 +141,14 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   for (const [key, re] of Object.entries(THERAPY_PATTERNS) as [keyof typeof THERAPY_PATTERNS, RegExp][]) {
     const m = re.exec(text);
     if (!m || (!PRIOR_CONTEXT.test(text) && !win)) continue;
+    const before = text.slice(Math.max(0, m.index - 60), m.index);
+    const after = text.slice(m.index + m[0].length, m.index + m[0].length + 30);
+    // v7: tissue sources, planned procedures, organization names and reproductive status are not treatment history;
+    // in inclusion text, a therapy offered as one option ("relapse after HSCT or CAR T") is not required.
+    if (THERAPY_SPECIMEN_LEAD.test(before) || THERAPY_SPECIMEN_AFTER.test(after) || THERAPY_PLANNED_LEAD.test(before) || THERAPY_NOT_HISTORY.test(text) || (incl && OR_NEAR.test(text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)))) {
+      out.push({ key, value: "mentioned" });
+      continue;
+    }
     // Negation only counts when it precedes the therapy word closely, inside the same clause
     // ("no prior chemotherapy"); the clause starts after the last comma/semicolon/colon.
     const lead = text.slice(Math.max(0, m.index - 60), m.index);
@@ -170,7 +192,9 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   if (incl && pt) {
     // "No documented progression ...", "previously untreated ... or recurrent" do not mean "previously treated".
     const lead = text.slice(Math.max(0, pt.index - 40), pt.index);
-    if (untreatedWording || NEGATION.test(lead) || ALTERNATIVE_NEAR.test(text.slice(Math.max(0, pt.index - 25), pt.index))) {
+    // v7: an alternative after the match counts too ("relapsed or newly diagnosed"), but not another treated word
+    // ("relapsed or refractory").
+    if (untreatedWording || NEGATION.test(lead) || ALTERNATIVE_NEAR.test(text.slice(Math.max(0, pt.index - 25), pt.index)) || /^\s*(?:\w+\s+)?(?:or|and\/or)\s+(?!(?:relapsed|refractory|progressive|progressing|previously treated|resistant)\b)/i.test(text.slice(pt.index + pt[0].length, pt.index + pt[0].length + 25))) {
       out.push({ key: "previously_treated", value: "mentioned" });
     } else out.push({ key: "previously_treated", value: "required" });
   }
@@ -194,9 +218,17 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   }
 
   // Biomarkers: direction from positive/negative wording near the marker.
+  // v7: an inclusion list of three or more markers ("driver mutation (EGFR, ALK, ROS1, RET)") offers options.
+  const markerCount = BIOMARKERS.filter((b) => b.pattern.test(text)).length;
+  const markerList = incl && markerCount >= 3 && (text.match(/,/g) ?? []).length >= 2;
   for (const b of BIOMARKERS) {
     const m = b.pattern.exec(text);
     if (!m) continue;
+    // v7: "anti-EGFR antibody" names a drug, not the patient's marker status.
+    if (/\banti-?\s*$/i.test(text.slice(Math.max(0, m.index - 6), m.index))) {
+      if (!out.some((o) => o.key === `biomarker:${b.id}`)) out.push({ key: `biomarker:${b.id}`, value: "mentioned" });
+      continue;
+    }
     // The marker's own suffix ("HER2-", "HER2+", "HER2-negative", "EGFR mutation") is decisive;
     // otherwise look at nearby words. This keeps "HR+/HER2-" from reading as HER2-positive.
     const suffix = text.slice(m.index + m[0].length, m.index + m[0].length + 16);
@@ -231,7 +263,7 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     // In inclusion text a marker offered as one of several options ("A or B", "one of the following cancers") is not required.
     // "BRCA1 or BRCA2": alternatives naming the same marker are one requirement, not options.
     const orWindow = sameMarkerAlternatives(text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 25), b.pattern);
-    const optional = incl && (listy || OR_NEAR.test(orWindow));
+    const optional = incl && (listy || markerList || OR_NEAR.test(orWindow));
     if (pos !== neg && !optional) {
       // inclusion+positive => required; inclusion+negative => positive patients excluded;
       // exclusion+positive => excluded; exclusion+negative => negative patients excluded (positive required).

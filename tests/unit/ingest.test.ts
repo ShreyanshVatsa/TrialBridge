@@ -162,3 +162,32 @@ describe("ingestion safety gates", () => {
     expect(ingestAbortReason({ rawCount: 0, invalidCount: 0, builtCount: 0, previousCount: null })).toMatch(/no valid/);
   });
 });
+
+describe("rule facts v7 (rules 5): labeled false facts (eval/facts-labels.json) stay non-directional", () => {
+  const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
+  it("tissue sources, planned procedures and organization names are not treatment history", () => {
+    expect(v("inclusion", "Tissue from a prior biopsy or resection must be available", "prior_surgery")).toBe("mentioned");
+    expect(v("exclusion", "Participants without available tissue from prior surgery", "prior_surgery")).toBe("mentioned");
+    expect(v("inclusion", "GBM recurrence or progression with planned standard of care surgical resection", "prior_surgery")).toBe("mentioned");
+    expect(v("inclusion", "Confirmation of SSTR positivity by Imaging and Radiation Oncology Core after prior therapy", "prior_radiation")).toBe("mentioned");
+    expect(v("inclusion", "Postmenopausal by prior bilateral oophorectomy or pelvic radiation", "prior_radiation")).toBe("mentioned");
+  });
+  it("a therapy offered as one option is not required", () => {
+    expect(v("inclusion", "Any relapse after HSCT or CAR T cell therapy.", "prior_immunotherapy")).toBe("mentioned");
+    // Plain requirements keep working.
+    expect(v("inclusion", "Must have received prior chemotherapy", "prior_chemotherapy")).toBe("required");
+  });
+  it("negative-for-metastases wording excludes metastatic disease instead of requiring it", () => {
+    expect(v("inclusion", "PSMA PET negative for metastatic disease (within 6 months of the biopsy)", "metastatic")).toBe("excluded");
+  });
+  it("driver lists offer options; anti-EGFR antibodies are drugs", () => {
+    expect(v("inclusion", "Metastatic NSCLC with oncogenic driver mutation (EGFR, ALK, ROS1, RET)", "biomarker:ROS1")).toBe("mentioned");
+    expect(v("inclusion", "Progressed after antibody therapy with bevacizumab and an anti-EGFR antibody", "biomarker:EGFR")).toBe("mentioned");
+    expect(v("exclusion", "Known EGFR, ALK or ROS1 alterations", "biomarker:ROS1")).toBe("excluded");
+  });
+  it("recurrence alone is not prior treatment; 'relapsed or newly diagnosed' is an option", () => {
+    expect(v("inclusion", "Recurrent or metastatic head and neck cancer", "previously_treated")).toBeUndefined();
+    expect(v("inclusion", "Relapsed or newly diagnosed multiple myeloma", "previously_treated")).toBe("mentioned");
+    expect(v("inclusion", "Relapsed or refractory disease", "previously_treated")).toBe("required");
+  });
+});

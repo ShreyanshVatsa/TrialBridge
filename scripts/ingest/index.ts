@@ -20,6 +20,7 @@ import MiniSearch from "minisearch";
 import { CTGOV_FIELDS, RawStudySchema } from "../../lib/ingest/raw";
 import { buildRecord, embeddingText, NOT_CANCER, OUT_OF_SCOPE } from "../../lib/ingest/record";
 import { MINISEARCH_OPTIONS, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
+import { qualifiedMarkerFact } from "../../lib/match/marker-qualifier";
 import { ManifestSchema, MetaSchema, trialBucketKey, type LiteCard, type Manifest, type Meta, type ShardInfo, type Site, type TrialBucket, type TrialCard } from "../../lib/types/trial";
 import { AccessDataSchema } from "../../lib/types/access";
 import { aggregateAccess } from "../../lib/access/aggregate";
@@ -270,7 +271,9 @@ async function main(): Promise<void> {
       minAge: c.minAge,
       maxAge: c.maxAge,
       // Directional, non-review facts only, as [key, value] or [key, value, param] (v2 thresholds/carve-outs).
-      f: c.facts.filter((x) => x.value !== "mentioned" && !x.needsReview).map((x): LiteCard["f"][number] => (x.param !== undefined ? [x.key, x.value, x.param] : [x.key, x.value])),
+      // v7: lite facts carry no quote, so biomarker facts with qualifier wording ("other than EGFR") are left out
+      // here; on full cards the pre-check skips them by their quote (lib/match/marker-qualifier.ts).
+      f: c.facts.filter((x) => x.value !== "mentioned" && !x.needsReview && !qualifiedMarkerFact(x)).map((x): LiteCard["f"][number] => (x.param !== undefined ? [x.key, x.value, x.param] : [x.key, x.value])),
       ...(c.sex !== "ALL" ? { s: c.sex } : {}),
       b: [...new Set(c.barriers.map((x) => x.type))],
     }));

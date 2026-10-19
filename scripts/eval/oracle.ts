@@ -97,6 +97,10 @@ export function oracleHaversine(lat1: number, lon1: number, lat2: number, lon2: 
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 const OPEN_STATUS = new Set(["RECRUITING", "NOT_YET_RECRUITING"]);
+/** Recruiting U.S. locations that have no registry coordinates (e.g. a misspelled city such as "Huston"). */
+export function oracleUncodedSites(s: OracleStudy): number {
+  return s.locations.filter((l) => (!l.country || l.country === "United States") && (!l.status || OPEN_STATUS.has(l.status)) && !l.geoPoint).length;
+}
 /** Nearest recruiting U.S. location (miles) to the origin, using the registry's own coordinates; null when none has coordinates. */
 export function oracleNearestMiles(s: OracleStudy, origin: { lat: number; lon: number }): number | null {
   let best: number | null = null;
@@ -144,6 +148,12 @@ export function oracleVerdict(s: OracleStudy, p: OraclePatient): Verdict {
     else {
       distanceStrict = d <= p.travelMiles;
       distance = d <= p.travelMiles + DISTANCE_SLACK_MILES;
+      // v7: a site the registry left without coordinates may be the near one (NCT03850574: "Huston", TX 77030 for a
+      // Houston patient; the app places it by its ZIP). Such a result cannot be judged, so it is not flagged.
+      if (!distanceStrict && oracleUncodedSites(s) > 0) {
+        distanceStrict = distance = true;
+        distanceUnverifiable = true;
+      }
     }
   }
   const sexOk = !p.sex || s.sex === "ALL" || s.sex === "" || (p.sex === "female" ? s.sex === "FEMALE" : s.sex === "MALE");

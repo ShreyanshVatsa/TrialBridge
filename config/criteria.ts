@@ -6,7 +6,7 @@
 import type { CancerGroupId } from "./cancer-groups";
 import type { DrugClassId, HistologyId } from "./questionnaire/ids";
 
-export const CRITERIA_RULES_VERSION = "4";
+export const CRITERIA_RULES_VERSION = "5";
 
 /** Prior-treatment facts: a pattern that identifies the therapy type in a criterion. */
 export const THERAPY_PATTERNS = {
@@ -28,10 +28,21 @@ export const WASHOUT = /\bwithin\s+(\d+|one|two|three|four|six)\b|\bwash-?out\b|
 
 export const METASTATIC = /\b(metasta(tic|sis|ses|sized)|stage\s*(iv|4)\b|distant (disease|spread))/i;
 export const LOCAL_METASTASES_ONLY = /\b(brain|cns|central nervous system|leptomeningeal|spinal cord|bone)\s+metasta|\bmetasta\w*\s+(to|in|of)\s+(the\s+)?(brain|cns|central nervous system|bones?|spine|spinal cord|leptomeninges)/i;
-export const NON_METASTATIC = /\bnon-?metastatic\b|\bno (evidence of )?(distant )?metasta|\bwithout (distant )?metasta|\bm0\b/i;
+export const NON_METASTATIC = /\bnon-?metastatic\b|\bno (evidence of )?(distant )?metasta|\bwithout (distant )?metasta|\bm0\b|\bnegative for (?:any )?(?:distant )?metasta/i;
 
 export const NEWLY_DIAGNOSED = /\b(newly diagnosed|treatment[- ]na[iï]ve|previously untreated|untreated|no prior (systemic )?(therapy|treatment|anti-?cancer))\b/i;
-export const PREVIOUSLY_TREATED = /\b(relapsed|refractory|recurrent|progress(ed|ion) (on|after|following|during)|previously treated|at least (one|1|two|2|three|3) (prior )?(line|regimen|therap))/i;
+/** v7 (rules 5): bare "recurrent" is not here: a recurrence says nothing about systemic treatment (labeled errors). */
+export const PREVIOUSLY_TREATED = /\b(relapsed|refractory|progress(ed|ion) (on|after|following|during)|previously treated|at least (one|1|two|2|three|3) (prior )?(line|regimen|therap))/i;
+
+/**
+ * v7 (rules 5): a therapy word that is not about the patient's treatment history (labeled errors, eval/facts-labels.json):
+ * a tissue source ("tissue from prior surgery"), a planned procedure ("planned surgical resection"), an
+ * organization ("Radiation Oncology Core"), or reproductive status ("surgical sterilization", "menopause by radiation").
+ */
+export const THERAPY_SPECIMEN_LEAD = /\b(?:tissue|specimens?|samples?|blocks?|slides?|material)\b[^.;]{0,40}$/i;
+export const THERAPY_SPECIMEN_AFTER = /^\s*(?:\w+\s+){0,2}(?:specimens?|samples?|tissue|blocks?)\b/i;
+export const THERAPY_PLANNED_LEAD = /\b(?:planned|scheduled|candidates? for|eligible for|indicated for|amenable to|suitable for|will undergo|undergo(?:ing)?|plans? to|intends? to|referred for|considered for|standard of care)\b[^.;]{0,30}$/i;
+export const THERAPY_NOT_HISTORY = /\bradiation oncology\b|\bsteriliz\w*|\btubal ligation\b|\bhysterectomy\b|\boophorectomy\b|\bmenopaus\w*/i;
 
 export const PREGNANCY = /\b(pregnan(t|cy)|breast[- ]?feeding|lactating|nursing)\b/i;
 

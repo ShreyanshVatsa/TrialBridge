@@ -16,7 +16,7 @@ import { CANCER_GROUPS, type CancerGroupId } from "@/config/cancer-groups";
 import { factPolicy } from "@/config/questionnaire/fact-policy";
 import { MARKER_QUALIFIER } from "./marker-qualifier";
 import { cohortSpecific } from "@/lib/ingest/eligibility-facts";
-import { factsForCriterion } from "@/lib/ingest/facts";
+import { factsForCriterion, preciseTreatedExclusion } from "@/lib/ingest/facts";
 import type { SplitCriterion } from "@/lib/ingest/criteria-split";
 import { cancerSynonyms, canonicalDrug, canonicalGene } from "@/lib/ingest/synonyms";
 import type { CriterionLabel, CriterionLabelValue, TrialCriteriaLabels } from "@/lib/types/criteria";
@@ -665,7 +665,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
 
   const alternatives = hasAlternatives(text) || markerList(text);
   // Policy gate: families below the precision gate never create a hard failure.
-  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || factPolicy(c.key).penalize));
+  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || factPolicy(c.key).penalize || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text))));
   // Inclusion alternatives: one failing option does not fail the item. Exclusion alternatives are a list of
   // excluding conditions, so any one of them that applies excludes.
   if (fails.length > 0 && !(incl && (alternatives || PERMISSIVE_ITEM.test(text)))) {
