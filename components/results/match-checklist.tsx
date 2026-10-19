@@ -226,13 +226,13 @@ export function TierBHeader({ id = "tier-b", className }: { id?: string; classNa
   );
 }
 
-/** Shown when no real LLM answered and labels are resolver-only. */
-export function DegradedMatchBanner({ className }: { className?: string }) {
+/** Shown when no real LLM answered and labels are resolver-only. v7: a used-up daily budget says so. */
+export function DegradedMatchBanner({ reason, className }: { reason?: string; className?: string }) {
   const m = useMessages();
   return (
     <div role="note" className={cn("flex items-start gap-3 rounded-2xl border border-warn-border bg-warn px-4 py-3 text-warn-foreground", className)}>
       <AlertTriangle className="mt-1 size-4 shrink-0" aria-hidden />
-      <p>{m.match.degraded}</p>
+      <p>{reason === "budget_exhausted" || reason === "rate_limited" ? m.match.degradedBudget : m.match.degraded}</p>
     </div>
   );
 }

@@ -1015,6 +1015,7 @@ export const en = {
     tierBTitle: "Possible matches with a requirement that may not fit",
     tierBIntro: "These trials are listed lower. Each shows the requirement that may rule you out. Your care team can tell you if it really does.",
     degraded: "AI reading is not available right now, so requirements were checked with simple rules only. More of them show as unknown. That never lowers a trial.",
+    degradedBudget: "Today's free AI reading capacity is used up, so requirements were checked with simple rules only. More of them show as unknown, which never lowers a trial. Try again tomorrow for a full reading.",
   },
   trial: {
     loading: "Loading trial…",

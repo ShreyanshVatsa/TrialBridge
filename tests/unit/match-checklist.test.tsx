@@ -157,3 +157,13 @@ describe("checked at screening (v7)", () => {
     expect(out).toContain("1 requirement is still unknown.");
   });
 });
+
+describe("DegradedMatchBanner reasons (v7)", () => {
+  it("says the daily capacity is used up for budget and rate limits, else the generic text", () => {
+    // (The apostrophe in "Today's" is HTML-escaped in static markup.)
+    expect(html(<DegradedMatchBanner reason="budget_exhausted" />)).toContain("free AI reading capacity is used up");
+    expect(html(<DegradedMatchBanner reason="rate_limited" />)).toContain("free AI reading capacity is used up");
+    expect(html(<DegradedMatchBanner reason="ai_unavailable" />)).toContain(en.match.degraded);
+    expect(html(<DegradedMatchBanner />)).toContain(en.match.degraded);
+  });
+});

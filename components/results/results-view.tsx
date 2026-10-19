@@ -165,7 +165,7 @@ export function ResultsView({
           </Notice>
         )}
         {analysis.status === "degraded" && <Notice tone="warn">{m.results.degraded}</Notice>}
-        {matchDegraded && <DegradedMatchBanner />}
+        {matchDegraded && <DegradedMatchBanner {...(session.criteria?.degradedReason ? { reason: session.criteria.degradedReason } : {})} />}
         {outcome.distanceUnavailable && <Notice tone="warn">{m.results.distanceUnavailable}</Notice>}
         {outcome.zipApproximate && <Notice>{m.results.zipApproximate}</Notice>}
         {outcome.keywordOnly && <Notice tone="warn">{m.results.keywordOnly}</Notice>}
