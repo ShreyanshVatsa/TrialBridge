@@ -472,6 +472,17 @@ function writeMarkdown() {
       for (const [d, v] of Object.entries(s.deltas)) for (const [m, ci] of Object.entries(v)) if (ci) lines.push(`- ${d} ${m}: ${fmtDiff(ci)}`);
       lines.push("");
     }
+    // v7 step 10: how often a Tier B demotion in the shown top 10 is right. TREC "excluded" (1) = correct,
+    // "eligible" (2) = a false exclusion, "not relevant" (0) is counted apart. Pooled over topics.
+    lines.push("Tier B precision (top 10, pooled over topics; correct = TREC excluded, wrong = TREC eligible):", "");
+    for (const arm of ["resolver", "llm"] as const) {
+      const shown = r.topics.flatMap((t) => (t.arms[arm]?.top10 ?? []).filter((x) => x.tier === "B"));
+      const ok = shown.filter((x) => x.grade === 1).length;
+      const wrong = shown.filter((x) => x.grade === 2).length;
+      const nr = shown.length - ok - wrong;
+      lines.push(`- ${arm}: ${shown.length} tier B in top 10; ${ok} correct, ${wrong} wrong (eligible), ${nr} not relevant; precision ${ok + wrong ? `${((100 * ok) / (ok + wrong)).toFixed(0)}% (${ok}/${ok + wrong})` : "n/a"}`);
+    }
+    lines.push("");
     const L = r.llm;
     lines.push("LLM judge:", "");
     lines.push(`- JSON validity: ${L.jsonValidity ? `${L.jsonValidity.valid}/${L.jsonValidity.calls} completions (${(L.jsonValidity.share * 100).toFixed(1)}%)` : "n/a"}`);
@@ -484,8 +495,10 @@ function writeMarkdown() {
     for (const t of r.topics) lines.push(`| ${t.key} | ${t.candidates} | ${f3(t.arms.baseline?.ndcg10)} | ${f3(t.arms.resolver?.ndcg10)} | ${f3(t.arms.llm?.ndcg10)} | ${f3(t.arms.baseline?.missedExclusions)} | ${f3(t.arms.resolver?.missedExclusions)} | ${f3(t.arms.llm?.missedExclusions)} | ${f3(t.arms.resolver?.unknownShare)} | ${f3(t.arms.llm?.unknownShare)} | ${t.llm.status} | ${t.llm.calls} | ${t.llm.tokens} |`);
     lines.push("");
   }
-  const testLog = path.join(OUT_DIR, "test-runs.json");
-  if (existsSync(testLog)) lines.push(`Test split runs recorded in eval/matching/test-runs.json: ${(JSON.parse(readFileSync(testLog, "utf8")) as { runs: unknown[] }).runs.length}.`, "");
+  for (const log of ["test-runs.json", "test-runs-v7.json"]) {
+    const f = path.join(OUT_DIR, log);
+    if (existsSync(f)) lines.push(`Test split runs recorded in eval/matching/${log}${log === "test-runs.json" ? " (v6, TREC 2022 only)" : " (v7, TREC 2022 + 2023)"}: ${(JSON.parse(readFileSync(f, "utf8")) as { runs: unknown[] }).runs.length}.`, "");
+  }
   lines.push("Vignettes: not run. The frozen vignette dev/test gold (eval/gold/vignettes-gold-v1.json) is absent in this checkout.", "");
   writeFileSync(path.join(OUT_DIR, "RESULTS.md"), lines.join("\n"));
 }
