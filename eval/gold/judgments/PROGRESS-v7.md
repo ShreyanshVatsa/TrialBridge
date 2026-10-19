@@ -18,6 +18,8 @@ Order: index.json order, skipping valid files.
 | 1 | 41 (v003-1 .. v033-5: vignettes v003 v004 v006 v012 v013 v014 v020 v022 v026 v028 v029 v033) | 154 | v039-1 |
 | 2 | 9 (v039-1..4, v042-1..5) | 163 | v043-1 |
 | 3 | 10 (v043-1..3, v046-1, v048-1..6) | 173 | v049-1 |
+| 4 | 10 (v049-1, v053-1, v055-1/2/5/6, v056-1..3, v057-1) | 183 | v057-2 |
+| 5 | 9 (v057-2/3, v058-1..3, v059-1..4) | 192 | v060-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -67,4 +69,45 @@ Order: index.json order, skipping valid files.
   - Transplant protocols that require morphologic remission now (no "at time of transplant" wording) are excluded
     for a patient with 15% blasts; ones that say "at time of transplant" for a planned second transplant are possibly.
   - Supportive-services observational study (NCT05745285) kept "possibly", as in v047-2.
+
+
+### Run 4 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v049-1, v053-1, v055-1, v055-2, v055-5, v055-6, v056-1..3, v057-1
+  (10 chunks; vignettes v049, v053, v055, v056 complete; v057 partial, 1 of its chunks done). v055-3/4 already existed (pre-v7).
+- Totals after run 4: 183 / 545 valid, 56 / 164 vignettes complete. Next chunk: v057-2.
+- Consistency calls this run:
+  - AML/myeloid trials for an MDS patient (and the reverse) are not_relevant; a trial whose conditions include MDS but
+    that requires untreated/HMA-naive MDS is excluded for an HMA-treated MDS patient.
+  - AML in first remission with molecular MRD (on aza/ven): trials requiring relapsed/refractory AML or untreated AML
+    are excluded (same as pre-v7 v055-3/4). Controlled HIV fails any criterion barring known HIV / positive HIV
+    antibody / "negative HIV test"; it passes criteria that only bar detectable viral load.
+  - ELN risk is not inferred from NPM1+/FLT3- alone (karyotype unstated): CR1 transplant trials needing
+    intermediate/high risk are possibly (v055-5 NCT05429632).
+  - Cumulative anthracycline dose is not inferred from "six cycles of R-CHOP": a ">150 mg/m2" exclusion is unknown
+    (v056-1 NCT06564038 possibly).
+  - Time since an event given only as a season ("CAR-T in the spring") is unknown against day windows (possibly).
+  - "At least 2 prior lines OR not eligible for / no other available therapy": a fit patient after one line with
+    standard options remaining is excluded on that criterion (v057-1 NCT07226843, NCT05780034).
+  - Patient-supplied R-CHOP implies CD20+ DLBCL for a "CD20+ B-cell NHL" criterion (v056-2 NCT06536049 eligible).
+  - Different lymphoma entities (FL vs LBCL vs MCL vs T-cell) are not_relevant to each other, as with other diseases.
+
+### Run 5 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v057-2, v057-3, v058-1..3, v059-1..4 (9 chunks; vignettes v057, v058, v059
+  complete). Stopped at a vignette boundary (v060 has 5 chunks).
+- Totals after run 5: 192 / 545 valid (full vcheck: 192 ok, 0 invalid), 59 / 164 vignettes complete. Next chunk: v060-1.
+- Consistency calls this run:
+  - "History of autoimmune disease" (no qualifier) fails for Hashimoto's thyroiditis on levothyroxine (excluded,
+    v057-2 NCT07101328, NCT06948786); "active autoimmune disease" and "requiring treatment" variants pass.
+  - Stated EF "around 40%" fails LVEF >= 45% criteria and "EF < 45%" exclusions (excluded); a "<= 40%" exclusion or
+    ">= 40%" cutoff is unknown (possibly). ECOG 2 fails ECOG 0-1 criteria (excluded).
+  - Monitored AF / reduced EF: "known significant heart disease" / "significant cardiovascular disease" is unknown
+    (possibly); criteria that bar only "uncontrolled" cardiac disease pass (v058-3 NCT05602363 eligible).
+  - Never-treated chronic hepatitis C is treated as viremic, active HCV: fails "positive HCV antibody unless negative
+    PCR", "detectable viral load", "potentially active HCV" and "known hepatitis C" criteria (excluded); a generic
+    "active or uncontrolled infection / unacceptable risk" exclusion is unknown (possibly).
+  - Prior-therapy rule: R/R-only trials (or 2+ prior lines) are excluded for an untreated patient. Early-phase
+    trials that list the disease with no R/R qualifier and no numbered prior-therapy criterion (v059-2 NCT05006716,
+    v059-3 NCT05544019) are possibly, not eligible.
+  - Disease stated "on both sides of the diaphragm" fails stage I-II-only criteria (v059-3 NCT07029217 excluded).
+  - MZL vs FL trials are different entities (not_relevant), consistent with the lymphoma-entity rule from run 4.
 
