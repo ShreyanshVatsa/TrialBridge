@@ -28,6 +28,7 @@ Order: index.json order, skipping valid files.
 | 11 | 12 (v075-1..8, v076-1, v077-1..3) | 256 | v078-1 |
 | 12 | 11 (v078-1, v079-1..5, v080-1..5) | 267 | v081-1 |
 | 13 | 10 (v081-1..3, v082-1..5, v083-1/2) | 277 | v083-3 |
+| 14 | 12 (v083-3..6, v084-1..3, v085-1, v086-1..4) | 289 | v087-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -348,3 +349,35 @@ Order: index.json order, skipping valid files.
   - Resected, NED patient on adjuvant therapy: trials needing measurable, unresectable, metastatic or untreated disease are
     excluded (as run 11); pre-operative procedure studies (distal pancreatectomy fistula prevention, prehab before planned
     surgery) are not_relevant after his Whipple.
+
+### Run 14 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v083-3..6, v084-1..3, v085-1, v086-1..4 (12 chunks; vignettes v083 (56M resected
+  stage IIB PDAC, germline BRCA2, NED on adjuvant mFOLFIRINOX), v084 (68F MSI-H metastatic PDAC after gem/nab, FOLFOX and
+  pembrolizumab, progressing, ECOG 2, bilirubin rising), v085 (79M pancreatic cancer of unstated histology on unnamed chemo
+  combinations in Anchorage, prior MI with stents, almost everything unknown) and v086 (44F unresectable LAPC, stable after
+  FOLFIRINOX + capecitabine chemoradiation, germline PALB2, KRAS-mutant, MSS) complete).
+- Totals after run 14: 289 / 545 valid (full vcheck: 289 ok, 0 invalid), 86 / 164 vignettes complete. Next chunk: v087-1.
+- Consistency calls this run:
+  - Resected, NED patient still on adjuvant chemo: adjuvant/maintenance trials for resected PDAC (APOLLO olaparib, daraxonrasib
+    RASolute, MTB-matched therapy for node-positive resected PDAC) are eligible; a "completed most recent treatment within
+    12 weeks" criterion is unknown while the last cycles finish (standard-timing rule). Neoadjuvant, "newly diagnosed",
+    upfront-resectable, unresectable/metastatic and measurable-disease trials are excluded; a psychosocial study during
+    neoadjuvant therapy is excluded on its numbered "already received >= 2 cycles" exclusion; imaging and peri-operative
+    analgesia studies around a surgery he already had are not_relevant (as run 13).
+  - ECOG 2 (rests about half the day) fails every ECOG 0-1 criterion (excluded), as in runs 7/11/12; ECOG 0-2 trials and ones
+    allowing ECOG 2 case-by-case are judged on the rest (unknown biomarkers -> possibly).
+  - Unstated KRAS variant: KRAS G12D / G12C / G12V requirements are unknown, never inferred from "KRAS positive"; generic
+    "KRAS mutation" / "RAS mutation" / "KRAS alteration" criteria are met. APL-101's mis-sectioned "known actionable ...
+    KRAS" exclusion is not_met for a KRAS-mutant tumor (excluded).
+  - Unresectable LAPC stable after first-line FOLFIRINOX + chemoradiation: criteria needing progression/intolerance on standard
+    therapy (with no other prong) are not_met (excluded, as run 12); ones with a "declined" or "standard therapy considered
+    inappropriate" prong are unknown (possibly); "treatment naive or prior standard therapy" trials are eligible (RMC-6236);
+    a maintenance trial requiring stable disease for 3 months after >= 1 line is eligible. Trials barring prior abdominal /
+    overlapping-field radiation are excluded after chemoradiation. Metastatic-only trials are excluded for non-metastatic LAPC.
+    Pemigatinib's "progressive disease following prior regimen, or stopped for toxicity" is not_met for a stable patient.
+  - Unstated pancreatic histology (v085): a resected-pNET adjuvant trial is excluded on the stated fact that surgery was never
+    an option; first-line metastatic trials are excluded after a year of chemo for never-resectable disease; any-histology and
+    PDAC trials with unknown biomarkers/lines/ECOG are possibly.
+  - Basket trials whose histology list omits pancreatic cancer (TAK-505, MK-5684) are not_relevant; AIM-NIVO for a patient with
+    prior pembrolizumab is excluded on E3, and not_relevant for one with no autoimmune disease and no prior PD-1 (as before).
+
