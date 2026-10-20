@@ -46,6 +46,7 @@ Order: index.json order, skipping valid files.
 | 29 | 9 (v134-1..3, v135-1..4, v136-1/2) | 448 | v137-1 |
 | 30 | 10 (v137-1..5, v138-1, v139-1..4) | 458 | v140-1 |
 | 31 | 14 (v140-1/2, v141-1, v142-1..5, v143-1..6) | 472 | v144-1 |
+| 32 | 12 (v144-1 empty, v145-1..6, v146-1, v147-1..4) | 484 | v148-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -955,3 +956,36 @@ Order: index.json order, skipping valid files.
     PRGN-2009 after >= 6 weeks of pembrolizumab, BOLD IL-2 basket, REAL-Neo vaccine, Lenti-HPV-07, Rina-S Part B) are possibly
     (run 30 rule). A SC-vs-IV pembrolizumab preference study for patients already on front-line pembrolizumab is eligible.
   - Clear-cell-only gyn trial for a cervical adenocarcinoma of unstated subtype is possibly (variant not reported, as run 19).
+
+### Run 32 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v144-1 (0 trials; written as `{"labels":[]}` like v123-1), v145-1..6, v146-1, v147-1..4
+  (12 chunks; vignettes v144, v145 (56F metastatic uterine carcinosarcoma to lung/liver after carboplatin/paclitaxel,
+  pembrolizumab + lenvatinib and doxorubicin, now progressing, HER2 2+, p53 abnormal, MSS, PD-L1 negative, SRS-treated stable
+  brain metastases, ECOG 2), v146 (49F central pelvic recurrence of HPV+ PD-L1-negative cervical SCC after cisplatin chemoradiation
+  2023, exenteration under discussion, active lupus on prednisone + hydroxychloroquine) and v147 (19M localized high-grade distal
+  femur osteosarcoma mid pre-operative MAP, limb salvage planned for November) complete). Finished v147 rather than stop mid-vignette.
+- Totals after run 32: 484 / 545 valid (full vcheck: 484 ok, 0 invalid), 147 / 164 vignettes complete. Next chunk: v148-1.
+- Consistency calls this run:
+  - Uterine carcinosarcoma (treated as high-grade endometrial cancer) counts as endometrial cancer for trials naming endometrial
+    cancer/carcinoma or carcinosarcoma; trials that exclude carcinosarcoma (Rina-S phase 3 and Parts F/G, TroFuse-033, NRG dMMR
+    nivolumab, Pro-Window, GCCC 2578) or limit histology to endometrioid, serous, clear cell or low-grade endometrioid are excluded
+    (subtype rule). Uterine sarcoma rules stay separate (carcinosarcoma is not "sarcoma" where a trial excludes only sarcomas).
+  - ECOG 2 (rests a good part of the day) fails every ECOG 0-1 criterion (as before), which excludes most refractory endometrial
+    trials; ECOG 0-2 trials with no failing criterion are eligible (DCSZ11 escalation, HER2 IHC 1+/2+/3+ recurrent EC phase 3
+    NCT06340568, NKT3964 carcinosarcoma cohort 2E). MGC026 ("adequate performance", cutoff not shown) is possibly.
+  - Line count for v145: carboplatin/paclitaxel, pembrolizumab + lenvatinib, doxorubicin = 3 lines (2 chemo lines). Caps of
+    "1-2 lines" / "no more than 2" fail; "maximum of 3", "<= 3" and "<= 4 with <= 2 chemo" are met. Prior lenvatinib fails TKI and
+    lenvatinib exclusions. Pembrolizumab fails "immune checkpoint blockade" bars even when the listed examples are anti-CTLA-4/PD-L1.
+  - Liver metastases fail XTX301's "known liver metastasis" exclusion; SRS-treated stable brain metastases pass "active/uncontrolled
+    CNS" exclusions but fail FORE8394 subprotocols C/D CNS bars (subprotocol A keeps it possibly on BRAF).
+  - Cervical vs endometrial entity rule applied both ways (as run 31). Central pelvic recurrence after chemoradiation with curative
+    exenteration under discussion (v146): newly diagnosed LACC and adjuvant/post-surgical pelvic RT trials are excluded (prior pelvic
+    RT); biomarker-gated baskets (ComboMATCH, PYNNACLE, HER2-amplified neratinib) are possibly on untested markers; an exercise study
+    for patients starting curative chemotherapy is excluded when the stated plan is surgery.
+  - Sarcoma entity rule: osteosarcoma (bone) vs soft tissue sarcoma subtypes, Ewing sarcoma, rhabdomyosarcoma, chondrosarcoma and GIST
+    are different diseases (not_relevant). Trials that name osteosarcoma, bone sarcoma or sarcoma broadly are judged on the rest; a
+    tumor list naming "soft tissue sarcoma" only (MT-4561) is not_relevant for osteosarcoma.
+  - Localized osteosarcoma mid neoadjuvant MAP with surgery planned (curative intent): relapsed/refractory, metastatic,
+    unresectable/locally advanced and lung-metastasis trials are excluded (prior-therapy and advanced-basket rules); a cell-therapy
+    trial (SPEARHEAD-3) and an advanced-solid-tumor trial with no numbered stage or prior-therapy rule (GI-102) are possibly (title
+    rule); a pre-surgical FAP PET imaging cohort is possibly (FAP expression and timing around MAP unknown).
