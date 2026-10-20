@@ -47,6 +47,7 @@ Order: index.json order, skipping valid files.
 | 30 | 10 (v137-1..5, v138-1, v139-1..4) | 458 | v140-1 |
 | 31 | 14 (v140-1/2, v141-1, v142-1..5, v143-1..6) | 472 | v144-1 |
 | 32 | 12 (v144-1 empty, v145-1..6, v146-1, v147-1..4) | 484 | v148-1 |
+| 33 | 9 (v148-1..5, v149-1..4) | 493 | v150-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -989,3 +990,34 @@ Order: index.json order, skipping valid files.
     unresectable/locally advanced and lung-metastasis trials are excluded (prior-therapy and advanced-basket rules); a cell-therapy
     trial (SPEARHEAD-3) and an advanced-solid-tumor trial with no numbered stage or prior-therapy rule (GI-102) are possibly (title
     rule); a pre-surgical FAP PET imaging cohort is possibly (FAP expression and timing around MAP unknown).
+
+### Run 33 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v148-1..5, v149-1..4 (9 chunks; vignettes v148 (62F metastatic KIT exon 11 gastric GIST
+  to liver, progressing on fourth-line ripretinib after imatinib, sunitinib and regorafenib, NTRK negative, ECOG 0-1) and v149 (54M
+  recurrent retroperitoneal leiomyosarcoma with nearby nodes after resection + nephrectomy and RT, doxorubicin x6 then gem/docetaxel,
+  now growing, NTRK negative, cured HCV, ECOG 0-1) complete). Stopped at a vignette boundary (v150 has 6 chunks).
+- Totals after run 33: 493 / 545 valid (full vcheck: 493 ok, 0 invalid), 149 / 164 vignettes complete. Next chunk: v150-1.
+- Consistency calls this run (sarcoma):
+  - Sarcoma entity rule extended: GIST and leiomyosarcoma are different diseases from each other and from other named STS subtypes
+    (liposarcoma, UPS/DDLPS, synovial, ASPS, Ewing, osteosarcoma, MPNST, angiosarcoma, uterine sarcoma): subtype-limited trials are
+    not_relevant. Trials open to "soft tissue sarcoma" or "sarcoma" broadly (no subtype list, no GIST exclusion) are judged on the
+    rest for GIST, as for LMS (GIST is a soft tissue sarcoma by WHO); a trial whose only STS route is a NOS safety run-in (AXIOM) is
+    possibly. Primary retroperitoneal STS surgery/RT trials are not_relevant for metastatic gastric GIST (and explicitly exclude GIST).
+  - Within GIST, molecular class is a subtype fact: an SDH-deficient-GIST-only trial is excluded for KIT exon 11-mutant GIST. Line
+    rules: first-line/frontline and imatinib-only GIST trials are excluded after four TKIs; trials barring prior ripretinib are
+    excluded; KIT T670X exclusions are not treated as unknown when only the primary exon 11 mutation is stated (ziftomenib eligible);
+    a 2L-after-imatinib phase 3 with no numbered line cap is possibly (title rule). TKIs are not "cytotoxic" or "chemotherapy" lines.
+  - After all four approved GIST TKIs, "no satisfactory alternative" / "all available therapies" criteria are met; for LMS after
+    doxorubicin and gem/docetaxel they are not_met (trabectedin, pazopanib remain; run 13 'all' rule), while plain "failed standard
+    therapy" is met.
+  - Doxorubicin counts as a topoisomerase inhibitor for unqualified "prior topoisomerase inhibitors" exclusions (BEHOLD-1 excluded);
+    TOP1-specific bars are not triggered by it. Known liver metastases fail XTX301 E2 (GIST), while LMS without liver disease is
+    eligible for its any-tumor Part 1A.
+  - Regional nodal recurrence ("spread: nearby"): "locally advanced or metastatic" is met; "unresectable / not amenable to curative
+    therapy" and "metastatic sarcoma" requirements stay unknown (possibly), as run 11. Prior retroperitoneal RT fails "prior radiation
+    to the area" exclusions (5-day preoperative RT trial excluded).
+  - Injection-based trials need injectable lesions: liver-only disease fails MQ710's cutaneous/subcutaneous/nodal requirement and
+    tigilanol's body wall/extremity requirement (excluded); a generic investigator-judged injectable lesion is unknown.
+  - NTRK-negative tumor: NTRK cohorts fail, but ALK/ROS1 fusion status stays unknown, so repotrectinib's Phase 1 is possibly.
+    Untested KRAS G12C, BRAF, FAP, SSR, XPO1, Trop-2/Nectin-4/HER2 and CCNE1 gates are possibly. FAP/any-malignancy imaging
+    studies whose entry fits (FAP-2286 agnostic cohort, 89Zr-starPEG) are eligible.
