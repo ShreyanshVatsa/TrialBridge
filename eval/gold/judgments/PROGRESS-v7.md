@@ -48,6 +48,7 @@ Order: index.json order, skipping valid files.
 | 31 | 14 (v140-1/2, v141-1, v142-1..5, v143-1..6) | 472 | v144-1 |
 | 32 | 12 (v144-1 empty, v145-1..6, v146-1, v147-1..4) | 484 | v148-1 |
 | 33 | 9 (v148-1..5, v149-1..4) | 493 | v150-1 |
+| 34 | 13 (v150-1..6, v151-1/2, v152-1..5) | 506 | v153-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -1021,3 +1022,38 @@ Order: index.json order, skipping valid files.
   - NTRK-negative tumor: NTRK cohorts fail, but ALK/ROS1 fusion status stays unknown, so repotrectinib's Phase 1 is possibly.
     Untested KRAS G12C, BRAF, FAP, SSR, XPO1, Trop-2/Nectin-4/HER2 and CCNE1 gates are possibly. FAP/any-malignancy imaging
     studies whose entry fits (FAP-2286 agnostic cohort, 89Zr-starPEG) are eligible.
+
+### Run 34 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v150-1..6, v151-1/2, v152-1..5 (13 chunks; vignettes v150 (24F relapsed pelvic Ewing
+  sarcoma after VDC/IE + pelvic RT, lung/rib relapse progressing on irinotecan/temozolomide, ECOG 2, NTRK untested), v151 (71M
+  resected 11 cm thigh UPS, clear margins, no spread, finishing post-operative RT, no chemo, melanoma 6 years ago) and v152 (45F
+  metastatic ETV6-NTRK3 spindle cell sarcoma of the forearm after adjuvant doxorubicin/ifosfamide, resected + irradiated stable brain
+  metastasis, lung nodules growing after 14 months of larotrectinib, ECOG 0-1) complete). Finished v152 rather than stop mid-vignette.
+- Totals after run 34: 506 / 545 valid (full vcheck: 506 ok, 0 invalid), 152 / 164 vignettes complete. Next chunk: v153-1.
+- Consistency calls this run (sarcoma):
+  - Sarcoma entity rule extended to Ewing sarcoma of bone: osteosarcoma-only, rhabdo/DSRCT/Wilms-only, named STS-subtype and
+    "soft tissue sarcoma"-only trials (incl. STS cohorts of OSA/STS baskets, TraPIN, SPEDOX-6, tigilanol, abemaciclib CDK) are
+    not_relevant for bone Ewing; trials naming Ewing, bone sarcoma or sarcoma broadly are judged on the rest. Conversely a
+    Ewing/CIC-only trial is not_relevant for UPS. A "spindle cell sarcoma" with an NTRK fusion is judged against subtype lists: lists
+    that name spindle cell sarcoma NOS / undifferentiated sarcoma are unknown or met (then judged on the rest); lists of other named
+    subtypes (LMS, UPS, MFS, SS, DDLPS) are not_relevant.
+  - ECOG 2 ("spend part of each day resting") meets Karnofsky/Lansky >= 50, > 50 and >= 60, fails ECOG 0-1, KPS >= 70 and "> 70"
+    (excluded); a criterion stating "Karnofsky >= 50, corresponding to ECOG < 2" is internally inconsistent -> unknown (possibly).
+  - Relapsed Ewing on second-line irinotecan/temozolomide with progression: trials barring progression on (or prior) irinotecan +
+    temozolomide are excluded (repotrectinib + chemo E10, vorinostat + VIT I4); where only a phase 2 Ewing cohort carries that bar
+    and phase 1 does not (PEEL-224), possibly. Newly diagnosed Ewing, remission/maintenance (NED-required) and frontline supportive
+    trials are excluded. Ewing fusion type not reported -> unknown for EWS-FLI1 / "classical fusion" requirements.
+  - Lines for metastatic-setting caps: chemo given after resection of localized disease (adjuvant VDC/IE, adjuvant dox/ifos) is not a
+    line "for metastatic/unresectable disease"; a TKI (larotrectinib) is not a cytotoxic line (ADCE-D01 excluded on I3).
+  - Progression on larotrectinib with an approved next-generation TRK inhibitor available: "no satisfactory alternative" is not_met
+    (FAP-2286 phase 1 excluded, run 13 rule); criteria with a refuse/forego-standard prong are unknown (MT-4561, ADC MATCH possibly).
+    The repotrectinib TRK-TKI-pretreated NTRK+ cohort (EXP-6) is eligible. "Any history of CNS metastases" fails for a resected,
+    irradiated stable brain metastasis (T3011 excluded); "treated stable" CNS wording passes. Prior doxorubicin fails anthracycline-naive
+    criteria (doxorubicin + pembrolizumab phase 3 excluded).
+  - Resected NED UPS on post-operative RT (v151): advanced/refractory solid-tumor baskets and first-line advanced-STS trials are
+    excluded (advanced-basket rule, as runs 11/14/20); a financial-hardship study for advanced cancer on non-curative systemic therapy is
+    excluded; taxane/platinum CIPN prevention and oral-agent symptom monitoring are not_relevant when the stated plan is RT only;
+    GIST, MPN, heme, Ewing and retroperitoneal-only trials are not_relevant.
+  - Studies requiring a procedure the plan does not mention (St. Jude proton therapy, microdevice before planned surgery, TIL harvest
+    at scheduled resection/biopsy, local control for relapsed Ewing) are possibly; palliative RT/cryoablation studies needing lesions
+    she does not have (superficial/skin lesions, bone metastases) are excluded.
