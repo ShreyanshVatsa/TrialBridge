@@ -23,6 +23,7 @@ Order: index.json order, skipping valid files.
 | 6 | 12 (v060-1..5, v061-1..3, v062-1, v063-1..3) | 204 | v064-1 |
 | 7 | 10 (v064-1..3, v065-1..4, v066-1..3) | 214 | v067-1 |
 | 8 | 12 (v067-1..3, v068-1..3, v069-1..6) | 226 | v070-1 |
+| 9 | 9 (v070-1/2, v071-1..3, v072-1..4) | 235 | v073-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -192,4 +193,34 @@ Order: index.json order, skipping valid files.
     "first transplant" studies are excluded after a prior ASCT.
   - Alkylator exposure is not inferred from "stem cell transplant" (melphalan not stated): unknown.
   - An RT trial whose ECOG text reads ">= 2" (likely a typo) was not cited; labelled possibly on lesion count (v069-1).
+
+### Run 9 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v070-1/2, v071-1..3, v072-1..4 (9 chunks; vignettes v070 (78M myeloma on
+  unnamed pill + weekly shot, markers rising), v071 (penta-exposed RRMM after cilta-cel, teclistamab and allo-HCT,
+  chronic HBV on entecavir) and v072 (BRAF V600E stage IV cutaneous melanoma, 2 months into first-line ipi/nivo) complete).
+  Stopped at a vignette boundary (v073 has 4 chunks).
+- Totals after run 9: 235 / 545 valid (full vcheck: 235 ok, 0 invalid), 72 / 164 vignettes complete. Next chunk: v073-1.
+- Consistency calls this run:
+  - Myeloma treated for years with unnamed drugs and unknown line count: SMM / NDMM / frontline trials are excluded
+    (prior-therapy rule); all RRMM line- or class-count criteria are unknown (possibly). Rising markers are not taken as
+    IMWG progression (unknown), so a deep-responder de-escalation trial (limited-duration teclistamab) is possibly.
+  - Chronic hepatitis B on entecavir with undetectable viral load is HBsAg-positive chronic HBV: it fails criteria that bar
+    "chronic or active hepatitis B", "hepatitis B infection" or a positive HBsAg/HBcAg test (excluded); it passes
+    criteria that bar only "active" or "uncontrolled" HBV; "excluded unless criteria can be met" is unknown.
+  - Mis-sectioned exclusions (exclusion text listed under INCLUSION, e.g. "Have received prior treatment with CAR T
+    therapy" in DURGA-2, "History of allogeneic and autologous stem cell transplantation" in linvoseltamab combos) are
+    cited with their inclusion number and verdict not_met when the patient has the barred history.
+  - Allo-HCT date not stated: "allo-HCT within 6 months" exclusions are unknown (possibly) even when the timeline makes
+    it unlikely.
+  - Patient mid first-line ICI with first restaging pending (no progression and no response known): "no prior systemic
+    therapy for advanced disease" trials are excluded; trials requiring progression on PD-1 are possibly (unknown, not
+    not_met), unlike run 6 where the patient was known to be responding.
+  - BRAF V600 melanoma: criteria that require prior BRAF/MEK therapy with no waiver for declining (JZP898, IGNYTE-3)
+    are not_met (excluded); ones that allow "declined"/"not indicated" or a second-line-ICI exception are unknown.
+    NRAS-mutant trials excluding known BRAF mutations are excluded.
+  - Uveal melanoma, cSCC, Merkel and neuroendocrine trials are not_relevant for cutaneous melanoma (entity rule); a
+    GNAQ/11 trial whose only numbered diagnosis is metastatic uveal melanoma is not_relevant.
+  - Solid-tumor or melanoma cohorts with no numbered prior-therapy or progression rule (DB-1311 basket) are possibly for a
+    patient mid first-line (title rule, as run 5); a trial that explicitly adds a novel agent to ipi-then-nivo and allows
+    prior PD-1 (alintegimod) is eligible.
 
