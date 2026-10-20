@@ -39,6 +39,7 @@ Order: index.json order, skipping valid files.
 | 22 | 10 (v112-1..3, v113-1..3, v114-1..3, v115-1) | 378 | v116-1 |
 | 23 | 10 (v116-1, v117-1..6, v118-1, v119-1/2) | 388 | v120-1 |
 | 24 | 11 (v120-1..4, v121-1/2, v122-1..4, v123-1 empty) | 399 | v124-1 |
+| 25 | 10 (v124-1..6, v125-1..4) | 409 | v126-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -703,3 +704,41 @@ Order: index.json order, skipping valid files.
     not_relevant. Flaring ulcerative colitis fails "uncontrolled inflammatory bowel disease" (FOG-001). AIM-NIVO excluded for her on I1/I2
     (no measurable disease; biliary not an adjuvant PD-1 indication), as v028-2.
   - Oral-agent symptom-monitoring study (NCT06279013) possibly when the next therapy is not stated (v121, as v076-1).
+
+### Run 25 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v124-1..6, v125-1..4 (10 chunks; vignettes v124 (39F metastatic perihilar
+  cholangiocarcinoma to peritoneum and nodes, FGFR2 fusion, IDH negative, after gem/cis, FOLFOX and pemigatinib now failing,
+  single biliary stent with normal bilirubin, ECOG 2, Anchorage) and v125 (68M NASH-cirrhosis HCC resected two years ago,
+  single 4 cm intrahepatic recurrence with viable residual after Y-90, systemic-treatment-naive, AF on apixaban, ECOG 0-1,
+  Fort Worth) complete).
+- Totals after run 25: 409 / 545 valid (full vcheck: 409 ok, 0 invalid), 125 / 164 vignettes complete. Next chunk: v126-1.
+- Consistency calls this run:
+  - "Rest for part of the day, but I still cook and get out" with daily activity 2 is ECOG 2 (as runs 7/11/14/15): every ECOG 0-1
+    criterion is not_met, which excludes most BTC trials she otherwise fits (I-DXd, spevatamig, CDX-1140, ZM008, TYRA-430 Part A,
+    IDOV-Immune, CTX-10726); ECOG 0-2 trials with no failing criterion are eligible (D07001 + capecitabine after gem/cis and FOLFOX,
+    tivozanib, nab-sirolimus, ABBV-400 with no ECOG rule shown); atezolizumab + tivozanib is possibly (ECOG 2 fits phase 2 only; TMB
+    unreported).
+  - Perihilar CCA follows the BTC subtype rule (run 24): iCCA-only trials (HAI pump, Y-90 + IO, resectable iCCA perioperative) are
+    excluded, citing the iCCA criterion or an explicit "perihilar cholangiocarcinoma" exclusion. Liver-resection procedure studies
+    (PVE DRAGON-PLC, iCCA lymphadenectomy) are not_relevant for a metastatic patient with no surgery planned (procedure rule).
+  - Prior pemigatinib fails "prior FGFR inhibitor / FGFR-targeted therapy" exclusions; trials that allow prior FGFR inhibitors are
+    judged on the rest. Line counting: gem/cis and FOLFOX are two platinum regimens, so a "1 prior platinum-based therapy" trial
+    (nanvuranlat) and "max 2 prior lines" caps (AZD0901 BTC substudy) are not_met; targeted therapy is not counted where the trial says so.
+  - FGFR2 fusion counts as a co-occurring driver for FORE8394 subprotocol D (not_met), but subprotocols A/C carry no such bar, so
+    the trial stays possibly on unreported BRAF.
+  - "I have a biliary stent" (singular) passes tivozanib's "stents at more than one level" exclusion.
+  - Studies tied to a procedure not in the plan but plausible for the disease (SBRT planning imaging, liver-RT biomarker MRI, EUS
+    microwave ablation, VR for visceral pain not described) are possibly (as run 17/23).
+  - HCC treated with resection and Y-90 but no systemic therapy is systemic-treatment-naive: trials requiring prior systemic lines,
+    progression on/refractoriness to SoC, "no standard therapy available" or exhausted SoC are excluded (prior-therapy rule, as run 22),
+    including loosely worded "relapsed or refractory to SoC" (SGN-PDL1V Part C) and "progressing from local standard of care" (CR-001);
+    locoregional therapy does not count as the SoC line these phase 1 trials mean. First-line HCC trials stay possibly when
+    unresectability / not-amenable-to-locoregional status is not stated (STRIDE + RBS2418, zanzalintinib HCC cohort).
+  - Apixaban for AF is full-dose oral anticoagulation: fails "full-dose oral or parenteral anticoagulants" bars (TTI-101 cohort C,
+    with A/B needing prior systemic therapy, so excluded); "except specified factor Xa inhibitors" is unknown. Atrial fibrillation fails
+    namodenoson's "atrial fibrillation of any grade" exclusion.
+  - Prior Y-90 to the only lesion fails "prior locoregional therapy to target lesions is not allowed" (THIO + cadonilimab neoadjuvant,
+    excluded). Child-Pugh class is not inferred for compensated NASH cirrhosis in a very active patient: Child-Pugh B7-8-only trials
+    are possibly.
+  - HCC vs BTC entity rule both ways and HCC screening/chemoprevention studies not_relevant (as runs 23/24); AIM-NIVO not_relevant
+    with no autoimmune disease and no prior PD-1.
