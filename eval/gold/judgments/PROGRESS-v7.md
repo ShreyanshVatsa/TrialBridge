@@ -27,6 +27,7 @@ Order: index.json order, skipping valid files.
 | 10 | 9 (v073-1..4, v074-1..5) | 244 | v075-1 |
 | 11 | 12 (v075-1..8, v076-1, v077-1..3) | 256 | v078-1 |
 | 12 | 11 (v078-1, v079-1..5, v080-1..5) | 267 | v081-1 |
+| 13 | 10 (v081-1..3, v082-1..5, v083-1/2) | 277 | v083-3 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -324,3 +325,26 @@ Order: index.json order, skipping valid files.
     setting (v080-2 HER3-DXd excluded). KRAS G12D fails KRAS G12C / G12V / KRAS-wild-type requirements (excluded).
   - Eight FOLFIRINOX cycles (~16 weeks) meet "minimum of 16 weeks" and "8-12 cycles" maintenance criteria.
   - AIM-NIVO for a patient with no autoimmune disease and no prior PD-1 is not_relevant (as v015/v024).
+
+### Run 13 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v081-1..3, v082-1..5, v083-1/2 (10 chunks; vignettes v081 (71F untreated borderline
+  resectable PDAC, neoadjuvant chemo planned, no molecular testing, lives in South Dakota) and v082 (47F metastatic G2
+  non-functional pNET after lanreotide and everolimus, KRAS/BRCA/MSI negative) complete; v083 (56M resected stage IIB PDAC,
+  germline BRCA2, KRAS+, NED on adjuvant mFOLFIRINOX cycle 10/12) partial, 2 of 6 chunks).
+- Totals after run 13: 277 / 545 valid (full vcheck: 277 ok, 0 invalid), 82 / 164 vignettes complete. Next chunk: v083-3.
+- Consistency calls this run:
+  - Pancreatic NET vs pancreatic adenocarcinoma are different diseases (entity rule): PDAC-only trials, and pancreatic
+    cohorts limited to adenocarcinoma or excluding neuroendocrine histology, are not_relevant for a pNET patient (and NET
+    trials for a PDAC patient). Within the neuroendocrine family, a poorly differentiated / high-grade NEC trial is excluded
+    for a well-differentiated G2 NET (subtype rule); a carcinoid-syndrome trial is excluded for a non-functional NET.
+  - pNET after SSA + everolimus: "progressed on all available standard of care", "no satisfactory alternative", "refractory
+    to all standard therapies" and "no available therapeutic options" are not_met (PRRT and other lines remain); plain
+    "failed / progressed after standard therapy" (no "all") is met. Prior everolimus fails mTOR-inhibitor exclusions.
+  - Borderline resectable, untreated, non-metastatic PDAC: metastatic-only, second-line, resected/adjuvant and
+    "unresectable / surgery with curative intent not an option" trials are excluded; a neoadjuvant-imaging study for
+    localized PDAC headed to surgery after chemo is eligible. A state-residency requirement she fails (Minnesota) is excluded.
+  - "No actionable mutations" is not read as HER2/MET amplification-negative (unknown -> possibly); it is read as no RAS
+    mutation for a RAS-mutation basket when KRAS is also negative (excluded).
+  - Resected, NED patient on adjuvant therapy: trials needing measurable, unresectable, metastatic or untreated disease are
+    excluded (as run 11); pre-operative procedure studies (distal pancreatectomy fistula prevention, prehab before planned
+    surgery) are not_relevant after his Whipple.
