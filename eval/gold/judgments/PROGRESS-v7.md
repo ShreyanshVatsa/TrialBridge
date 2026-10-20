@@ -33,6 +33,7 @@ Order: index.json order, skipping valid files.
 | 16 | 13 (v090-1..4, v091-1..4, v092-1, v093-1..3, v094-1 empty) | 312 | v095-1 |
 | 17 | 12 (v095-1..5, v096-1..4, v097-1..3) | 324 | v098-1 |
 | 18 | 10 (v098-1..4, v099-1..3, v100-1..3) | 334 | v101-1 |
+| 19 | 10 (v101-1, v102-1..4, v103-1/2, v104-1..3) | 344 | v105-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -509,3 +510,33 @@ Order: index.json order, skipping valid files.
   - Recurrent grade 3 meningioma after surgery, RT and three systemic lines: refractory solid-tumor phase 1s allowing ECOG 2 with no
     failing criterion are eligible (DCSZ11 escalation, RBS2418, SBO-154); ECOG 0-1 trials are excluded (ECOG 2 from resting much of
     the afternoon); a palliative RT study excluding intracranial targets is excluded. ECOG 2 meets KPS >= 60 (zanzalintinib eligible).
+
+### Run 19 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v101-1, v102-1..4, v103-1/2, v104-1..3 (10 chunks; vignettes v101 (70F incidental 3 cm
+  presumed grade 1 meningioma, unbiopsied, untreated, inactive lupus, cardiac stent), v102 (48M IDH-wt MGMT-unmethylated
+  EGFR-amplified GBM after two resections, RT/TMZ, bevacizumab, lomustine and a trial immunotherapy, ECOG 3-4, dexamethasone 8 mg),
+  v103 (76M high-grade glioma of unknown type and markers, unresectable, mid chemoradiation, activity unknown) and v104 (70M metastatic
+  urothelial carcinoma after neoadjuvant gem/cis + cystectomy and ~10 months of pembrolizumab, progressing, eGFR ~45, no EV yet) complete).
+- Totals after run 19: 344 / 545 valid (full vcheck: 344 ok, 0 invalid), 104 / 164 vignettes complete. Next chunk: v105-1.
+- Consistency calls this run:
+  - ECOG 3-4 with a wheelchair and family help for most daily care fails KPS >= 60 as well as KPS >= 70 / ECOG 0-2 (excluded, as
+    runs 6/12); an "ECOG 0-3" criterion is unknown for "3-4" (possibly). Trials with no performance-status rule are judged on the rest
+    (VISTA NCT07831369 eligible for a recurrent GBM after RT/TMZ with no irinotecan).
+  - Dexamethasone 8 mg fails every steroid cap of <= 2 / 4 / 6 mg and a ">= 6 mg" exclusion. First-recurrence-only GBM trials are
+    excluded after several recurrences; prior bevacizumab, lomustine or immunotherapy fail the matching exclusions.
+  - Re-treatment / follow-up trials that require a prior specific therapy (186RNL re-treatment) are excluded for a patient who never
+    had it (as run 8).
+  - Unbiopsied, presumed grade 1 meningioma with no documented growth: a progressive-meningioma trial needing histology and growth is
+    excluded; open-ended advanced solid-tumor baskets are excluded (advanced-basket rule).
+  - Patient mid first-line chemoradiation with unknown glioma type/markers: IDH-mutant maintenance and EGFR-amplified GBM trials are
+    possibly; first-recurrence and refractory-basket trials are excluded; baskets barring primary CNS tumors are not_relevant (run 18).
+  - Metastatic UC after perioperative platinum and one metastatic line (pembrolizumab): first-line mUC trials, NMIBC, localized MIBC,
+    adjuvant, bladder-sparing and upper-tract trials are excluded; trials requiring prior enfortumab vedotin (or EV-ineligibility) are
+    excluded; "not eligible or able to take existing standard therapies" is not_met while EV/carboplatin remain (run 13 rule).
+    Neoadjuvant platinum is not a line "for LA/mUC" (disitamab vedotin cohorts excluded). eGFR ~45 rules out cisplatin but not
+    "eligible for platinum-based chemotherapy" (carboplatin), so that criterion is met; a "CrCl >= 50 OR creatinine <= 1.5 x ULN" rule
+    is unknown (possibly).
+  - Rare/variant-histology GU trial (NCT03866382) for a patient with urothelial carcinoma of unstated variant: possibly (variant not
+    reported), not excluded. A mRNA vaccine arm limited to NMIBC is excluded for metastatic MIBC (stage within the same disease).
+  - Upper-tract surgical procedure study (nephroureterectomy LND) is not_relevant (procedure he is not having, as run 13).
+
