@@ -41,6 +41,7 @@ Order: index.json order, skipping valid files.
 | 24 | 11 (v120-1..4, v121-1/2, v122-1..4, v123-1 empty) | 399 | v124-1 |
 | 25 | 10 (v124-1..6, v125-1..4) | 409 | v126-1 |
 | 26 | 12 (v126-1..3, v127-1..4, v128-1..5) | 421 | v129-1 |
+| 27 | 9 (v129-1..5, v130-1, v131-1..3) | 430 | v132-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -786,3 +787,32 @@ Order: index.json order, skipping valid files.
     positive" bars (saRNA IL-12, BHV-1530 excluded, as run 9); "active HBV (HBV DNA > LLOD)" and "known active viral infection" are
     unknown (possibly).
   - AIM-NIVO excluded on E3 after pembrolizumab or toripalimab (as before).
+
+### Run 27 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v129-1..5, v130-1, v131-1..3 (9 chunks; vignettes v129 (70F adenoid cystic carcinoma of the
+  parotid, resected + proton RT 2016, slowly growing lung metastases, systemic-treatment-naive, DCIS 2014, ECOG 0-1), v130 (83M newly
+  biopsied neck carcinoma of unknown type and primary, probably throat, untreated, ECOG 3-4, CKD, pacemaker, Salina) and v131 (33F
+  HPV-negative, PD-L1 CPS < 1 oral cavity (gum) SCC, resected with neck dissection, NED, halfway through adjuvant RT + weekly cisplatin)
+  complete). Stopped at a vignette boundary (v132 has 5 chunks).
+- Totals after run 27: 430 / 545 valid (full vcheck: 430 ok, 0 invalid), 131 / 164 vignettes complete. Next chunk: v132-1.
+- Consistency calls this run:
+  - Salivary gland carcinoma (adenoid cystic) is a different disease from mucosal HNSCC (entity rule, as NPC vs HNSCC in run 26):
+    HNSCC-only trials, squamous-only baskets (ALE.P02 excludes non-squamous histology) and HNSCC trials that exclude salivary primaries are
+    not_relevant for a salivary patient, and a salivary-only trial (HER2 SGC) is not_relevant for an oral cavity SCC patient. Trials naming
+    "carcinoma of the head and neck" or "HNC of any types" (FLASH reirradiation, VMD-928, NeoScorch "head and neck ... tumors") are judged
+    on the rest: FLASH excluded on distant metastases, NeoScorch excluded (curative-intent, untreated locoregional only).
+  - Metastatic salivary ACC, systemic-naive: the salivary ivonescimab trial (any subtype incl. ACC, progression over any interval, no prior
+    therapy required) is eligible; the HER2 SGC trial is possibly (HER2 never tested, not inferred from ACC histology); the post-op HER2
+    salivary trial and the IMD microdevice study (non-metastatic, pre-surgery) are excluded on their stage criteria; an untreated-lesion
+    salivary MRI study is not_relevant (diagnostic study, as run 17). Epithelial baskets whose protocol tumor list is not shown (AVENTINE-1)
+    or that only prioritise other types (BL-B01D1) are possibly; explicit tumor lists omitting salivary cancer are not_relevant.
+  - Intratumoral-injection trials: lung-only nodules fail a requirement for cutaneous, subcutaneous or nodal injectable lesions (MQ710
+    excluded); a generic "accessible for IT injection" requirement with an unknown lesion count is unknown (T3011 possibly).
+  - RAPA-201 (needs anti-PD-1 in the most recent line) is excluded for a systemic-naive patient on that criterion.
+  - Unknown-histology neck carcinoma with ECOG 3-4 (v130): HNSCC/salivary trials are excluded on ECOG/Zubrod 0-2 even with histology
+    unknown (the stated performance status rules him out); AIM-NIVO not_relevant (no autoimmune disease).
+  - HPV-negative oral cavity SCC: HPV+ OPSCC trials are excluded (subtype rule, as v127). Resected NED patient mid adjuvant CRT: every
+    advanced/R/M/measurable-disease trial and open-ended advanced basket is excluded (advanced-basket rule); baskets whose list omits
+    HNSCC are not_relevant; studies for untreated patients (HOPE gabapentin needs no prior surgery; rural care study bars already-started
+    curative treatment) are excluded; post-CRT consolidation for unresected disease (volrustomig) is excluded after primary resection. An
+    anti-EGFR skin-toxicity prophylaxis study is not_relevant when the stated regimen is cisplatin-RT (as v109's stated-plan rule).
