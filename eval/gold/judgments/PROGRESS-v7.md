@@ -36,6 +36,7 @@ Order: index.json order, skipping valid files.
 | 19 | 10 (v101-1, v102-1..4, v103-1/2, v104-1..3) | 344 | v105-1 |
 | 20 | 11 (v105-1..4, v106-1..3, v107-1..4) | 355 | v108-1 |
 | 21 | 13 (v108-1/2, v109-1..3, v110-1/2, v111-1..6) | 368 | v112-1 |
+| 22 | 10 (v112-1..3, v113-1..3, v114-1..3, v115-1) | 378 | v116-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -603,3 +604,37 @@ Order: index.json order, skipping valid files.
   - Surgical procedure studies the patient is not having (nephroureterectomy lymph node dissection, ureteral stent at cystectomy) are
     not_relevant, as run 19.
 
+### Run 22 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v112-1..3, v113-1..3, v114-1..3, v115-1 (10 chunks; vignettes v112 (58M newly diagnosed
+  untreated stage IV ccRCC with biopsy-proven lung metastases, IO combination planned, head never scanned, never tested for hepatitis),
+  v113 (66F metastatic ccRCC after nephrectomy, ipilimumab/nivolumab ~14 months then cabozantinib, now progressing, treated stable
+  Gamma Knife brain metastasis, ECOG 0-1), v114 (44F papillary RCC recurrent in retroperitoneal nodes, progressing after ~8 months of
+  cabozantinib, Hashimoto's on levothyroxine) and v115 (73M resected pT3 ccRCC, NED on adjuvant pembrolizumab) complete).
+- Totals after run 22: 378 / 545 valid (full vcheck: 378 ok, 0 invalid), 115 / 164 vignettes complete. Next chunk: v116-1.
+- Consistency calls this run (kidney):
+  - RCC histology follows the subtype rule: clear-cell-only RCC trials/cohorts (clear-cell component required) are excluded for papillary
+    RCC, and trials whose RCC cohorts are only non-clear-cell (rare GU histology NCT03866382: sarcomatoid, papillary, chromophobe,
+    medullary, collecting duct) are excluded for clear cell RCC (sarcomatoid features not reported are not assumed).
+  - Untreated metastatic ccRCC with first-line IO combinations planned: first-line RCC trials (no prior systemic therapy) are eligible;
+    refractory / "failed or no standard therapy" / "progressed on SOC" / prior-PD-1 or prior-line trials are excluded (as run 12);
+    "refused standard therapy" or "willing to forego standard therapy" prongs are unknown (possibly); phase 1 solid-tumor baskets with
+    no numbered prior-therapy rule are possibly (title rule). Diagnosis-to-treatment under 1 year counts as an IMDC risk factor, so
+    "IMDC intermediate or poor" is met for a newly diagnosed patient; an unstated cytoreductive-nephrectomy plan is unknown (SAMURAI possibly).
+  - Planned IO combination not named: a dosing-interval study open to pembrolizumab + TKI but not ipilimumab + nivolumab is possibly.
+  - Progressing ccRCC/pRCC after IO and/or a VEGF TKI: plain "progressed on / refractory to standard therapy" criteria are met; "no
+    satisfactory alternative", "all available SOC", "no other SOC therapy available" and "standard palliative measures do not exist or are
+    no longer effective" are not_met while further standard RCC options remain (run 13 'all' rule; same reading as v104-1). Phase 1
+    solid-tumor trials with no failing criterion are eligible.
+  - Progression on ipilimumab/nivolumab after ~14 months of benefit meets "progression while receiving anti-PD-1 after >= 12 weeks with
+    prior clinical benefit" even though cabozantinib followed (PLN-101095 eligible); prior/current cabozantinib fails cabozantinib-naive
+    criteria (casdatifan + cabozantinib, rare GU trial). First-line SBRT + IO (SAMURAI) and cytoreductive-nephrectomy (PROBE) trials are
+    excluded after nephrectomy and prior systemic therapy.
+  - Hashimoto's on levothyroxine: fails "active, uncontrolled, or prior documented autoimmune disorders" when thyroid disease is not among
+    the listed exceptions (IMGS-001 excluded, as run 5); passes criteria that except replacement-treated hypothyroidism/endocrinopathy or
+    bar only autoimmune disease needing systemic/immunosuppressive treatment; "history of active autoimmune disorders" and "prior autoimmune
+    disorders (with exceptions)" whose exceptions are not shown are unknown (possibly).
+  - Patient who feels fine apart from drug side effects fails a palliative RT study requiring a symptom score >= 5 from the target lesion
+    (excluded). Resected NED patient already on adjuvant pembrolizumab: an adjuvant trial requiring no prior systemic therapy and surgery
+    within 16 weeks is excluded, as are trials needing recurrent measurable disease (as runs 11/14/20).
+  - "Advanced solid tumors, including ..." lists are read as non-exclusive (PYX-201 + pembrolizumab possibly for RCC); explicit tumor lists
+    that omit RCC remain not_relevant.
