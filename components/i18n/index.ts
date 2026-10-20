@@ -7,7 +7,7 @@
  * keys filled from English); `useT()` is the flat `t(key, vars)` API with plural and Intl helpers.
  */
 import { useEffect, useSyncExternalStore } from "react";
-import { DEFAULT_LOCALE, getLocale, intlLocale, isLocaleTag, LOCALE_TAGS, type FontPackId, type LocaleDef, type LocaleTag } from "@/config/locales";
+import { DEFAULT_LOCALE, getLocale, intlLocale, isLocaleTag, type FontPackId, type LocaleDef, type LocaleTag } from "@/config/locales";
 import { coverage as coverageOf, flatten, format, lookup, overlay, type FlatMessages, type Paths, type Vars } from "@/lib/i18n/keys";
 import { isManifest, noteKind, type LocaleStatus, type Manifest, type ManifestEntry } from "@/lib/i18n/manifest";
 import { en, type Messages } from "./en";
@@ -22,7 +22,6 @@ export type PluralKey = MessageKey extends infer K ? (K extends `${infer B}.othe
 
 /** UI languages = locale registry tags. A language is a BCP 47 tag string. */
 export type Language = LocaleTag;
-export const UI_LANGUAGES: readonly LocaleTag[] = LOCALE_TAGS;
 const STORAGE_KEY = "tb-lang";
 
 export interface T {
@@ -210,12 +209,4 @@ export function LanguageReady(): null {
     if (!pending || pending === lang) root.removeAttribute("data-lang-pending");
   }, [lang]);
   return null;
-}
-
-/** Test helper: reset module state. */
-export function __resetI18nForTests(): void {
-  state = null;
-  cache.clear();
-  manifestPromise = null;
-  fontLinks.clear();
 }

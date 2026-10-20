@@ -45,7 +45,6 @@ export interface LiveCount {
 
 /** Essentials, in the fixed order the flow asks them (spec §2.1). */
 export const ESSENTIAL_IDS = ["cancer_type", "age", "zip", "travel"] as const;
-export const MAX_ADAPTIVE = { quick: 7, thorough: 20 } as const;
 
 export function isEssential(id: string): boolean {
   return (ESSENTIAL_IDS as readonly string[]).includes(id);

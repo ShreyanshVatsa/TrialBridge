@@ -12,7 +12,6 @@ export const AskRequestSchema = z.strictObject({
   language: LanguageSchema,
   turnstileToken: z.string().min(1).max(2048),
 });
-export type AskRequest = z.infer<typeof AskRequestSchema>;
 
 export const AskKindSchema = z.enum(["answer", "not_in_text", "refusal", "crisis"]);
 export type AskKind = z.infer<typeof AskKindSchema>;

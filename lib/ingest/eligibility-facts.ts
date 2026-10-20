@@ -128,9 +128,6 @@ export interface ExtractContext {
   alt?: boolean;
 }
 
-/** Keys whose `param` is merged leniently across criteria (see mergeParam). */
-export const PARAM_KEYS: readonly string[] = ["ecog_max", "min_prior_lines", "max_prior_lines", "other_malignancy", "brain_mets", "hiv", "hepatitis_b", "hepatitis_c", "autoimmune"];
-
 /** Fact families used for precision measurement and the catalog gate (§7.3). */
 export const FACT_FAMILIES = {
   performance: ["ecog_max"],

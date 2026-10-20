@@ -1,6 +1,5 @@
 /** Small builders that keep the catalog files declarative. Data-only helpers, no runtime state. */
 import type { FactKey } from "@/lib/types/trial";
-import type { CancerGroupId } from "@/config/cancer-groups";
 import { PREFER_NOT, SKIP, UNKNOWN, type FactRule, type MessageKey, type OptionDef, type OptionEffect, type QuestionDef } from "./types";
 import type { QuestionId } from "./ids";
 
@@ -40,12 +39,6 @@ export function priors(table: Record<string, number>): Record<string, number> {
   const unknown = table[UNKNOWN] ?? Math.max(0, 1 - sum);
   const total = sum + unknown;
   return Object.fromEntries([...known.map(([k, v]) => [k, Number((v / total).toFixed(4))]), [UNKNOWN, Number((unknown / total).toFixed(4))]]);
-}
-
-/** Same prior table for several groups. */
-export function priorsFor(groups: readonly CancerGroupId[], table: Record<string, number>): Partial<Record<CancerGroupId, Record<string, number>>> {
-  const p = priors(table);
-  return Object.fromEntries(groups.map((g) => [g, p]));
 }
 
 /** A question with the conventional key layout (label/help/why under questionnaire.<keyBase>.*). */

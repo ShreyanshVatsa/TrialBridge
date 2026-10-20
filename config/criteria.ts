@@ -140,7 +140,6 @@ export const TRANSPLANT_FUTURE = /\b(candidates?|eligible (for|to)|planned|plan(
 export const TRANSPLANT_PRIOR = /\b(prior|previous(ly)?|history of|received|underwent|undergone|had|after|following|post[- ]?(allogeneic|allo|transplant)|relapsed? (after|post|following)|status post|s\/p)\b/i;
 
 export const AUTOIMMUNE = /\bauto-?immune (disease|disorder|condition|illness|diseases|disorders|conditions|hepatitis|colitis)|\bautoimmunity\b/i;
-export const AUTOIMMUNE_ACTIVE = /\b(active|requir(ed|es|ing) (systemic |chronic |ongoing |daily |long-term )?(treatment|therapy|immunosuppress\w*|steroids?|corticosteroids?|prednisone|medications?|biologic\w*|disease[- ]modifying|DMARDs?)|in the (past|last|previous) \w+ (years?|months?)|within (the )?(past|last)? ?\w+ (years?|months?)|uncontrolled|unless|except|exceptions?|allowed|permitted|eligible|ongoing|currently)\b/i;
 
 export const HEART_DISEASE = /\b(congestive heart failure|heart failure|\bCHF\b|myocardial infarction|heart attack|unstable angina|cardiomyopathy|NYHA|New York Heart Association|(clinically )?significant (cardiac|cardiovascular|heart) (disease|condition|disorder|dysfunction)|cardiac (disease|disorder)s?|cardiovascular disease)\b/i;
 export const KIDNEY_DISEASE = /\b(dialysis|hemodialysis|haemodialysis|end[- ]stage (renal|kidney)|ESRD|ESKD|renal failure|kidney failure|chronic kidney disease)\b/i;

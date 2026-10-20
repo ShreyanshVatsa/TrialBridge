@@ -38,7 +38,6 @@ export interface Features {
 
 export type FusionWeights = Readonly<Record<keyof Features, number>>;
 
-export const ZERO_FEATURES: Features = { retrieval: 0, kw: 0, vec: 0, cosine: 0, bm25: 0, penalty: 0, bonus: 0, phase: 0, subtypeMatch: 0, subtypeConflict: 0, basket: 0, weakGroup: 0 };
 
 export const FUSION_WEIGHTS: FusionWeights = SHIPPED.weights as FusionWeights;
 

@@ -13,5 +13,5 @@ import { lexicon as vi } from "./vi";
 import { lexicon as zhHans } from "./zh-Hans";
 import { lexicon as zhHant } from "./zh-Hant";
 
-/** pl, bn, gu, ur, fa lexicon files are parked (locales cut until translated). All lexicons, keyed by locale tag. Adding one = a file here plus an entry below. */
+/** All lexicons, keyed by locale tag. Adding one = a file here plus an entry below. */
 export const LEXICONS: Readonly<Record<string, CrisisLexicon>> = { en, es, pt, ht, "zh-Hans": zhHans, "zh-Hant": zhHant, vi, ko, tl, ar, ru, fr, hi };
