@@ -40,6 +40,7 @@ Order: index.json order, skipping valid files.
 | 23 | 10 (v116-1, v117-1..6, v118-1, v119-1/2) | 388 | v120-1 |
 | 24 | 11 (v120-1..4, v121-1/2, v122-1..4, v123-1 empty) | 399 | v124-1 |
 | 25 | 10 (v124-1..6, v125-1..4) | 409 | v126-1 |
+| 26 | 12 (v126-1..3, v127-1..4, v128-1..5) | 421 | v129-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -742,3 +743,46 @@ Order: index.json order, skipping valid files.
     are possibly.
   - HCC vs BTC entity rule both ways and HCC screening/chemoprevention studies not_relevant (as runs 23/24); AIM-NIVO not_relevant
     with no autoimmune disease and no prior PD-1.
+
+### Run 26 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v126-1..3, v127-1..4, v128-1..5 (12 chunks; vignettes v126 (61M untreated HPV+ (p16+)
+  base-of-tongue SCC with ipsilateral neck nodes, chemoradiation planned, asking about de-escalation trials, ECOG 0-1), v127 (55F
+  HPV-negative oral tongue SCC, resected + RT/weekly cisplatin 2023, lung metastases this spring, first-line pembrolizumab +
+  carboplatin/5-FU then maintenance pembrolizumab with a lung nodule now growing, feeding tube, brain never scanned) and v128 (47M
+  EBV+ nasopharyngeal carcinoma, chemoradiation 2022, liver/bone metastases on gem/cis + toripalimab then capecitabine with rising
+  EBV DNA, chronic HBV carrier on entecavir) complete). Finished v128 rather than stop mid-vignette.
+- Totals after run 26: 421 / 545 valid (full vcheck: 421 ok, 0 invalid), 128 / 164 vignettes complete. Next chunk: v129-1.
+- Consistency calls this run (head and neck):
+  - Nasopharyngeal carcinoma vs non-nasopharyngeal HNSCC (oral cavity, oropharynx, larynx, hypopharynx) are different diseases
+    (entity rule, as pNET vs PDAC): HNSCC trials are not_relevant for an NPC patient whether or not they name the nasopharynx
+    exclusion, and NPC-only trials are not_relevant for oral/oropharyngeal patients; salivary gland, ESCC, mucosal melanoma and GI
+    trials are not_relevant too. Trials that explicitly include NPC or head and neck cancer of any type (ALE.P02 "nasopharyngeal
+    cancer included", BHV-1530 nasopharynx in the HNSCC site list, BMX-001 nasopharynx in I3, VMD-928 "HNC of any types", saRNA IL-12
+    "head and neck cancer", HOPE "head and neck region", PULS-Pal) are judged on the rest.
+  - HPV status within OPSCC is a subtype fact: p16-negative-only / HPV-negative-only trials are excluded for p16+ OPSCC and HPV+
+    trials (HPV16 CUE-101, p16+ OPC vaccines, HPV+ de-escalation) are excluded for HPV-negative disease. Stage-within-disease rule
+    applies: R/M, recurrent-in-radiated-field, salvage-surgery, post-operative and post-chemoradiation consolidation trials are excluded
+    for a new untreated patient, and definitive/newly diagnosed LA trials excluded for metastatic recurrence.
+  - Untreated locoregional HPV+ OPSCC with chemoradiation planned: open-ended advanced/refractory baskets excluded (advanced-basket
+    rule); a basket open to "metastatic or locally advanced" MSI-H tumors is possibly on unknown MSI. "Chemotherapy with radiation"
+    does not name cisplatin, so cisplatin-specific supportive/radioprotector trials (HOPE, BMX-001) are possibly; it does establish
+    platinum eligibility, so platinum/cisplatin-ineligible-only trials (NBTXR3, NRG cetuximab-RT) are excluded. Ipsilateral-only nodes
+    in p16+ OPSCC are cN1 (not N2); unstated T stage keeps stage cutoffs unknown. A trial needing measurable disease stays possibly
+    when measurable = unknown (run 1 rule), even for an otherwise close fit (reduced-dose RT NCT07497607). A ctHPVDNA study around
+    upfront TORS is possibly (surgery plausible, plan is chemoradiation); oral-agent symptom monitoring is not_relevant when the stated
+    plan is chemoradiation (as v109).
+  - A lesion "getting larger" on the latest scan while on maintenance pembrolizumab counts as progression on PD-1 + platinum (met for
+    I-DXd, HER3-DXd, ficlatuzumab, CTX-8371, BiCaZO I5). By contrast a rising tumor marker alone (EBV DNA on capecitabine) is not
+    progression on the current line (unknown), consistent with run 12.
+  - Feeding tube for radiation dysphagia does not state whether pills can be swallowed whole: oral-capsule criteria are unknown
+    (BiCaZO possibly); trials that explicitly allow feeding tubes pass. A brain never scanned does not trigger CNS exclusions (as v112).
+  - Studies tied to surgery the patient is not having (nodal-staging or intraoperative imaging before neck dissection, navigation from
+    curative surgery to adjuvant RT) and a diagnostic PET study for indeterminate metastases in a patient with established lung
+    metastases are not_relevant; NED-only survivorship/vaccine studies are not_relevant (lymphedema) or excluded on the NED criterion
+    (Candida vaccine to prevent recurrence).
+  - A cohort that fits but is marked "closed to enrolment" (petosemtamab 2L/3L HNSCC) is possibly, not eligible. A multi-part trial
+    whose shown HNSCC expansion cohorts fail but whose Part A criteria are not shown (BCA101) is possibly.
+  - Chronic HBV carrier on entecavir with normal liver tests (HBV DNA not stated): fails "known chronic hepatitis B" and "HBsAg
+    positive" bars (saRNA IL-12, BHV-1530 excluded, as run 9); "active HBV (HBV DNA > LLOD)" and "known active viral infection" are
+    unknown (possibly).
+  - AIM-NIVO excluded on E3 after pembrolizumab or toripalimab (as before).
