@@ -2,7 +2,8 @@
  * Check judge output: `npx tsx scripts/eval/vignettes/judge-check.ts --judge=opus [--split=dev|test] [--ids=v001,v002]`.
  * For every chunk of the split: the file eval/gold/judgments/<judge>/<chunk>.json must parse, cover exactly the chunk's
  * trials, and every evidence quote must be a verbatim substring of the numbered criterion it cites (verifyJudgment).
- * Valid files are normalised to the JudgmentFile shape. Prints the chunks still missing or invalid (the redo list).
+ * Valid files are normalised to the JudgmentFile shape (an existing judgedAt is kept; a file is rewritten only when its
+ * normalised content differs). Prints the chunks still missing or invalid (the redo list).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { loadNational } from "../national";
@@ -11,7 +12,7 @@ import { readChunkIndex } from "./judge-packets";
 import { JudgmentSchema, packetTrial, verifyJudgment, type Judgment, type JudgmentFile, type PacketTrial } from "./judge-prompt";
 import { splitOf } from "./schema";
 
-export const MODELS_BY_JUDGE: Record<string, string> = { opus: "claude-opus (subagent)", sonnet: "claude-sonnet (subagent)" };
+export const MODELS_BY_JUDGE: Record<string, string> = { opus: "claude-opus (subagent)", "opus-2": "claude-opus (fresh-context second judge)", sonnet: "claude-sonnet (subagent)" };
 
 export interface ChunkCheck {
   chunk: string;
@@ -42,9 +43,10 @@ export function checkJudge(judge: string, split?: "dev" | "test", only?: Set<str
       continue;
     }
     const problems: string[] = [];
-    let raw: { labels?: unknown[] } = {};
+    let raw: { labels?: unknown[]; judgedAt?: unknown } = {};
+    const text = readFileSync(file, "utf8");
     try {
-      raw = JSON.parse(readFileSync(file, "utf8")) as { labels?: unknown[] };
+      raw = JSON.parse(text) as { labels?: unknown[]; judgedAt?: unknown };
     } catch (e) {
       problems.push(`unparseable JSON: ${(e as Error).message}`);
     }
@@ -63,8 +65,10 @@ export function checkJudge(judge: string, split?: "dev" | "test", only?: Set<str
       else problems.push(...verifyJudgment(j, trial(j.nctId)));
     }
     if (problems.length === 0) {
-      const out: JudgmentFile = { judge, model: MODELS_BY_JUDGE[judge] ?? judge, vignette: c.vignette, judgedAt: new Date().toISOString().slice(0, 10), labels: parsed };
-      writeFileSync(file, `${JSON.stringify(out)}\n`);
+      const judgedAt = typeof raw.judgedAt === "string" ? raw.judgedAt : new Date().toISOString().slice(0, 10);
+      const out: JudgmentFile = { judge, model: MODELS_BY_JUDGE[judge] ?? judge, vignette: c.vignette, judgedAt, labels: parsed };
+      const normalised = `${JSON.stringify(out)}\n`;
+      if (normalised !== text) writeFileSync(file, normalised);
       labels.set(c.id, parsed);
     }
     checks.push({ chunk: c.id, status: problems.length ? "invalid" : "ok", problems });
@@ -75,7 +79,7 @@ export function checkJudge(judge: string, split?: "dev" | "test", only?: Set<str
 if (process.argv[1]?.endsWith("judge-check.ts")) {
   const arg = (k: string) => process.argv.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
   const judge = arg("judge");
-  if (!judge) throw new Error("usage: judge-check.ts --judge=<opus|sonnet> [--split=dev|test] [--ids=v001,...]");
+  if (!judge) throw new Error("usage: judge-check.ts --judge=<opus|opus-2|sonnet> [--split=dev|test] [--ids=v001,...]");
   const only = arg("ids") ? new Set(arg("ids")!.split(",")) : undefined;
   const { checks } = checkJudge(judge, arg("split") as "dev" | "test" | undefined, only);
   const n = (s: string) => checks.filter((c) => c.status === s).length;

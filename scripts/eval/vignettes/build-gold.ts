@@ -1,5 +1,5 @@
 /**
- * Merge verified judge files into the vignette gold set: `npx tsx scripts/eval/vignettes/build-gold.ts`.
+ * Merge verified judge files into the vignette gold set: `npx tsx scripts/eval/vignettes/build-gold.ts [--second=opus-2]`.
  * Writes eval/gold/vignettes-gold-v1.json (primary-judge label per pooled pair, the second judge's label where it judged
  * the pair, `contested` where they differ), the inter-judge agreement (raw + Cohen's kappa, stratified by split), and
  * eval/gold/vignettes-review-packet-v1.md (all disagreements + a seeded random 15% of the pairs, for the owner).
@@ -8,7 +8,7 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { loadNational } from "../national";
 import { JUDGMENTS_DIR } from "./files";
-import { checkJudge } from "./judge-check";
+import { checkJudge, MODELS_BY_JUDGE } from "./judge-check";
 import { readChunkIndex } from "./judge-packets";
 import { LABELS, type Judgment, type Label } from "./judge-prompt";
 import { cohensKappa, rng } from "./metrics";
@@ -17,7 +17,8 @@ import { splitOf } from "./schema";
 export const GOLD_FILE = "eval/gold/vignettes-gold-v1.json";
 export const REVIEW_FILE = "eval/gold/vignettes-review-packet-v1.md";
 export const PRIMARY = "opus";
-export const SECOND = "sonnet";
+/** Second judge's directory: v7 uses a fresh-context Opus judge ("opus-2") on a seeded 20% vignette sample (second-sample.ts). */
+export const SECOND = process.argv.find((a) => a.startsWith("--second="))?.slice(9) ?? "opus-2";
 
 export interface GoldPair {
   /** Primary judge's label. */
@@ -99,7 +100,7 @@ function main(): void {
   }
   const gold: GoldFile = {
     schema: 1,
-    note: "LLM-judged gold labels, NOT clinician-reviewed. l = primary judge (Claude Opus subagent), s = independent second judge (Claude Sonnet subagent) on a stratified sample of vignettes, contested = they differ. See eval/gold/README.md.",
+    note: `LLM-judged gold labels, NOT clinician-reviewed. l = primary judge (Claude Opus subagent), s = independent second judge (${SECOND}: ${MODELS_BY_JUDGE[SECOND] ?? SECOND}) on a stratified sample of vignettes, contested = they differ. See eval/gold/README.md.`,
     primary: PRIMARY,
     second: SECOND,
     vignettes,
