@@ -45,6 +45,7 @@ Order: index.json order, skipping valid files.
 | 28 | 9 (v132-1..5, v133-1..4) | 439 | v134-1 |
 | 29 | 9 (v134-1..3, v135-1..4, v136-1/2) | 448 | v137-1 |
 | 30 | 10 (v137-1..5, v138-1, v139-1..4) | 458 | v140-1 |
+| 31 | 14 (v140-1/2, v141-1, v142-1..5, v143-1..6) | 472 | v144-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -914,3 +915,43 @@ Order: index.json order, skipping valid files.
   - Ovarian metastases from gastric cancer are not ovarian cancer: baskets whose tumor list names ovarian but not gastric are
     not_relevant. Petosemtamab (NCT03526835) not_relevant for gastric, as v128-5/v133. ESCC-only substudies not_relevant for gastric
     adenocarcinoma (entity rule, run 29). Barrett's/screening studies not_relevant.
+
+### Run 31 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v140-1/2, v141-1, v142-1..5, v143-1..6 (14 chunks; vignettes v140 (63F resected stage
+  IIIC1 HER2 3+ p53-abnormal uterine serous carcinoma, NED, cycle 4 of 6 adjuvant carboplatin/paclitaxel/trastuzumab), v141 (41F
+  untreated stage IIIC1 HPV16+ PD-L1+ cervical SCC, chemoradiation planned, controlled HIV), v142 (70F Lynch, recurrent dMMR
+  p53-normal HER2-negative endometrioid EC with lung metastases after adjuvant carbo/paclitaxel + pelvic RT, pembrolizumab 11
+  months then progression, now 5 months on lenvatinib with BP/appetite toxicity, colon cancer 9 years ago) and v143 (29F stage IVB
+  HPV18+ PD-L1+ MSS cervical adenocarcinoma, good response to first-line carboplatin/paclitaxel/bevacizumab/pembrolizumab) complete).
+  Finished v143 rather than stop mid-vignette.
+- Totals after run 31: 472 / 545 valid (full vcheck: 472 ok, 0 invalid), 143 / 164 vignettes complete. Next chunk: v144-1.
+- Consistency calls this run (gynecologic):
+  - Endometrial vs cervical cancer are different diseases (entity rule): cervical-only trials (incl. cervical screening and early
+    cervical surgery) are not_relevant for endometrial patients and endometrial-only trials for cervical patients; uterine sarcoma
+    and fibroid studies are not_relevant for both. Cervical screening/self-collection studies are not_relevant for any cancer patient.
+  - Molecular class within endometrial cancer is a subtype fact: TP53-wild-type-only trials (navtemadlin) are excluded for a
+    p53-abnormal tumor and pMMR/p53-aberrant-only trials for a dMMR p53-normal tumor; pMMR-only and dMMR-only trials follow MMR status.
+    TP53 Y220C-required trials are excluded for a p53-normal tumor.
+  - Resected NED patient mid adjuvant chemo (v140): advanced/recurrent/measurable-disease trials and open-ended solid-tumor baskets are
+    excluded (advanced-basket rule); Sofe-M stays possibly (only numbered criterion is tumor type, as v093); survivorship programs
+    requiring completed treatment and adjuvant trials needing treatment start within 10 weeks of surgery are excluded on timing.
+    Neuropathy-prevention trials requiring paclitaxel-naive entry are excluded once taxane chemo has started (as runs 17/30).
+  - "Progressed on pembrolizumab, now on lenvatinib, progression on it not stated" (v142): criteria that only need progression after
+    platinum and PD-(L)1 are met (MOMA-341, TS-104, REGN5668 endometrial cohort, BL-B01D1 EC cohort eligible); criteria needing
+    radiographic progression on the most recent line are unknown (possibly), as run 29. Lenvatinib-induced hypertension is not
+    treated as uncontrolled hypertension (exclusions not cited) unless stated.
+  - Late recurrence (> 12 months) after adjuvant platinum with no platinum rechallenge: trials with that as a numbered exclusion or a
+    required extra cytotoxic line (Bluestar-Endometrial01 I9, Rina-S GCT1184 Parts F/G I30) are not_met; Rina-S phase 3 waives
+    rechallenge when IO was given for recurrence (met). Single-agent pembrolizumab with progression fails NRG nivolumab +/- ipilimumab
+    (prior PD-1 allowed only with chemo/RT, CR and 12-month interval).
+  - "HER2 negative" with no IHC score is unknown against HER2-expressing (IHC 1+ and above) requirements (BL-M07D1 possibly);
+    HER2 IHC 3+/2+ requirements are not_met.
+  - Numbered criteria that never name tumor types, with listed conditions omitting the patient's cancer (BMS-986340, AZD5335 for
+    cervical), are not_relevant (run 6 rule); AZD5335 is eligible for endometrial (listed condition, no failing core criterion).
+  - HPV16-required trials (E7 TCR-T) are excluded for an HPV18-positive tumor (required biomarker she is negative for).
+  - Patient responding to first-line chemo-IO (v143): progression-required trials and cohorts excluded (runs 6/12/15/30);
+    untreated/newly diagnosed, locally advanced (LACC) definitive-chemoradiation, post-hysterectomy adjuvant RT and stage IB1-IVA
+    post-treatment vaccine trials excluded (stage within disease); trials with no numbered progression clause (LenPem cervix,
+    PRGN-2009 after >= 6 weeks of pembrolizumab, BOLD IL-2 basket, REAL-Neo vaccine, Lenti-HPV-07, Rina-S Part B) are possibly
+    (run 30 rule). A SC-vs-IV pembrolizumab preference study for patients already on front-line pembrolizumab is eligible.
+  - Clear-cell-only gyn trial for a cervical adenocarcinoma of unstated subtype is possibly (variant not reported, as run 19).
