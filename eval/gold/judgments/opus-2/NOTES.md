@@ -101,3 +101,41 @@ New judgment calls:
   reconstruction, distal pancreatectomy fistula, post-Whipple analgesia, SLNB pain) -> not_relevant.
 - Same-cancer trials whose listed tumor types omit the patient's cancer (TAK-505: gastric/CRC/NSCLC/HNSCC) ->
   not_relevant.
+
+## Run 4 (2026-10-20)
+
+Chunks done (32): v093-1..3; v102-1..4; v103-1..2; v108-1..2; v109-1..3; v115-1; v118-1; v121-1..2;
+v132-1..5; v139-1..4; v164-1..5. Totals after run: 109 ok / 0 invalid / 0 missing of 109 (sample complete).
+
+New judgment calls:
+- NED patient on first-line maintenance (v093 HGSOC on olaparib+bev): every recurrent/PROC/refractory or
+  measurable-disease trial -> excluded; first-line-maintenance trials that bar prior PARPi or need randomization
+  within 12 weeks of chemo -> excluded; generic advanced-solid-tumor trials that list only tumor types ->
+  not_relevant with "unknown" (the title-only stage rule).
+- Performance status read from the narrative: wheelchair/dependent for most care (v102 GBM) = ECOG 3-4, which
+  fails every KPS >= 60/70 or ECOG <= 2 trial; ECOG 0-3 trials -> possibly. "Half the day sitting/lying, self-care
+  intact" (v132) = ECOG 2.
+- Dexamethasone dose caps (<= 2/4/6 mg) with a stated 8 mg/day dose -> not_met; prior bevacizumab exclusions ->
+  not_met for a GBM patient who had bev.
+- Brain-metastasis or primary-CNS radiosurgery/imaging studies for a patient whose brain met is already treated
+  and stable (v164), or who has primary GBM -> not_relevant. Trials that explicitly exclude germ cell, SCLC or
+  primary CNS histology -> excluded/not_relevant on that criterion.
+- Upper-tract urothelial trials for a bladder primary -> excluded (same disease, wrong site, like rectal vs
+  colon). NMIBC vs MIBC and N0-only vs cN+ mismatches -> excluded.
+- Post-surgery adjuvant trials for a patient who hasn't had surgery yet (v109 MODERN, v118 RCC adjuvant) ->
+  excluded (same as the post-ASCT maintenance rule). Exception: maintenance trial where the key biomarker is also
+  unknown (v103 SIGMA, IDH unknown) -> possibly.
+- Patient responding on first-line palliative therapy (v139 gastric on FOLFOX-nivo): trials needing progression,
+  failure or "received all appropriate therapies" -> excluded (current stated fact, unlike v080 where response
+  was unclear); first-line/untreated trials -> excluded; trials with no prior-therapy rule -> eligible/possibly.
+- HIV well controlled on ART (v132): an explicit exclusion of "HIV-positive patients receiving combination
+  antiretroviral therapy" -> not_met (excluded); if the trial also says HIV+ without immunocompromise is allowed
+  -> unknown/possibly.
+- Brain metastasis currently untreated (radiation scheduled) -> trials excluding untreated/active CNS mets are
+  excluded now (note that they may reopen after treatment).
+- Supportive studies tied to a treatment the patient is not getting (CINV for AC/cisplatin, anti-EGFR rash,
+  oral-agent symptom monitoring for an IV-chemo patient, chemoRT imaging/radioprotector, hearing monitoring
+  without cisplatin) -> not_relevant. Pan-tumor baskets whose listed tumor types omit the patient's cancer ->
+  not_relevant.
+- Observational/supportive studies whose cohort fits (TAPS performance-status cohort, riluzole cognition cohort
+  for prior brain RT, MRE necrosis imaging) -> judged normally (eligible/possibly).
