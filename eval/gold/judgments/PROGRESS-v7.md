@@ -49,6 +49,7 @@ Order: index.json order, skipping valid files.
 | 32 | 12 (v144-1 empty, v145-1..6, v146-1, v147-1..4) | 484 | v148-1 |
 | 33 | 9 (v148-1..5, v149-1..4) | 493 | v150-1 |
 | 34 | 13 (v150-1..6, v151-1/2, v152-1..5) | 506 | v153-1 |
+| 35 | 10 (v153-1, v154-1..4, v155-1..5) | 516 | v156-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -1057,3 +1058,35 @@ Order: index.json order, skipping valid files.
   - Studies requiring a procedure the plan does not mention (St. Jude proton therapy, microdevice before planned surgery, TIL harvest
     at scheduled resection/biopsy, local control for relapsed Ewing) are possibly; palliative RT/cryoablation studies needing lesions
     she does not have (superficial/skin lesions, bone metastases) are excluded.
+
+### Run 35 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v153-1, v154-1..4, v155-1..5 (10 chunks; vignettes v153 (84M newly found large
+  abdominal sarcoma of pending type, untreated, spread unknown, ECOG 3-4, weak heart pump, Fargo), v154 (52F RAI-refractory BRAF
+  V600E papillary thyroid cancer with lung metastases progressing on first-line lenvatinib, RET/NTRK negative, ECOG 0-1) and v155
+  (38M sporadic RET M918T medullary thyroid cancer with liver and bone metastases after thyroidectomy, systemic-treatment-naive,
+  selpercatinib vs trial being weighed, ECOG 0-1) complete).
+- Totals after run 35: 516 / 545 valid (full vcheck: 516 ok, 0 invalid), 155 / 164 vignettes complete. Next chunk: v156-1.
+- Consistency calls this run (thyroid):
+  - Thyroid histology follows the subtype rule: differentiated (papillary/follicular/oncocytic, incl. PDTC where listed), medullary
+    and anaplastic thyroid cancer are subtypes of one disease, so a trial limited to another thyroid subtype (anaplastic-only,
+    RAI-refractory DTC-only, follicular-derived RET-fusion-only) or one that excludes the patient's subtype is excluded, citing the
+    subtype criterion as not_met. Thyroid RAI supportive studies (artificial tears after RAI) are not_relevant for MTC (no RAI).
+  - BRAF V600E RAI-refractory DTC progressing on lenvatinib: "no satisfactory alternative" / "exhausting all available SoC" are
+    not_met while dabrafenib/trametinib and cabozantinib remain (run 13 rule); criteria with a declines/forego prong are unknown
+    (MBRC-101, SAR445877 Part 1A, ADC MATCH possibly); plain "progressed after / refractory to standard therapy" is met (DCSZ11
+    Phase 1a, XTX301 Part 1A, IMGS-001 Part 1, NDI-219216, D3S-002 Part 1, S241656 Part 1E for BRAF eligible). Prior lenvatinib
+    fails "prior TKI" exclusions. Lenvatinib hypertension that is "hard" is not read as uncontrolled hypertension (as run 31).
+  - Systemic-naive metastatic MTC with selpercatinib available: trials requiring progression on/after standard therapy, "no
+    effective/available standard therapy" or exhaustion of SoC are excluded (prior-therapy rule, as runs 22/25); prongs allowing
+    the patient to decline standard therapy are unknown (BI 3819026, MBRC-101, OTP-01 backfill possibly) because he is weighing a
+    trial against selpercatinib. Advanced solid-tumor phase 1s with no numbered prior-therapy rule are possibly (title rule).
+  - A known RET mutation fails "known actionable ... RET" exclusions (APL-101 excluded) and the neoadjuvant zanzalintinib MTC
+    RET exclusion. RAS status is not inferred from a RET driver (S241656 possibly), as run 15; ALK/ROS1 stay unknown when only
+    NTRK is negative (repotrectinib phase 1 possibly, as run 33).
+  - Procedure/supportive studies: a central-airway-obstruction PDT study is excluded for a patient with asymptomatic lung nodules;
+    a spine-metastasis SBRT study is excluded when metastases are lung-only (as run 34) and possibly when bone metastases of
+    unstated site exist; palliative/lattice RT studies are possibly when the need for radiation is not stated.
+  - Frail ECOG 3-4 patient with a "weak heart pump": ECOG <= 2 / 0-1 criteria and LVEF > 50% are not_met (excluded, runs 6/20);
+    a financial-hardship study for patients on palliative systemic therapy is excluded for an untreated patient.
+- Note: within this run, MBRC-101 (NCT06014658) in v154-2 and v155-2 was first written as excluded and corrected to possibly
+  before the run ended (its "ineligible or declines" prong is unknown); no earlier-run files were changed.
