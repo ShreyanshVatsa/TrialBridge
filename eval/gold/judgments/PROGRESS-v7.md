@@ -51,6 +51,7 @@ Order: index.json order, skipping valid files.
 | 34 | 13 (v150-1..6, v151-1/2, v152-1..5) | 506 | v153-1 |
 | 35 | 10 (v153-1, v154-1..4, v155-1..5) | 516 | v156-1 |
 | 36 | 13 (v156-1..3, v157-1..3, v158-1, v159-1, v160-1..5) | 529 | v161-1 |
+| 37 | 16 (v161-1..4, v162-1..5, v163-1/2, v164-1..5) | 545 | none (primary judging complete) |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -1127,3 +1128,32 @@ Order: index.json order, skipping valid files.
     study (never had immunotherapy) and a Mexico INCan psychosocial program are not_relevant; a thyroid-surgery consent study after
     thyroidectomy is not_relevant (procedure rule).
   - GM T-cell long-term follow-up (v158) and an AC/cisplatin antiemetic study that also bars thyroid tumors (v159) are not_relevant.
+
+### Run 37 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v161-1..4, v162-1..5, v163-1/2, v164-1..5 (16 chunks; vignettes v161 (54F metastatic G2
+  small-intestine NET to liver after octreotide and Lutathera, progressing with carcinoid syndrome back, ECOG 0-1), v162 (47M recurrent
+  cortisol-secreting adrenocortical carcinoma in lungs and surgical bed, progressing after six cycles of EDP + mitotane, ECOG 0-1), v163
+  (69F newly diagnosed untreated adenocarcinoma of unknown primary in liver and bones, gene panel pending, ECOG 2, Roanoke) and v164 (28M
+  relapsed testicular NSGCT after BEP, TIP and two HDCT/ASCT courses, AFP rising with a new lung nodule, resected + irradiated stable
+  brain met, ECOG 2) complete).
+- Totals after run 37: 545 / 545 valid (full vcheck: 545 ok, 0 invalid, 0 missing), 164 / 164 vignettes complete. Primary judging done.
+- Consistency calls this run:
+  - Rare-tumor pools (NET, ACC, CUP, GCT) were mostly other-disease trials: site- or tumor-list-limited trials that omit the patient's
+    cancer are not_relevant (entity rule; run 6/31 rule for numbered criteria that never name a tumor type while the listed conditions
+    omit it: AKY-1189, volrustomig sub-studies, Hodgkin pembro + BEAM). Open-ended "select solid tumor" phase 1s whose list is not shown
+    (NEOK001/NEOK002, ACR-2316, REC-1245, AVENTINE-1, CRB-601-01) are possibly; any-tumor phase 1s with no failing criterion are eligible
+    (IMGS-001 Part 1 for NET and ACC; IDOV-Immune for ACC, which lists adrenal tumors).
+  - Cancer of unknown primary (after negative endoscopy, colonoscopy, mammogram and PET) is its own diagnosis: trials limited to a named
+    primary (gastric/GEJ, colorectal, breast, lung, pancreatic, ovarian, biliary) are not_relevant, not possibly; tumor-agnostic and
+    genomically matched trials are judged on the rest (ComboMATCH possibly with the gene panel pending; CRB-601-01 possibly).
+  - Brain-metastasis trials for a patient with no brain metastases (v161) or with a single resected and irradiated, stable met (v164) are
+    excluded on the criterion needing an intact, untreated, growing or about-to-be-treated lesion (as in earlier runs); brain-met trials
+    limited to NSCLC/melanoma or SCLC histology are not_relevant; ones that bar germ cell histology are excluded on that criterion.
+  - Ongoing mitotane is a strong CYP3A4 inducer: exclusions on strong CYP3A4 inducers are unknown (stopping and clearing mitotane is a
+    care-team call), so AMXI-5001 is possibly rather than eligible.
+  - "Refractory to or intolerant of all standard therapy" is not_met for a NET after SSA and PRRT while everolimus and other NET options
+    remain (BTX-A51 excluded, run 13 'all' rule); plain "progressed after standard therapy" is met. For GCT after BEP, TIP and two HDCT
+    courses, "no standard therapy exists" is unknown (palliative salvage regimens remain), so AG01 Phase 1A is possibly.
+  - Two prior autologous transplants fail an unqualified "history of HSCT" exclusion (GIGA-564 excluded); "daily activity: 2" is ECOG 2
+    and fails ECOG 0-1 throughout (IDOV-Immune, VMD-928, EXCLAIM). Sotorasib rollover and similar parent-study continuations are
+    not_relevant for patients never on the drug (as runs 7/8).
