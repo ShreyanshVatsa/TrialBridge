@@ -37,6 +37,7 @@ Order: index.json order, skipping valid files.
 | 20 | 11 (v105-1..4, v106-1..3, v107-1..4) | 355 | v108-1 |
 | 21 | 13 (v108-1/2, v109-1..3, v110-1/2, v111-1..6) | 368 | v112-1 |
 | 22 | 10 (v112-1..3, v113-1..3, v114-1..3, v115-1) | 378 | v116-1 |
+| 23 | 10 (v116-1, v117-1..6, v118-1, v119-1/2) | 388 | v120-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -638,3 +639,37 @@ Order: index.json order, skipping valid files.
     within 16 weeks is excluded, as are trials needing recurrent measurable disease (as runs 11/14/20).
   - "Advanced solid tumors, including ..." lists are read as non-exclusive (PYX-201 + pembrolizumab possibly for RCC); explicit tumor lists
     that omit RCC remain not_relevant.
+
+### Run 23 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v116-1, v117-1..6, v118-1, v119-1/2 (10 chunks; vignettes v116 (81F newly biopsied RCC of
+  unknown type, possible spine lesions, untreated, ECOG 3-4, heart failure, poor kidney function, Jackson), v117 (35M metastatic TFE3
+  translocation RCC on fourth line lenvatinib/everolimus after sunitinib, nivolumab and cabozantinib, slowly progressing, ECOG 2, HIV
+  undetectable on Biktarvy), v118 (62M kidney-transplant recipient on tacrolimus/mycophenolate, localized 6 cm ccRCC in a native kidney,
+  nephrectomy planned) and v119 (64M untreated unresectable HCC with portal vein branch tumor thrombus and a nearby node, Child-Pugh A,
+  ECOG 0-1, chronic HBV on entecavir, no gene testing) complete).
+- Totals after run 23: 388 / 545 valid (full vcheck: 388 ok, 0 invalid), 119 / 164 vignettes complete. Next chunk: v120-1.
+- Consistency calls this run:
+  - Translocation (TFE3) RCC is non-clear-cell: clear-cell-only RCC trials and ccRCC-or-papillary-only trials are excluded (RCC subtype
+    rule, as run 22); trials that name translocation RCC (rare GU NCT03866382 cohort G note, abemaciclib + cabozantinib NCT06835972) or
+    accept any RCC histology are judged on the rest (both excluded here on KPS >= 80 / prior cabozantinib / max 3 lines).
+  - Line count: sunitinib, nivolumab, cabozantinib, lenvatinib/everolimus (current) = 4 lines; caps of <= 3 are not_met.
+  - Cabozantinib rechallenge requiring >= 6 months of prior cabozantinib (NCT05931393): duration not stated -> possibly.
+  - Supportive study for VEGF-inhibitor proteinuria (sparsentan) for a patient on lenvatinib with proteinuria not stated: possibly.
+    Antiemetic study for AC / high-dose cisplatin is not_relevant for HCC (therapy outside standard care, as run 16).
+  - Microdevice drug-screening study requiring a planned nephrectomy/metastatectomy is possibly when surgery is not stated (run 17 rule);
+    post-ablation imaging study is not_relevant for a patient never ablated; research-only biology studies (Yale lymph node study) and
+    patient navigation programs are not_relevant.
+  - Prior nivolumab excludes AIM-NIVO on E3 (as before). PROBE excluded on the "beyond the one regimen" prior-therapy bar after 4 lines.
+  - Kidney-transplant recipient on tacrolimus/mycophenolate fails "no history of allogeneic organ transplantation" and immunosuppressant
+    bars (excluded); adjuvant trials are excluded before nephrectomy; node-positive/metastatic-only trials excluded for localized RCC.
+  - Untreated advanced HCC (BCLC C from portal vein branch thrombus): first-line HCC trials with macrovascular invasion allowed are eligible
+    (HELIO-RT); MRI-guided SABR for HCC with Child-Pugh A is eligible; trials requiring measurable disease stay possibly (measurable =
+    unknown, run 1 rule); trials requiring prior SOC / refractory disease ("prior standard therapy, as available", "relapsed or
+    refractory", "failed or intolerant to SOC") are excluded; "main portal vein invasion needs sponsor approval" does not apply to a branch
+    thrombus. Cirrhosis fails "chronic severe liver disease or liver cirrhosis" exclusions; "current active liver disease" with chronic HBV
+    on entecavir and compensated cirrhosis is unknown. Untested BRAF/MTAP/WPAM/DNA-repair/FAP status -> unknown.
+  - HCC screening/surveillance trials (cirrhosis without HCC, multi-cancer screening) are not_relevant; biliary, NET-liver-metastasis and
+    baskets whose tumor list omits HCC are not_relevant; a basket whose Phase 1b takes any advanced solid tumor after >= 1 prior line
+    (LY4337713) is excluded for an untreated patient (advanced-basket rule).
+  - HCC diagnosed on MRI without a stated biopsy: "histological or cytological confirmation" is unknown (PET imaging study possibly);
+    criteria that allow noninvasive diagnosis are met.
