@@ -30,6 +30,7 @@ Order: index.json order, skipping valid files.
 | 13 | 10 (v081-1..3, v082-1..5, v083-1/2) | 277 | v083-3 |
 | 14 | 12 (v083-3..6, v084-1..3, v085-1, v086-1..4) | 289 | v087-1 |
 | 15 | 10 (v087-1, v088-1..4, v089-1..5) | 299 | v090-1 |
+| 16 | 13 (v090-1..4, v091-1..4, v092-1, v093-1..3, v094-1 empty) | 312 | v095-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -409,3 +410,35 @@ Order: index.json order, skipping valid files.
   - MSI-H-negative tumor fails MSI-H/dMMR basket requirements (excluded). Phase 1 ovarian/solid-tumor trials with no failing
     numbered criterion are eligible (NTB-928, HWK-016); ones gated on an unreported biomarker (CLDN6, BRAF, mesothelin, HER2) are
     possibly.
+
+### Run 16 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v090-1..4, v091-1..4, v092-1, v093-1..3, plus v094-1 (0 trials; written as
+  `{"labels":[]}` like v018-1/v041-1/v050-1). Vignettes v090 (29F newly diagnosed stage I ovarian immature teratoma, surgery
+  planned), v091 (51F recurrent platinum-resistant KRAS G12V low-grade serous ovarian carcinoma after carboplatin/paclitaxel and
+  letrozole, diet-controlled celiac disease), v092 (72F stage IIIB HGSOC mid neoadjuvant carboplatin/paclitaxel, ECOG 2, valve
+  surgery + AF), v093 (62F resected stage IIIA HGSOC, MSI-H / Lynch MSH2, NED on bevacizumab + olaparib maintenance, prior colon
+  cancer at 49) and v094 complete.
+- Totals after run 16: 312 / 545 valid (full vcheck: 312 ok, 0 invalid), 94 / 164 vignettes complete. Next chunk: v095-1.
+- Consistency calls this run:
+  - Ovarian germ cell tumors (immature teratoma) are a different disease from epithelial ovarian carcinoma (entity rule, as pNET
+    vs PDAC): epithelial-only ovarian trials, and ovarian trials that bar non-epithelial / germ-cell histology, are not_relevant
+    for a germ cell patient; a germ cell trial is not_relevant for an HGSOC patient (v092-1 NCT03067181). The ovarian subtype
+    rule (excluded) applies only within epithelial carcinoma. Open-ended advanced solid tumor baskets are excluded for her
+    localized, untreated tumor (as run 11); trials whose tumor list omits germ cell tumors are not_relevant.
+  - LGSOC vs HGSOC follows the subtype rule both ways (excluded): HGSOC-only trials and ones barring low-grade tumors for the LGSOC
+    patient; the LGSOC avutometinib/defactinib trial for the HGSOC patient.
+  - KRAS-mutant recurrent LGSOC: "received all standard therapies" / "no satisfactory alternative" criteria are not_met while
+    MEK-based therapy (avutometinib + defactinib) remains (run 13 'all' rule); plain "failed standard therapy" is met; criteria
+    with an investigator / refusal waiver are unknown (possibly).
+  - Celiac disease controlled by diet: passes "active autoimmune disease" and "requiring systemic treatment" exclusions (and an
+    explicit celiac-by-diet carve-out); fails unqualified "active or history of autoimmune disease" (excluded, as Hashimoto's in
+    run 5). AIM-NIVO is possibly for this patient (autoimmune disease, no prior PD-1, metastatic; tumor type PI case-by-case).
+  - Growing peritoneal nodules count as abdominal carcinomatosis (fails a "history of ... abdominal carcinomatosis" exclusion);
+    "liver surface nodules" are not assumed to be liver metastases (unknown).
+  - NED patient on first-line maintenance (v093): every recurrent / platinum-resistant / measurable-disease trial is excluded;
+    first-line maintenance trials requiring PARPi-naive entry or no planned PARPi are excluded because she is on olaparib.
+    Trials whose only numbered criterion is the tumor type (Sofe-M, HWK-016) stay possibly by the v028-3 title rule.
+  - Supportive studies tied to a therapy outside her disease's standard care (anti-EGFR skin toxicity for ovarian cancer) are
+    not_relevant; ones tied to undecided future chemo (weekly-paclitaxel neuropathy prevention) are possibly. Location-limited
+    non-treatment programs near the patient (PAYMENT at PeaceHealth for a Portland patient, Healthy Oregon Project) are possibly
+    (as v032-1); a palliative RT study is excluded for a patient on concurrent cytotoxic chemotherapy.
