@@ -34,6 +34,7 @@ Order: index.json order, skipping valid files.
 | 17 | 12 (v095-1..5, v096-1..4, v097-1..3) | 324 | v098-1 |
 | 18 | 10 (v098-1..4, v099-1..3, v100-1..3) | 334 | v101-1 |
 | 19 | 10 (v101-1, v102-1..4, v103-1/2, v104-1..3) | 344 | v105-1 |
+| 20 | 11 (v105-1..4, v106-1..3, v107-1..4) | 355 | v108-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -540,3 +541,30 @@ Order: index.json order, skipping valid files.
     reported), not excluded. A mRNA vaccine arm limited to NMIBC is excluded for metastatic MIBC (stage within the same disease).
   - Upper-tract surgical procedure study (nephroureterectomy LND) is not_relevant (procedure he is not having, as run 13).
 
+### Run 20 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v105-1..4, v106-1..3, v107-1..4 (11 chunks; vignettes v105 (64M BCG-unresponsive high-grade
+  NMIBC with CIS after induction + maintenance BCG, wants bladder preservation, no molecular testing), v106 (59F resected ypT2+ N1 MIBC
+  with squamous features after ddMVAC + cystectomy/neobladder, NED on adjuvant nivolumab ~4 months, FGFR3-mutant, PD-L1 negative) and
+  v107 (73M metastatic renal pelvis UC, MSI-H/Lynch, after pembrolizumab, gem/carbo, EV and erdafitinib, treated stable brain met, ECOG 2,
+  coronary disease with reduced EF) complete).
+- Totals after run 20: 355 / 545 valid (full vcheck: 355 ok, 0 invalid), 107 / 164 vignettes complete. Next chunk: v108-1.
+- Consistency calls this run:
+  - Bladder-cancer stage follows the stage-within-disease rule (as run 19): MIBC, bladder-sparing chemoRT/post-NAT, adjuvant post-cystectomy
+    and LA/mUC trials are excluded for an NMIBC patient (on the numbered stage criterion), and NMIBC trials (BCG-naive, BCG-exposed,
+    BCG-unresponsive, intermediate-risk, papillary-only) are excluded for MIBC or metastatic patients. Risk/grade within NMIBC is a subtype
+    fact: a low-grade intermediate-risk surveillance trial is excluded for high-grade CIS. Upper-tract-only trials are excluded for bladder
+    patients and bladder-only trials (incl. ones barring UTUC history) for a renal pelvis patient. RCC trials stay not_relevant.
+  - BCG-unresponsive CIS ("BCG-unresponsive" per urologist after induction + maintenance, recurrence this month, wants to keep bladder) meets
+    BCG-unresponsive definitions and "elect not to undergo cystectomy" criteria (nadofaragene NCT06545955 eligible).
+  - Advanced-basket rule applied to NMIBC (open-ended advanced/metastatic or "not curable by surgery" solid-tumor baskets excluded) and to a
+    resected NED patient on adjuvant therapy (as run 11/14). A solid-tumor cell-therapy study with no numbered stage criterion (PAT
+    NCT05338658) is possibly (title rule) on unknown CMV/EBV/HLA.
+  - Patient already on adjuvant nivolumab: a ctDNA-guided adjuvant trial requiring "no postoperative adjuvant systemic therapy" and surgery
+    within 12-16 weeks is excluded; peri-cystectomy procedure studies after her cystectomy are not_relevant (run 13 rule).
+  - "Reduced ejection fraction" with no number fails an LVEF < 50% exclusion (reduced EF is below 50% by definition; DCSZ11 v107-1 excluded);
+    "significant cardiovascular disease" / recent CHF or MI criteria stay unknown (possibly).
+  - Line counting for mUC: pembrolizumab, gem/carbo, EV, erdafitinib = 4 metastatic lines; caps of 1-2 / <= 2 regimens / <= 3 lines are
+    not_met. ECOG 2 (rests a good part of the day) fails every ECOG 0-1 / <= 1 / KPS >= 80 criterion (excluded); cohorts allowing ECOG <= 2
+    are judged on the rest (FORAGER-1 post-erdafitinib cohort possibly on cardiac wording; MK-3475-04A PD-1-refractory arm eligible).
+  - Bellmunt score 0-2 is unknown for an ECOG 2 patient with liver metastases (hemoglobin decides): possibly.
+  - Prior pembrolizumab excludes AIM-NIVO on E3; with no autoimmune disease and no prior PD-1 it is not_relevant (as before).
