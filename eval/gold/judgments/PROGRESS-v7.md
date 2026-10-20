@@ -25,6 +25,7 @@ Order: index.json order, skipping valid files.
 | 8 | 12 (v067-1..3, v068-1..3, v069-1..6) | 226 | v070-1 |
 | 9 | 9 (v070-1/2, v071-1..3, v072-1..4) | 235 | v073-1 |
 | 10 | 9 (v073-1..4, v074-1..5) | 244 | v075-1 |
+| 11 | 12 (v075-1..8, v076-1, v077-1..3) | 256 | v078-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -255,3 +256,44 @@ Order: index.json order, skipping valid files.
   - Unreported genomic drivers (KRAS G12D, RAS/NRAS, MET amp, B7-H3, HER3, GPER, MC1R uptake) are unknown -> possibly.
   - Survivorship / behavior / procedure-support studies (sun protection, sentinel-node anesthetic, abdominoplasty laser,
     actinic keratosis prevention, bone density on curative anti-PD-1) are not_relevant.
+
+### Run 11 (sequential, single agent, no forks)
+- Melanoma-subtype relabel (consistency fix, applied before judging). Rule: melanoma subtypes (cutaneous, acral, mucosal,
+  uveal) are subtypes of one disease. A trial limited to another melanoma subtype is "excluded" (not "not_relevant"),
+  citing the inclusion criterion that names the subtype with verdict not_met. This supersedes the run 9/10 notes that kept
+  uveal-only trials not_relevant for cutaneous patients and mucosal-only trials not_relevant for a uveal patient.
+  Non-melanoma skin cancers (cSCC, BCC, Merkel) remain different diseases (not_relevant). Only the label and note changed
+  on each line; evidence (already not_met on the subtype criterion), judgedAt and layout kept.
+  | file | nctId | old -> new |
+  |---|---|---|
+  | v072-1 | NCT06581406 | not_relevant -> excluded |
+  | v072-1 | NCT07015190 | not_relevant -> excluded |
+  | v072-2 | NCT07136181 | not_relevant -> excluded |
+  | v072-3 | NCT06070012 | not_relevant -> excluded |
+  | v072-3 | NCT03947385 | not_relevant -> excluded |
+  | v073-1 | NCT07276386 | not_relevant -> excluded |
+  | v073-3 | NCT07015190 | not_relevant -> excluded |
+  | v074-3 | NCT04318717 | not_relevant -> excluded (mucosal-only trial, uveal patient) |
+  Kept not_relevant: v074-1 NCT05896839 (kidney-transplant-recipient population) and procedure/survivorship studies.
+- Written + validated (read-only vcheck): v075-1..8, v076-1, v077-1..3 (12 chunks; vignettes v075 (74F recurrent sinonasal
+  mucosal melanoma in neck nodes after pembrolizumab, KIT-mutant, ECOG 2), v076 (82M kidney-transplant recipient, metastatic
+  cSCC after cemiplimab, ECOG 2) and v077 (77M resected stage III Merkel cell on adjuvant avelumab, no evidence of disease)
+  complete).
+- Totals after run 11: 256 / 545 valid (full vcheck: 256 ok, 0 invalid), 77 / 164 vignettes complete. Next chunk: v078-1.
+- Consistency calls this run:
+  - "daily activity: 2" with a naps-in-the-afternoon narrative is ECOG 2 (as run 7): every ECOG/Zubrod 0-1 criterion is
+    not_met (excluded), including trials whose subtype and prior-therapy rules she otherwise fits.
+  - Mucosal melanoma patient: cutaneous-only melanoma trials and ones excluding mucosal melanoma are excluded (subtype rule);
+    uveal-only trials are excluded too.
+  - Regional nodal recurrence ("spread: nearby") fails stage IV / brain-metastasis requirements (excluded) but meets
+    "locally advanced or metastatic"; "unresectable" requirements are unknown when resectability is not stated (possibly).
+  - Progression ~10 months into pembrolizumab meets "relapse within 12 months of initiation" and anti-PD-1-refractory
+    criteria; ICI-naive trials (no prior PD-1/PD-L1, first-line ICI) are excluded. KIT mutation of unstated variant against
+    a CKIT-activating-mutation cohort is unknown (possibly).
+  - Resected, disease-free patient on adjuvant ICI: advanced/measurable-disease trials for his tumor type (or solid-tumor
+    baskets that list it or are open-ended) are excluded; trials whose tumor list omits his cancer are not_relevant.
+    Adjuvant avelumab counts as prior anti-PD-L1 and fails CPI-naive criteria.
+  - AIM-NIVO (NCT03816345) for a patient with prior anti-PD-1/PD-L1 and no autoimmune disease: excluded on E3, as in v014.
+  - Supportive/behavioral studies tied to future therapy the description does not state (exercise during immunotherapy,
+    oral-agent symptom monitoring, goals-of-care program) are possibly; procedure studies for a surgery the patient is not
+    having (ALND/ILND lymphatic reconstruction) are not_relevant.
