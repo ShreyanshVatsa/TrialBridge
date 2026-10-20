@@ -24,6 +24,7 @@ Order: index.json order, skipping valid files.
 | 7 | 10 (v064-1..3, v065-1..4, v066-1..3) | 214 | v067-1 |
 | 8 | 12 (v067-1..3, v068-1..3, v069-1..6) | 226 | v070-1 |
 | 9 | 9 (v070-1/2, v071-1..3, v072-1..4) | 235 | v073-1 |
+| 10 | 9 (v073-1..4, v074-1..5) | 244 | v075-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -224,3 +225,33 @@ Order: index.json order, skipping valid files.
     patient mid first-line (title rule, as run 5); a trial that explicitly adds a novel agent to ipi-then-nivo and allows
     prior PD-1 (alintegimod) is eligible.
 
+### Run 10 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v073-1..4, v074-1..5 (9 chunks; vignettes v073 (69F BRAF-WT cutaneous melanoma
+  after adjuvant pembrolizumab and nivolumab/relatlimab, treated stable brain met, immune colitis on low-dose budesonide)
+  and v074 (60F metastatic uveal melanoma to liver, HLA-A*02:01 negative, systemic-treatment-naive) complete).
+  Stopped at a vignette boundary (v075 has 8 chunks).
+- Totals after run 10: 244 / 545 valid (full vcheck: 244 ok, 0 invalid), 74 / 164 vignettes complete. Next chunk: v075-1.
+- Consistency calls this run:
+  - Ongoing immune colitis on low-dose oral budesonide, called active by her oncologist: fails unqualified "active
+    autoimmune disease" / "history of active autoimmune disorders" exclusions and ones that name oral or enteric
+    corticosteroids or any current immunosuppressive medication (excluded); criteria limited to autoimmune disease
+    "requiring systemic treatment", "serious autoimmune disease", steroid thresholds (> 10 mg prednisone) or "systemic
+    corticosteroids" are unknown (possibly); unresolved-irAE / grade <= 1 recovery criteria are unknown (colitis grade not stated).
+  - Whether immune colitis counts as anti-PD-1 "intolerance" or a reaction making re-treatment unadvisable is unknown.
+  - Adjuvant pembrolizumab + 1 metastatic line = 2 lines (patient's own count); she passes "<= 2 lines" and
+    "<= 2 lines for advanced melanoma" criteria. IGNYTE-3 without prior anti-CTLA-4 is possibly via its "not a candidate
+    for anti-CTLA-4 (e.g. irAE history)" clause.
+  - Uveal melanoma patient: melanoma trials that require cutaneous / non-uveal melanoma or exclude uveal by a numbered
+    criterion are excluded (they study melanoma and a criterion rules her out); uveal-only trials remain not_relevant for
+    cutaneous patients (run 9), and mucosal-only trials are not_relevant for uveal (entity rule). Basket trials whose
+    histology list omits melanoma entirely are not_relevant.
+  - HLA-A*02:01-negative: tebentafusp and IMA203 (HLA-A*02:01-positive) trials excluded; "prior tebentafusp required if
+    HLA-A*02:01 positive" clauses count as met.
+  - Treatment-naive metastatic uveal melanoma: trials requiring progression on or receipt of prior standard therapy are
+    excluded; "progressed on standard therapy OR no standard therapy exists" is unknown (investigator call); metastatic
+    uveal trials allowing treatment-naive patients with no failing numbered criterion are eligible (NCT06121180,
+    NCT06581406 RP2 ICI-naive, NBM-BMX, IDE196). A first-in-human basket naming melanoma without a numbered prior-therapy
+    rule is possibly (title rule).
+  - Unreported genomic drivers (KRAS G12D, RAS/NRAS, MET amp, B7-H3, HER3, GPER, MC1R uptake) are unknown -> possibly.
+  - Survivorship / behavior / procedure-support studies (sun protection, sentinel-node anesthetic, abdominoplasty laser,
+    actinic keratosis prevention, bone density on curative anti-PD-1) are not_relevant.
