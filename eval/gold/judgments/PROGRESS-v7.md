@@ -44,6 +44,7 @@ Order: index.json order, skipping valid files.
 | 27 | 9 (v129-1..5, v130-1, v131-1..3) | 430 | v132-1 |
 | 28 | 9 (v132-1..5, v133-1..4) | 439 | v134-1 |
 | 29 | 9 (v134-1..3, v135-1..4, v136-1/2) | 448 | v137-1 |
+| 30 | 10 (v137-1..5, v138-1, v139-1..4) | 458 | v140-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -884,3 +885,32 @@ Order: index.json order, skipping valid files.
     fails MSS-only criteria (PARAMUNE, IP paclitaxel). Oral-agent symptom monitoring is not_relevant when the stated therapy is IV
     chemo (as v109); a re-irradiation technique study and pre-treatment staging/pre-operative imaging studies are not_relevant or
     excluded on their timing criteria; MPN trials and post-cell-therapy follow-up are not_relevant.
+
+### Run 30 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v137-1..5, v138-1, v139-1..4 (10 chunks; vignettes v137 (45M diffuse signet-ring gastric
+  adenocarcinoma with peritoneal disease, third line TAS-102 after FOLFOX + nivolumab and ramucirumab/paclitaxel, ascites
+  re-accumulating, HER2-, CPS < 1, MSS, CLDN18.2 75%, no measurable disease, ECOG 2, unnamed prior trial drug), v138 (80M newly
+  diagnosed untreated GEJ cancer of unknown type and stage, ECOG 3-4, CHF, weak kidneys, Fayetteville) and v139 (36F CDH1 hereditary
+  diffuse gastric cancer after total gastrectomy, ovarian and pelvic bone recurrence, responding to first-line FOLFOX + nivolumab,
+  HER2-, MSS, CLDN18.2 negative, CPS 2, ECOG 0-1) complete). Stopped at a vignette boundary (v140 has 2 chunks).
+- Totals after run 30: 458 / 545 valid (full vcheck: 458 ok, 0 invalid), 139 / 164 vignettes complete. Next chunk: v140-1.
+- Consistency calls this run:
+  - Structured "measurable: no" (doctors say nothing is measurable) makes every RECIST-measurable requirement not_met (excluded),
+    unlike "measurable: unknown" (possibly, run 1 rule). Trials accepting evaluable/non-measurable disease are judged on the rest.
+  - ECOG 2 (part of the day lying down) fails ECOG 0-1 throughout (as runs 7/11/14/25); with no measurable disease that leaves few
+    trials: SG + capecitabine for GI adenocarcinoma after failed standard therapy (no ECOG or measurable rule shown, no TOP1 exposure
+    in FOLFOX, ramucirumab/paclitaxel or TAS-102) is eligible; the unnamed prior trial drug is not assumed to be a TOP1 inhibitor.
+    CDK2/CCNE1 basket with no ECOG rule is possibly (CCNE1 untested, progression on TAS-102 not documented).
+  - Peritoneal-directed surgical trials (CRS/HIPEC, perioperative IP paclitaxel with cytoreduction) allowing ECOG <= 2 are possibly for
+    "mostly peritoneal" disease when surgical candidacy is not stated. The S2303-style IP paclitaxel trial needing synchronous
+    peritoneal disease with the primary in place is excluded for a metachronous ovarian/bone recurrence after total gastrectomy.
+  - Patient responding to first-line chemo-IO (v139): progression/refractory-only trials and cohorts (incl. 2L-after-progression GEA
+    cohorts and "received all appropriate systemic therapies") are excluded, as runs 6/12/15; first-line/treatment-naive trials are
+    excluded; a cohort needing only prior platinum/fluoropyrimidine with no progression clause (SGN-CEACAM5C Part C GC) and phase 1s
+    with no numbered prior-therapy rule (MGC026, BL-B01D1 escalation) are possibly (title rule). A FOLFOX-cycle-1 supportive study is
+    excluded on its timing criterion. NX-1607 (oral) also fails its "resection of the stomach" exclusion after total gastrectomy.
+  - CLDN18.2-negative tumors fail all CLDN18.2-required trials; PD-L1 CPS < 1 fails CPS >= 1 / PD-L1-positive requirements; HER2
+    negative fails HER2-expression requirements (IHC 1+ vs 0 not stated, but such trials were excluded on other criteria anyway).
+  - Ovarian metastases from gastric cancer are not ovarian cancer: baskets whose tumor list names ovarian but not gastric are
+    not_relevant. Petosemtamab (NCT03526835) not_relevant for gastric, as v128-5/v133. ESCC-only substudies not_relevant for gastric
+    adenocarcinoma (entity rule, run 29). Barrett's/screening studies not_relevant.
