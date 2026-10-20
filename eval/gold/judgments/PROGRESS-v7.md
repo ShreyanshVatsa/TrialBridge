@@ -43,6 +43,7 @@ Order: index.json order, skipping valid files.
 | 26 | 12 (v126-1..3, v127-1..4, v128-1..5) | 421 | v129-1 |
 | 27 | 9 (v129-1..5, v130-1, v131-1..3) | 430 | v132-1 |
 | 28 | 9 (v132-1..5, v133-1..4) | 439 | v134-1 |
+| 29 | 9 (v134-1..3, v135-1..4, v136-1/2) | 448 | v137-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -851,3 +852,35 @@ Order: index.json order, skipping valid files.
     monotherapy expansion, as v080-1).
   - Petosemtamab (NCT03526835) is not_relevant for gastric cancer: its expansion cohorts are HNSCC and colorectal only (as v128-5).
     Barrett's low-grade dysplasia study not_relevant (people without cancer).
+
+### Run 29 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v134-1..3, v135-1..4, v136-1/2 (9 chunks; vignettes v134 (67F stage III lower-esophageal
+  adenocarcinoma, HER2 negative, MSS, mid neoadjuvant CROSS with esophagectomy planned, Barrett's history), v135 (52M metastatic ESCC
+  to chest nodes and lungs, PD-L1 TPS 10, progressed on cisplatin/5-FU + nivolumab, now on second-line paclitaxel with mixed results,
+  esophageal stent, ECOG 0-1, Lexington) and v136 (74F resected gastric adenocarcinoma, dMMR/MSI-H, HER2 and PD-L1 negative, NED on
+  post-operative FLOT, quiet RA on hydroxychloroquine) complete). Stopped at a vignette boundary (v137 has 5 chunks).
+- Totals after run 29: 448 / 545 valid (full vcheck: 448 ok, 0 invalid), 136 / 164 vignettes complete. Next chunk: v137-1.
+- Consistency calls this run:
+  - Esophageal squamous cell carcinoma vs gastroesophageal adenocarcinoma are different diseases (entity rule, as NPC vs HNSCC and
+    pNET vs PDAC): trials limited to gastric, GEJ and/or esophageal adenocarcinoma (incl. cadonilimab, which also excludes squamous
+    histology) and GI baskets whose tumor list is adenocarcinoma-only (azirkitug GEA cohort, CHM-2101, AZD0901, SGN-CEACAM5C, TAK-505,
+    DR-0202) are not_relevant for an ESCC patient. Trials naming "esophageal cancer" or ESCC (BL-B01D1, MT-4561, TS-104, IDE892,
+    LY4337713, HER3-DXd ESCC cohort, CHS-114 cohort B) are judged on the rest. Within adenocarcinoma, gastric vs esophageal site follows
+    the subtype rule (PULSO esophageal-adenocarcinoma CRT trial excluded for a resected gastric patient, as run 28 for HNSCC sites).
+  - Patient mid neoadjuvant chemoradiation with surgery planned (curative intent): unresectable/metastatic, refractory, "not amenable
+    to curative therapy", "received adequate SoC" and first-line advanced trials are excluded (advanced-basket rule, as v109/v126);
+    "previously untreated ... advanced" fails because she is already on CROSS. Baskets whose only stage wording is "locally advanced"
+    (comma lists such as "locally advanced, unresectable, or metastatic" or "inoperable, locally advanced, metastatic, or recurrent")
+    with no refractory clause are possibly (OMNIRAY GRPR, XB010, PYX-201), as v126's MSI-H basket. A T1a-only Barrett's/EAC ablation
+    study is excluded for a T3N1 tumor (stage within disease); Barrett's dysplasia/surveillance studies stay not_relevant.
+  - Patient progressed on first line and is on second line with mixed results: plain "progressed after appropriate lines of standard
+    therapy" / "refractory to SoC" / "failed standard therapy" are met (IMGS-001 Part 1, LCB84, MRG007, TS-104 eligible; sigvotatug
+    Part B eligible); criteria needing progression on all prior/last therapy or after 2 lines are unknown (VVD-130037, NKT3964,
+    HER3-DXd ESCC cohort possibly); "no standard options or refuses" is unknown (MT-4561). Second-line ESCC trials capped at 1 prior
+    line or barring >= 2 prior therapies (I-DXd IDeate-Esophageal01, CHS-114 cohort B) are excluded once a second line has started.
+    BL-B01D1 esophageal chemo-line cap is waivable by sponsor (possibly, as v089). Prior nivolumab excludes AIM-NIVO (E3) and the
+    INBRX-106 mis-sectioned anti-PD-1 exposure bar.
+  - Resected NED gastric patient on post-op FLOT: every advanced/measurable/refractory trial is excluded (advanced-basket rule); MSI-H
+    fails MSS-only criteria (PARAMUNE, IP paclitaxel). Oral-agent symptom monitoring is not_relevant when the stated therapy is IV
+    chemo (as v109); a re-irradiation technique study and pre-treatment staging/pre-operative imaging studies are not_relevant or
+    excluded on their timing criteria; MPN trials and post-cell-therapy follow-up are not_relevant.
