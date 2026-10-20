@@ -50,6 +50,7 @@ Order: index.json order, skipping valid files.
 | 33 | 9 (v148-1..5, v149-1..4) | 493 | v150-1 |
 | 34 | 13 (v150-1..6, v151-1/2, v152-1..5) | 506 | v153-1 |
 | 35 | 10 (v153-1, v154-1..4, v155-1..5) | 516 | v156-1 |
+| 36 | 13 (v156-1..3, v157-1..3, v158-1, v159-1, v160-1..5) | 529 | v161-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -1090,3 +1091,39 @@ Order: index.json order, skipping valid files.
     a financial-hardship study for patients on palliative systemic therapy is excluded for an untreated patient.
 - Note: within this run, MBRC-101 (NCT06014658) in v154-2 and v155-2 was first written as excluded and corrected to possibly
   before the run ended (its "ineligible or declines" prong is unknown); no earlier-run files were changed.
+
+### Run 36 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v156-1..3, v157-1..3, v158-1, v159-1, v160-1..5 (13 chunks; vignettes v156 (68F newly
+  diagnosed untreated BRAF V600E anaplastic thyroid cancer, bilateral neck nodes, no distant spread, dabrafenib/trametinib planned,
+  ECOG 2), v157 (76M RAI-refractory papillary thyroid cancer, ETV6-NTRK3, lenvatinib then larotrectinib now progressing in the spine,
+  bladder cancer resected 5 years ago, pacemaker for slow rhythm, ECOG 0-1), v158 (31F resected PTC, RAI-responsive, NED), v159 (85F
+  untreated aggressive thyroid cancer of unknown type, bedbound) and v160 (59M MEN2A germline RET C634 metastatic MTC after vandetanib,
+  cabozantinib and selpercatinib, liver progression, ECOG 2) complete). Finished v160 rather than stop mid-vignette.
+- Totals after run 36: 529 / 545 valid (full vcheck: 529 ok, 0 invalid), 160 / 164 vignettes complete. Next chunk: v161-1.
+- Consistency calls this run (thyroid):
+  - Radioiodine-based supportive, dosimetry and decision studies (RAI decision aid, RAI symptom program, artificial tears, 124-I/131-I
+    dosimetry) are not_relevant for anaplastic and medullary patients (extends the v155-2 call). Treatment or imaging trials whose
+    numbered criteria limit histology to DTC (RT + RAI planning, larotrectinib redifferentiation, I-124 PET with a DTC criterion,
+    DOTATATE imaging for DTC/MTC only) are excluded by the thyroid subtype rule. Within this run v156-3 NCT03841617 was first written
+    as excluded (no thyroidectomy) and changed to not_relevant before the run ended; no earlier-run files were changed.
+  - Untreated BRAF V600E ATC with ECOG 2 and dabrafenib/trametinib planned: every ECOG 0-1 trial is excluded; trials requiring prior
+    SOC, progression or no available SOC are excluded (prior-therapy rule); "ineligible or declines" prongs stay unknown (MBRC-101
+    possibly, as v155); ComboMATCH's "recurrent or persistent disease" is not_met for new untreated disease. S241656 Part 1E is possibly
+    (no numbered prior-therapy or ECOG rule; resectability not stated).
+  - DTC after lenvatinib and larotrectinib (v157): cabozantinib and next-generation TRK inhibitors remain, so "no satisfactory
+    alternative" / "no other SOC available" criteria are not_met (run 13 rule) while plain "failed standard therapy" is met (XTX301
+    Part 1A, XB628, DOTA-5G theranostic eligible); repotrectinib EXP-6 fits but is possibly because the cause of a paced slow rhythm
+    (heart block) is unknown against conduction-abnormality exclusions; an unqualified "history of and/or current cardiovascular events
+    or conditions" exclusion fails for bradycardia with a pacemaker plus hypertension (CRB-601-01 excluded, unqualified-history rule).
+    "History of another primary malignancy" with no exceptions fails for a bladder cancer resected 5 years ago (AZD3470 excluded);
+    windowed (2-3 year) or superficial-bladder exceptions pass.
+  - Tumor-category qualifiers that thyroid cancer does not meet ("solid tumors where topoisomerase I inhibitors have shown efficacy",
+    "amenable to CPI therapy (eg. ...)") are not_relevant, not possibly.
+  - MTC after vandetanib, cabozantinib and selpercatinib (v160): approved MTC options are exhausted, so "no standard or effective
+    treatment" and "all available therapies" are met (Ac225 anti-CEA and ADC MATCH possibly on CEA/Trop-2 etc.); ECOG 2 excludes ECOG
+    0-1 trials and passes DCSZ11 Phase 1a, GTB-5550 and KPS >= 60. Known RET C634 fails APL-101's actionable-RET exclusion and the
+    neoadjuvant zanzalintinib germline-RET exclusion. An MTC decision aid about starting drugs or joining trials is eligible; a
+    research-only hereditary thyroid cancer registry, benign-nodule, nodule-decision and ENT aromatherapy studies, an irAE treatment
+    study (never had immunotherapy) and a Mexico INCan psychosocial program are not_relevant; a thyroid-surgery consent study after
+    thyroidectomy is not_relevant (procedure rule).
+  - GM T-cell long-term follow-up (v158) and an AC/cisplatin antiemetic study that also bars thyroid tumors (v159) are not_relevant.
