@@ -42,6 +42,7 @@ Order: index.json order, skipping valid files.
 | 25 | 10 (v124-1..6, v125-1..4) | 409 | v126-1 |
 | 26 | 12 (v126-1..3, v127-1..4, v128-1..5) | 421 | v129-1 |
 | 27 | 9 (v129-1..5, v130-1, v131-1..3) | 430 | v132-1 |
+| 28 | 9 (v132-1..5, v133-1..4) | 439 | v134-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -816,3 +817,37 @@ Order: index.json order, skipping valid files.
     HNSCC are not_relevant; studies for untreated patients (HOPE gabapentin needs no prior surgery; rural care study bars already-started
     curative treatment) are excluded; post-CRT consolidation for unresected disease (volrustomig) is excluded after primary resection. An
     anti-EGFR skin-toxicity prophylaxis study is not_relevant when the stated regimen is cisplatin-RT (as v109's stated-plan rule).
+
+### Run 28 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v132-1..5, v133-1..4 (9 chunks; vignettes v132 (66M HPV-negative laryngeal SCC, CPS 5,
+  lung/spine metastases after cisplatin-RT 2021, pembrolizumab, cetuximab/paclitaxel and docetaxel, untreated brain metastasis with
+  RT being scheduled, trach/electrolarynx, ECOG 2, HIV undetectable for 15 years) and v133 (59M newly diagnosed untreated stage IV
+  HER2 3+ GEJ adenocarcinoma, CPS 5, MSS, claudin untested, liver and peritoneal disease, ECOG 0-1, New York) complete).
+  Stopped at a vignette boundary (v134 has 3 chunks).
+- Totals after run 28: 439 / 545 valid (full vcheck: 439 ok, 0 invalid), 133 / 164 vignettes complete. Next chunk: v134-1.
+- Consistency calls this run:
+  - Site within mucosal HNSCC follows the subtype rule: oral-cavity-only, oropharynx-only/HPV+ OPSCC, glottic early-stage and
+    oral tongue trials are excluded (not not_relevant) for a laryngeal SCC patient, citing the site criterion as not_met; cutaneous
+    SCC and mucosal melanoma trials stay not_relevant.
+  - Line count for R/M HNSCC: curative cisplatin-RT is not an R/M line (progression timing not stated); pembrolizumab, cetuximab/
+    paclitaxel and docetaxel = 3 R/M lines. Caps of "1-2 lines" / "no more than 2" / "3 or more excluded" are not_met; "up to 3
+    regimens" and "no more than three lines" are met. "Platinum in the R/M setting" is unknown for a patient whose only platinum was
+    curative CRT.
+  - Prior cetuximab fails cetuximab/EGFR-antibody exclusions (cetuximab-after-IO, palbociclib + cetuximab, ficlatuzumab + cetuximab).
+    "PD-1 in the most recent line" (RAPA-201) is not_met when the latest line was docetaxel.
+  - Untreated brain metastasis with radiation only being scheduled fails "untreated brain metastases" / "active CNS metastases" /
+    "unless adequately treated" exclusions (as run 21); trials with no CNS rule are judged on the rest.
+  - Controlled HIV: "HIV-positive subjects receiving combination antiretroviral therapy" fails as uncontrolled-illness wording (TMV
+    vaccine excluded, as run 17); where the same trial adds an explicit exception for HIV without an immunocompromised state
+    (metronomic MEC NCT06997068), the conflict is unknown -> possibly.
+  - Stated plan is brain-met RT only: a hearing-monitoring study for cisplatin and/or radiation near the inner ear and a palliative
+    head and neck SBRT study are possibly (target not stated); thoracic-RT planning study not_relevant (no thoracic RT planned,
+    laryngeal primary); salvage-neck-dissection flap and curative-surgery navigation studies not_relevant (procedure rule).
+  - HER2 3+ untreated GEA: HER2-negative-only first-line trials (zolbetuximab, CLDN18.2 ADC, cadonilimab, pumitamig, MTAP + FOLFOX,
+    novel combos, PARAMUNE 2L) are excluded on the HER2 criterion; first-line HER2+ PD-L1+ trials (rilvegostomig + T-DXd, T-DXd +
+    pembrolizumab) are eligible; refractory/after-prior-line baskets (incl. HER2 baskets needing prior T-DXd or 2 lines, AZD0901
+    substudy 1 barring HER2+ unless anti-HER2 failed) are excluded. Phase 1 HER2/GRPR/B7-H3 baskets with no numbered prior-therapy
+    rule are possibly (title rule); first-line CLDN18.2 cohorts with untested claudin are possibly (givastomig Part 2; ASP2138
+    monotherapy expansion, as v080-1).
+  - Petosemtamab (NCT03526835) is not_relevant for gastric cancer: its expansion cohorts are HNSCC and colorectal only (as v128-5).
+    Barrett's low-grade dysplasia study not_relevant (people without cancer).
