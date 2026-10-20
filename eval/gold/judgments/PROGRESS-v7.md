@@ -38,6 +38,7 @@ Order: index.json order, skipping valid files.
 | 21 | 13 (v108-1/2, v109-1..3, v110-1/2, v111-1..6) | 368 | v112-1 |
 | 22 | 10 (v112-1..3, v113-1..3, v114-1..3, v115-1) | 378 | v116-1 |
 | 23 | 10 (v116-1, v117-1..6, v118-1, v119-1/2) | 388 | v120-1 |
+| 24 | 11 (v120-1..4, v121-1/2, v122-1..4, v123-1 empty) | 399 | v124-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -673,3 +674,32 @@ Order: index.json order, skipping valid files.
     (LY4337713) is excluded for an untreated patient (advanced-basket rule).
   - HCC diagnosed on MRI without a stated biopsy: "histological or cytological confirmation" is unknown (PET imaging study possibly);
     criteria that allow noninvasive diagnosis are met.
+
+### Run 24 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v120-1..4, v121-1/2, v122-1..4, plus v123-1 (0 trials; written as `{"labels":[]}` like
+  v094-1). Vignettes v120 (57F metastatic IDH1 R132C intrahepatic cholangiocarcinoma, six cycles into first-line gem/cis/durvalumab,
+  last scan stable), v121 (71M recurrent metastatic HCC after resection, atezolizumab/bevacizumab then lenvatinib now failing, cured
+  HCV with cirrhosis, portal hypertension and mildly low platelets, New Orleans), v122 (48F resected gallbladder cancer, R0, NED on
+  adjuvant capecitabine with ~2 months left, flaring ulcerative colitis on mesalamine) and v123 complete.
+- Totals after run 24: 399 / 545 valid (full vcheck: 399 ok, 0 invalid), 123 / 164 vignettes complete. Next chunk: v124-1.
+- Consistency calls this run:
+  - HCC vs biliary tract cancer (intrahepatic cholangiocarcinoma, gallbladder) are different diseases (entity rule): HCC-only trials are
+    not_relevant for BTC patients and BTC-only trials for an HCC patient. Within BTC, an iCCA-only trial is excluded for a gallbladder
+    patient (subtype rule); trials naming "cholangiocarcinoma" or BTC broadly are judged on the rest.
+  - Patient stable on first-line BTC therapy: criteria requiring progression, refractoriness or no remaining SOC are not_met (excluded,
+    as run 12); first-line (previously untreated / <= 2 prior cycles / no prior systemic therapy) trials are excluded after six cycles;
+    cohorts needing only ">= 1 prior line" or "prior 1st line chemotherapy" with no progression clause are possibly (LY4337713, tivozanib,
+    spevatamig Part A, MK-2870 BTC); ADC MATCH is possibly via its on-therapy screening note. Durvalumab counts as prior anti-PD-L1
+    (AIM-NIVO excluded on E3; ICI-naive first-line trials excluded).
+  - "IDH1 mutation found" is not read as BRAF/KRAS/HER2/FGFR negative (unknown); FORE8394 subprotocol D possibly on BRAF.
+  - "Including" tumor lists stay non-exclusive (run 22): CTX-10726 (RCC/HCC/GC/EC named) is excluded on its relapsed/refractory criterion
+    rather than not_relevant; explicit cohort lists that omit the tumor (DB-1311 + BNT327, SGN-PDL1V, TAK-505) are not_relevant.
+  - HCC after atezolizumab/bevacizumab and lenvatinib: "no other SOC therapy available" is not_met while cabozantinib/regorafenib remain
+    (run 13 'all' rule); plain "progressed after appropriate lines of standard therapy" is met; a second-line trial barring prior
+    multi-kinase inhibitors is excluded. "Mildly low platelets" is unknown against platelet >= 100k cutoffs. Cured HCV passes criteria
+    requiring completed curative treatment.
+  - Resected NED BTC patient on adjuvant capecitabine: advanced/unresectable/measurable-disease trials (BTC-specific and open-ended solid
+    tumor baskets) are excluded (advanced-basket rule, as runs 11/14/20); pre-resection PVE study and colorectal liver-resection study
+    not_relevant. Flaring ulcerative colitis fails "uncontrolled inflammatory bowel disease" (FOG-001). AIM-NIVO excluded for her on I1/I2
+    (no measurable disease; biliary not an adjuvant PD-1 indication), as v028-2.
+  - Oral-agent symptom-monitoring study (NCT06279013) possibly when the next therapy is not stated (v121, as v076-1).
