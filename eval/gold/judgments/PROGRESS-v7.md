@@ -35,6 +35,7 @@ Order: index.json order, skipping valid files.
 | 18 | 10 (v098-1..4, v099-1..3, v100-1..3) | 334 | v101-1 |
 | 19 | 10 (v101-1, v102-1..4, v103-1/2, v104-1..3) | 344 | v105-1 |
 | 20 | 11 (v105-1..4, v106-1..3, v107-1..4) | 355 | v108-1 |
+| 21 | 13 (v108-1/2, v109-1..3, v110-1/2, v111-1..6) | 368 | v112-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -568,3 +569,37 @@ Order: index.json order, skipping valid files.
     are judged on the rest (FORAGER-1 post-erdafitinib cohort possibly on cardiac wording; MK-3475-04A PD-1-refractory arm eligible).
   - Bellmunt score 0-2 is unknown for an ECOG 2 patient with liver metastases (hemoglobin decides): possibly.
   - Prior pembrolizumab excludes AIM-NIVO on E3; with no autoimmune disease and no prior PD-1 it is not_relevant (as before).
+
+### Run 21 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v108-1/2, v109-1..3, v110-1/2, v111-1..6 (13 chunks; vignettes v108 (81F newly resected
+  high-grade NMIBC, BCG planned, heart failure, weak kidneys, ECOG 2, Erie PA), v109 (52F untreated cT3 MIBC with two enlarged pelvic
+  nodes, neoadjuvant chemo then cystectomy planned, cured HCV), v110 (77M bladder cancer of unknown stage on unnamed chemo + immunotherapy
+  infusions, one kidney, nearly everything unknown) and v111 (45M metastatic UC with liver/lung metastases, progressing on first-line
+  EV + pembrolizumab, three new untreated brain metastases with headaches on a short steroid course, ECOG 0-1) complete).
+- Totals after run 21: 368 / 545 valid (full vcheck: 368 ok, 0 invalid), 111 / 164 vignettes complete. Next chunk: v112-1.
+- Consistency calls this run:
+  - New high-grade NMIBC with BCG planned: a T1 trial for "cystectomy-recommended" disease (PARRC) is excluded on that wording; MIBC,
+    metastatic, post-cystectomy and upper-tract-only trials excluded (stage-within-disease rule, as run 20); RCC trials not_relevant.
+  - Untreated MIBC headed to curative neoadjuvant chemo + cystectomy: refractory / "no other options" / "not amenable to curative
+    therapy" solid-tumor trials and LA/mUC trials are excluded (advanced-basket rule); a basket with no numbered stage or prior-therapy
+    criterion (ALK201) is possibly (title rule); FORAGER-1 cohort B6 (perioperative FGFR3 MIBC) is possibly on untested FGFR3.
+  - "Two enlarged pelvic lymph nodes" on CT is evidence of node-positive disease: cN0-only MIBC trials (BRIGHT, ARCHER chemoRT) are
+    excluded even where a negative node biopsy route exists (that route is unknown, but the N0 criterion is not_met as stated).
+  - Oral-agent symptom-monitoring study (NCT06279013) is not_relevant when the planned therapy is stated and is IV neoadjuvant chemo
+    (as v037-1); it stays possibly when the next therapy is not stated (v076-1).
+  - Bladder cancer of unknown stage on systemic chemo + immunotherapy (v110): NMIBC, BRIGHT and advanced/refractory basket trials are
+    possibly (stage, BCG history, spread, ECOG unknown); a trial barring current systemic therapy and systemic immunotherapy within
+    6 months (TYRA-300) is excluded; upper-tract-only trials excluded; baskets whose tumor list omits bladder, RCC/lung trials, a
+    hematuria-workup study and a multi-cancer screening study (for people without cancer) are not_relevant.
+  - Untreated, symptomatic brain metastases: criteria phrased as "patients with (previously) treated brain metastases are eligible /
+    may participate if stable" are read as not_met for untreated lesions (excluded: CA-4948 + pembrolizumab, SG + pembrolizumab
+    NCT06524544, pemetrexed NCT06630416); explicit "active / untreated CNS" exclusions likewise; trials whose listed criteria have no
+    CNS rule are judged on the rest (Dato-DXd + platinum, HER3-DXd bladder cohort, MK-3475-04A Arm A, plasma exchange + EV/pembro and
+    an 89Zr PET imaging study eligible); "symptomatic brain metastases requiring supraphysiologic steroids" with a short steroid course
+    is unknown (IDE892 possibly). FORE8394: subprotocols C/D bar CNS metastases but subprotocol A does not, so possibly on BRAF.
+  - Second line after first-line EV + pembrolizumab with no platinum: trials requiring prior platinum + PD-1 + EV (MK-2870-031) or
+    progression after two metastatic lines (pemetrexed) are excluded; first-line, EV-naive, PD-1-naive and newly-diagnosed (within
+    90 days) trials are excluded; Bellmunt 0-2 is met for ECOG 0-1 with liver metastases (score is at most 2 whatever the hemoglobin).
+  - Surgical procedure studies the patient is not having (nephroureterectomy lymph node dissection, ureteral stent at cystectomy) are
+    not_relevant, as run 19.
+
