@@ -21,6 +21,7 @@ Order: index.json order, skipping valid files.
 | 4 | 10 (v049-1, v053-1, v055-1/2/5/6, v056-1..3, v057-1) | 183 | v057-2 |
 | 5 | 9 (v057-2/3, v058-1..3, v059-1..4) | 192 | v060-1 |
 | 6 | 12 (v060-1..5, v061-1..3, v062-1, v063-1..3) | 204 | v064-1 |
+| 7 | 10 (v064-1..3, v065-1..4, v066-1..3) | 214 | v067-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -136,3 +137,29 @@ Order: index.json order, skipping valid files.
     (v063-2 NCT07101328 possibly).
   - GCB DLBCL fails "non-GCB DLBCL" criteria and GCB-DLBCL exclusions (excluded).
 
+### Run 7 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v064-1..3, v065-1..4, v066-1..3 (10 chunks; vignettes v064, v065, v066
+  complete; all three are myeloma).
+- Totals after run 7: 214 / 545 valid (full vcheck: 214 ok, 0 invalid), 66 / 164 vignettes complete. Next chunk: v067-1.
+- Consistency calls this run (myeloma):
+  - Plasma-cell disease states follow the prior-therapy rule, not the entity rule: smoldering-MM trials for an active-MM
+    patient, and active NDMM/RRMM trials for a smoldering-MM patient, are excluded (SMM / "requiring treatment" /
+    "diagnosis of MM per IMWG" criteria not_met). AL-amyloidosis trials are not_relevant for MM/SMM patients.
+  - Untreated NDMM whose doctor is "possibly" planning a transplant: transplant-ineligible NDMM trials are possibly
+    (ineligibility unknown); trials accepting "deferral of ASCT" likewise possibly.
+  - Gain of 1q alone does not meet high-risk definitions that need 1q plus a translocation/del(1p32); other FISH
+    results unknown -> possibly. "Classified as high-risk MM" with no definition -> unknown.
+  - Title rule applied to MM: an R/R-titled trial with no numbered prior-therapy criterion is possibly for an
+    untreated patient (v064-1 NCT04634552, v064-3 NCT05862012); an NDMM-titled trial with no numbered "newly
+    diagnosed" criterion is possibly for a 3-line RRMM patient (v065-1 NCT07764978).
+  - Lines counted per IMWG from the narrative (induction + ASCT + maintenance = 1 line): a narrative listing exactly
+    three regimens fails ">= 4 prior lines" (excluded) and "no more than 2" (excluded), passes "1 to 3"/"1 to 4".
+  - Stated ECOG 2 from fatigue/neuropathy fails ECOG 0-1 criteria, including ones that allow ECOG 2 only "solely due to
+    local symptoms of myeloma" (v065-4 NCT07555938 excluded).
+  - Bortezomib neuropathy of unstated grade: exclusions at grade >= 2 (or grade 2 with pain) are unknown (possibly);
+    criteria that allow neuropathy up to grade 2 are not treated as failing (v065-2 NCT05714839 eligible).
+  - "Triple-class refractory" counts as progression on/within 60 days of last therapy; refractoriness to a specific
+    drug pair (carfilzomib AND pomalidomide) is not inferred (unknown).
+  - "Diagnosed within the past 12 months" fails for SMM found 18 months ago (v066-3 NCT03937635 excluded).
+  - Observational/follow-up studies tied to a treatment she has not had (post-cilta-cel follow-up, post-CAR-T cytopenia)
+    and a respiratory-virus treatment study are not_relevant.
