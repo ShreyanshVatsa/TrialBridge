@@ -9,22 +9,22 @@
    "updated": "2026-10-19"
   },
   "es": {
-   "status": "partial",
-   "coverage": 0.4466,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "10atuze",
-   "updated": "2026-10-19"
+   "updated": "2026-10-20"
   },
   "pt": {
-   "status": "partial",
-   "coverage": 0.4466,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "10atuze",
-   "updated": "2026-10-19"
+   "updated": "2026-10-20"
   },
   "ht": {
    "status": "partial",
-   "coverage": 0.4505,
+   "coverage": 0.9924,
    "sourceHash": "10atuze",
-   "updated": "2026-10-19"
+   "updated": "2026-10-20"
   },
   "zh-Hans": {
    "status": "partial",
@@ -70,15 +70,15 @@
   },
   "fr": {
    "status": "partial",
-   "coverage": 0.9093,
+   "coverage": 0.9802,
    "sourceHash": "10atuze",
-   "updated": "2026-10-19"
+   "updated": "2026-10-20"
   },
   "hi": {
-   "status": "partial",
-   "coverage": 0.9124,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "10atuze",
-   "updated": "2026-10-19"
+   "updated": "2026-10-20"
   }
  }
 }
