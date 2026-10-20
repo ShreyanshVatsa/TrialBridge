@@ -72,3 +72,32 @@ New judgment calls:
 - Patient-support / services observational studies (LLS services) for an eligible blood-cancer patient
   -> possibly when treatment timing is unknown (judged normally, not not_relevant). Post-trial-access
   continuation studies and respiratory-virus treatment studies -> not_relevant.
+
+## Run 3 (2026-10-20)
+
+Chunks done (25): v074-1..5; v075-1..8; v080-1..5; v081-1..3; v086-1..4.
+Next: v093-1. Totals after run: 77 ok / 0 invalid / 32 missing of 109.
+
+New judgment calls:
+- Uveal melanoma patient (v074): cutaneous-only or "uveal excluded" melanoma trials -> excluded; mucosal-only
+  trials -> excluded; generic melanoma/solid-tumor trials with no prior-therapy rule -> eligible; "progressed on
+  standard therapy OR no standard therapy exists" baskets for untreated HLA-A2-negative metastatic UM -> possibly
+  (limited standard options); baskets requiring progression/received SoC with no such clause -> excluded.
+  HLA-A*02:01-required trials (tebentafusp, IMA203) -> excluded on stated HLA-negative status.
+- Structured "daily activity: 2" (v075) treated as stated ECOG 2: trials requiring ECOG 0-1 -> excluded (not_met),
+  even when disease/setting otherwise fits; ECOG 0-2 trials judged on the rest.
+- Mucosal melanoma: trials excluding mucosal -> excluded; trials listing mucosal explicitly -> judged normally.
+- Patient mid-first-line (v080, stable CT, rising CA 19-9): trials requiring progression after 1L -> possibly
+  (unknown); 1L-only trials -> excluded; maintenance trials requiring SD after 16-32 weeks -> eligible; a trial
+  requiring a "stable or decreasing tumor marker" with rising CA 19-9 -> possibly (investigator-determined).
+  Prior FOLFIRINOX = prior irinotecan -> topo-I exclusions (HER3-DXd) not_met.
+- KRAS variant known (G12D): G12C/G12V-only trials -> excluded; KRAS-WT trials -> excluded. KRAS mutated with
+  variant unstated (v086): variant-specific trials -> possibly.
+- Stable LAPC after completed 1L + chemoradiation (v086): progression-required trials -> possibly; trials needing
+  metastatic or recurrent disease -> excluded; prior abdominal RT exclusions -> excluded.
+- Borderline resectable untreated (v081): metastatic-only, post-1L, resected-adjuvant and LAPC-after-induction
+  trials -> excluded; imaging study for localized PDAC before neoadjuvant therapy -> eligible.
+- Surgical/perioperative supportive studies for a procedure the patient is not having (ALND/ILND lymphatic
+  reconstruction, distal pancreatectomy fistula, post-Whipple analgesia, SLNB pain) -> not_relevant.
+- Same-cancer trials whose listed tumor types omit the patient's cancer (TAK-505: gastric/CRC/NSCLC/HNSCC) ->
+  not_relevant.
