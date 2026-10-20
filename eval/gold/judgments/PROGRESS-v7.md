@@ -32,6 +32,7 @@ Order: index.json order, skipping valid files.
 | 15 | 10 (v087-1, v088-1..4, v089-1..5) | 299 | v090-1 |
 | 16 | 13 (v090-1..4, v091-1..4, v092-1, v093-1..3, v094-1 empty) | 312 | v095-1 |
 | 17 | 12 (v095-1..5, v096-1..4, v097-1..3) | 324 | v098-1 |
+| 18 | 10 (v098-1..4, v099-1..3, v100-1..3) | 334 | v101-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -478,3 +479,33 @@ Order: index.json order, skipping valid files.
     are excluded for a taxane-exposed ovarian patient and not_relevant for a GBM patient on temozolomide.
   - Healthy Oregon Project (NCT04494945) kept possibly for a Baltimore patient (site encounter unknown), as v032-1/v090-2.
 
+
+### Run 18 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v098-1..4, v099-1..3, v100-1..3 (10 chunks; vignettes v098 (36F recurrent grade 3
+  IDH1-mutant 1p/19q-intact astrocytoma after two surgeries, RT/TMZ and PCV, new enhancement, ECOG 0-1, San Francisco), v099 (42M
+  newly resected grade 2 IDH-mutant 1p/19q-codeleted oligodendroglioma with small residual, untreated, Richmond VA) and v100 (61F
+  recurrent grade 3 skull-base meningioma after four surgeries, two RT courses, bevacizumab, sunitinib, everolimus/octreotide,
+  ECOG 2, melanoma excised 6 years ago) complete).
+- Totals after run 18: 334 / 545 valid (full vcheck: 334 ok, 0 invalid), 100 / 164 vignettes complete. Next chunk: v101-1.
+- Consistency calls this run:
+  - Glioma subtype rule applied in reverse: IDH-wildtype / WHO 2021 glioblastoma-only trials (recurrent or newly diagnosed) are
+    excluded for IDH-mutant astrocytoma or oligodendroglioma (not not_relevant). Grade also follows the subtype rule: HGG-only
+    (grade III-IV) trials and a grade 3-only oligodendroglioma cohort are excluded for a grade 2 oligodendroglioma. DMG, ATRT,
+    medulloblastoma/ependymoma trials stay not_relevant (as run 17).
+  - Meningioma vs glioma are different diseases both ways (not_relevant), as run 17; brain-metastasis trials are not_relevant for
+    primary brain tumors.
+  - PCV counts as prior lomustine/nitrosourea (fails lomustine/nitrosourea exclusions, and the AZD9574 glioma module's explicit PCV
+    bar); RT/TMZ then PCV = two alkylating lines (fails "> 1 prior line of alkylating chemotherapy").
+  - Newly diagnosed IDH-mutant tumor trials requiring no prior chemo/RT are excluded for a recurrent pre-treated patient; recurrent
+    glioma trials needing prior RT + alkylator or progression are excluded for a newly resected untreated one.
+  - Untreated, just-resected grade 2 glioma: open-ended "advanced / unresectable / metastatic" solid-tumor baskets are excluded
+    (run 16/17 advanced-basket rule), even when they carry an investigator "ineligible for standard therapy" prong; baskets that name
+    glioma explicitly (TNG456 MTAP, NST-628 BRAF glioma cohort) are possibly when entry rests on that investigator prong and the
+    biomarker is unknown. Epithelial-only baskets and ones barring primary CNS tumors are not_relevant.
+  - Multi-phase trial where only a later phase fails (NEO212 Phase 2b bars more than one recurrence; Phase 1 has no such bar) is possibly.
+  - "I feel normal" with full-time work fails a "subjective complaints of cognitive deficits" requirement (cognitive rehab study
+    excluded); objective neurocognitive-deficit requirements are unknown (possibly). Location-limited supportive studies at a centre in
+    the patient's city (UCSF, VCU) are possibly when affiliation is not stated.
+  - Recurrent grade 3 meningioma after surgery, RT and three systemic lines: refractory solid-tumor phase 1s allowing ECOG 2 with no
+    failing criterion are eligible (DCSZ11 escalation, RBS2418, SBO-154); ECOG 0-1 trials are excluded (ECOG 2 from resting much of
+    the afternoon); a palliative RT study excluding intracranial targets is excluded. ECOG 2 meets KPS >= 60 (zanzalintinib eligible).
