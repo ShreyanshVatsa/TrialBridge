@@ -47,11 +47,26 @@ resolver+LLM - baseline nDCG@10 +0.060 [0.002, 0.120] (distinguishable); v6 dev:
 | Hard-filter oracle, national top 15 | 0 of 600 | 0 of 600 (oracle changed: uncoded sites are "not checkable", disclosed) |
 | v2 vs v1 (profiles without ECOG 2) | -0.004 [-0.022, 0.012] | -0.004 [-0.021, 0.014] |
 
-## 3. Production on the free tier (live)
+## 3. Vignette benchmark (164 synthetic patients, LLM-judged gold)
+
+`npm run eval:vignettes -- --split=dev|test` against `eval/gold/vignettes-gold-v1.json`: 164 hand-written synthetic vignettes, 5,389 pooled (vignette, trial) pairs labelled eligible / possibly / excluded / not_relevant by a Claude Opus judge (306 / 852 / 2,814 / 1,417), every evidence quote machine-checked verbatim against the cited criterion. An independent fresh-context Opus judge ("opus-2", blind to the primary labels and notes) re-judged a seeded 20% sample (32 vignettes, 109 chunks, 1,095 pairs): raw agreement 0.902, **Cohen's kappa 0.841** (dev 0.869, test 0.814), relevant-vs-not agreement 0.956. 107 contested pairs plus a 15% random sample are in `eval/gold/vignettes-review-packet-v1.md` for owner review. The pool and the gold were frozen before v7 rankings were added (`scripts/eval/vignettes/add-pipeline.ts`); 93-95% of the v7 top 10s were already pooled, unpooled trials count as non-relevant. **pipeline:v7+resolver** = what the app shows before the AI judge answers. The AI judge arm was not run here (164 patients x ~7k tokens is over the free daily quota).
+
+| split | system | nDCG@10 (graded) | recall@50 eligible | excluded share in top 10 | dNDCG vs v4 |
+| --- | --- | --- | --- | --- | --- |
+| dev (94) | pipeline:v4 | 0.288 [0.236, 0.345] | 0.791 | 0.560 | ref |
+| dev | pipeline:v7 | 0.298 [0.243, 0.354] | 0.804 | 0.584 | +0.010 [-0.017, 0.038] |
+| dev | pipeline:v7+resolver | 0.325 [0.267, 0.386] | 0.804 | 0.545 | **+0.038 [0.003, 0.072]** |
+| test (70) | pipeline:v4 | 0.307 [0.249, 0.365] | 0.845 | 0.477 | ref |
+| test | pipeline:v7 | 0.315 [0.253, 0.377] | 0.854 | 0.525 | +0.008 [-0.024, 0.039] |
+| test | pipeline:v7+resolver | 0.295 [0.237, 0.352] | 0.854 | 0.487 | -0.012 [-0.051, 0.027] |
+
+Baselines (dev / test nDCG@10): BM25 0.219 / 0.256, embeddings 0.194 / 0.217, ClinicalTrials.gov search 0.135 / 0.169; the pipeline beats all three, distinguishably, on both splits. The v7 resolver lowers the share of excluded trials in the top 10 on both splits (dev 0.584 to 0.545, test 0.525 to 0.487) and helps nDCG on dev, but on test its nDCG change is not distinguishable from zero and points down (-0.020 [-0.063, 0.020] vs pipeline:v7; -0.023 vs v4 with contested pairs dropped). About half of every system's top 10 is labelled "excluded" by the gold: retrieval finds the right disease, and most of the remaining error is eligibility detail the questionnaire does not capture.
+
+## 4. Production on the free tier (live)
 
 `scripts/eval/matching/live-check.ts`: 5 TREC dev patients judged back to back through the production judge (45 s deadline, real Groq client, token budget, no pacing or cache): 5 of 5 judged, none degraded, coverage 20-100% per patient. Groq's free tier allows 8000 tokens per minute and one patient costs about 7k, so sustained capacity is about one full judgment per minute; patients beyond that get partial AI coverage (the rest stays "unknown", which never lowers a trial) or, when the daily budget is gone, a rules-only reading with a banner saying so.
 
-## 4. Components
+## 5. Components
 
 | component | v6 | v7 | source |
 | --- | --- | --- | --- |
@@ -72,7 +87,8 @@ resolver+LLM - baseline nDCG@10 +0.060 [0.002, 0.120] (distinguishable); v6 dev:
 - Free-tier throughput: about one full judgment per minute.
 
 ## What is unvalidated
-- The vignette benchmark (gold labels in progress: `eval/gold/judgments/PROGRESS-v7.md`).
+- The vignette gold is LLM-judged (two Opus judges, kappa 0.841), not clinician-reviewed; the owner review packet is unfilled.
+- The resolver's vignette gain does not replicate on the vignette test split (TREC held-out: +0.056 nDCG for the resolver alone, distinguishable; vignette test: -0.012, not distinguishable).
 - Precision of the judge's met/not-met labels item by item (only Tier B demotions are checked against TREC).
 - Translations of the new checklist and privacy text (English fallback where missing).
 - Anything about real patients or clinicians.
