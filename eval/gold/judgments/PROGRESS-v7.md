@@ -29,6 +29,7 @@ Order: index.json order, skipping valid files.
 | 12 | 11 (v078-1, v079-1..5, v080-1..5) | 267 | v081-1 |
 | 13 | 10 (v081-1..3, v082-1..5, v083-1/2) | 277 | v083-3 |
 | 14 | 12 (v083-3..6, v084-1..3, v085-1, v086-1..4) | 289 | v087-1 |
+| 15 | 10 (v087-1, v088-1..4, v089-1..5) | 299 | v090-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -381,3 +382,30 @@ Order: index.json order, skipping valid files.
   - Basket trials whose histology list omits pancreatic cancer (TAK-505, MK-5684) are not_relevant; AIM-NIVO for a patient with
     prior pembrolizumab is excluded on E3, and not_relevant for one with no autoimmune disease and no prior PD-1 (as before).
 
+### Run 15 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v087-1, v088-1..4, v089-1..5 (10 chunks; vignettes v087 (75M recurrent KRAS-WT PDAC
+  after gem/cape adjuvant and gem/nab, possible NRG1 fusion, ECOG 3-4, chronic HBV on tenofovir), v088 (58F platinum-sensitive
+  recurrent HGSOC, gBRCA1, after olaparib maintenance, partial response to second-line carboplatin/PLD, discussing maintenance)
+  and v089 (66F platinum-resistant HGSOC after ~5 lines incl. niraparib, MIRV and a current phase 2 trial ADC, CA-125 rising with
+  scan pending, ECOG 2, creatinine 1.6) complete).
+- Totals after run 15: 299 / 545 valid (full vcheck: 299 ok, 0 invalid), 89 / 164 vignettes complete. Next chunk: v090-1.
+- Consistency calls this run:
+  - Ovarian histologic subtypes follow the subtype rule: low-grade serous-only and mucinous-only trials are excluded for a
+    high-grade serous patient (not not_relevant). Endometrial-cancer trials remain not_relevant for ovarian patients.
+  - Platinum status: platinum-resistant-only trials/cohorts are excluded for a platinum-sensitive patient, and PSOC-only cohorts
+    fail for a platinum-resistant one. Frontline (newly diagnosed, neoadjuvant, first-line maintenance, PARPi-naive) trials are
+    excluded for recurrent disease; prehab before NACT/IDS and risk-reducing-surgery studies are not_relevant.
+  - Patient responding to her latest platinum (partial response, maintenance planned): criteria requiring progression on/after
+    the most recent therapy, "progressive cancer at enrollment" or exhausted standard therapy are not_met (excluded), as runs 6/12.
+    A post-platinum maintenance trial (MIRV + olaparib for PSOC after prior PARPi) is possibly on unknown FRalpha. A 2L-titled PSOC
+    trial with no numbered line cap is possibly for a patient who already had 2L (title rule).
+  - Line counting for ovarian: maintenance is part of the preceding line; a current investigational ADC counts as a line. A
+    patient with ~5 lines fails "no more than 3/4 prior lines" caps (excluded). Where a line cap can be waived by sponsor approval
+    (BL-B01D1 E33), the label is possibly.
+  - Progression pending ("CA-125 rising, scan next week will probably show progression") is unknown, not met, for criteria
+    requiring documented progression. Payload of an unnamed experimental ADC is unknown against TOP1-ADC exclusions.
+  - "Sits much of the afternoon" with daily activity 2 is ECOG 2 (fails every ECOG 0-1 criterion; ECOG 0-2 trials judged on the
+    rest). ECOG 3-4 (v087) fails ECOG <= 2 / Zubrod 0-2 and pemigatinib's "ECOG 2 case-by-case" too.
+  - MSI-H-negative tumor fails MSI-H/dMMR basket requirements (excluded). Phase 1 ovarian/solid-tumor trials with no failing
+    numbered criterion are eligible (NTB-928, HWK-016); ones gated on an unreported biomarker (CLDN6, BRAF, mesothelin, HER2) are
+    possibly.
