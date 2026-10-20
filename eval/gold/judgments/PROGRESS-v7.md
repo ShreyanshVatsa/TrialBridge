@@ -26,6 +26,7 @@ Order: index.json order, skipping valid files.
 | 9 | 9 (v070-1/2, v071-1..3, v072-1..4) | 235 | v073-1 |
 | 10 | 9 (v073-1..4, v074-1..5) | 244 | v075-1 |
 | 11 | 12 (v075-1..8, v076-1, v077-1..3) | 256 | v078-1 |
+| 12 | 11 (v078-1, v079-1..5, v080-1..5) | 267 | v081-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -297,3 +298,29 @@ Order: index.json order, skipping valid files.
   - Supportive/behavioral studies tied to future therapy the description does not state (exercise during immunotherapy,
     oral-agent symptom monitoring, goals-of-care program) are possibly; procedure studies for a surgery the patient is not
     having (ALND/ILND lymphatic reconstruction) are not_relevant.
+
+### Run 12 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v078-1, v079-1..5, v080-1..5 (11 chunks; vignettes v078 (66M locally advanced
+  BCC after two hedgehog inhibitors, controlled HIV with CD4 > 600), v079 (34F BRAF V600K cutaneous melanoma after ipi/nivo,
+  dabrafenib/trametinib and encorafenib/binimetinib, growing brain metastases after WBRT, ECOG 3-4) and v080 (63M metastatic
+  KRAS G12D PDAC, eight cycles into first-line FOLFIRINOX, CT stable but CA 19-9 rising) complete).
+- Totals after run 12: 267 / 545 valid (full vcheck: 267 ok, 0 invalid), 80 / 164 vignettes complete. Next chunk: v081-1.
+- Consistency calls this run:
+  - Basal cell carcinoma is a different disease from melanoma, cSCC and Merkel (not_relevant), as with the other
+    non-melanoma skin cancers. Controlled HIV fails "HIV" / "known HIV infection" exclusions (excluded); "acquired immune
+    deficiency diseases" with exceptions not shown is unknown.
+  - ECOG 3-4 ("mostly in bed") fails every ECOG/Zubrod 0-1 / 0-2 / Karnofsky >= 70 criterion (excluded, as run 6). Trials
+    with no numbered performance-status criterion are judged on the rest (v079-5 NCT06413680 anti-PD-1-progressed melanoma
+    cohort eligible; v079-3 STAR0602 and AU-007 possibly on CNS/BRAF wording).
+  - Brain lesions "still growing" after WBRT fail criteria barring progressing or active CNS metastases (excluded).
+  - Patient stable on first-line chemo (CT stable, marker rising): criteria that require radiographic progression on, or
+    intolerance to, prior therapy, or exhaustion of standard therapy, are not_met (excluded, as run 6 for a responding
+    patient); first-line / treatment-naive trials are excluded; cohorts that only require "1 prior line" or "at least 1
+    systemic therapy" without a progression clause are possibly; trials with no prior-therapy rule ("treatment naive or
+    prior standard therapy") are eligible. A rising CA 19-9 alone is not radiographic progression, but it fails a criterion
+    that explicitly requires a stable or decreasing tumor marker (v080-5 NCT06747845 excluded); "steadily rising tumor
+    marker" treatment-failure wording is unknown (SHARON possibly).
+  - FOLFIRINOX counts as prior irinotecan (topoisomerase-1 inhibitor) for exclusions on prior TOP1 therapy in the advanced
+    setting (v080-2 HER3-DXd excluded). KRAS G12D fails KRAS G12C / G12V / KRAS-wild-type requirements (excluded).
+  - Eight FOLFIRINOX cycles (~16 weeks) meet "minimum of 16 weeks" and "8-12 cycles" maintenance criteria.
+  - AIM-NIVO for a patient with no autoimmune disease and no prior PD-1 is not_relevant (as v015/v024).
