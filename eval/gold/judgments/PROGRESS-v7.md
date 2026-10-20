@@ -22,6 +22,7 @@ Order: index.json order, skipping valid files.
 | 5 | 9 (v057-2/3, v058-1..3, v059-1..4) | 192 | v060-1 |
 | 6 | 12 (v060-1..5, v061-1..3, v062-1, v063-1..3) | 204 | v064-1 |
 | 7 | 10 (v064-1..3, v065-1..4, v066-1..3) | 214 | v067-1 |
+| 8 | 12 (v067-1..3, v068-1..3, v069-1..6) | 226 | v070-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -163,3 +164,32 @@ Order: index.json order, skipping valid files.
   - "Diagnosed within the past 12 months" fails for SMM found 18 months ago (v066-3 NCT03937635 excluded).
   - Observational/follow-up studies tied to a treatment she has not had (post-cilta-cel follow-up, post-CAR-T cytopenia)
     and a respiratory-virus treatment study are not_relevant.
+
+### Run 8 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v067-1..3, v068-1..3, v069-1..6 (12 chunks; vignettes v067 (MGUS), v068 (AL
+  amyloidosis) and v069 (high-risk RRMM after 2 lines) complete).
+- Totals after run 8: 226 / 545 valid (full vcheck: 226 ok, 0 invalid), 69 / 164 vignettes complete. Next chunk: v070-1.
+- Consistency calls this run:
+  - MGUS follows the plasma-cell prior-therapy rule: SMM, NDMM and RRMM trials are excluded (SMM / MM diagnosis /
+    prior-line criteria not_met); a trial that names MGUS in an exclusion is excluded on it. Waldenstrom and AL trials
+    are not_relevant for MGUS.
+  - AL amyloidosis patient (the reverse of run 7): myeloma-only trials (MM diagnosis required, or AL/amyloidosis
+    excluded) and lymphoma trials are not_relevant. AL trials for R/R disease are possibly for a patient still on
+    first-line Dara-VCD with a suboptimal response (refractoriness, NT-proBNP cutoffs, Mayo IIIa vs IIIb, NYHA unknown).
+  - Basket trial TAPUR (solid tumor / MM / B-NHL only) is not_relevant for AL; excluded for MGUS (in the plasma-cell
+    family but not MM and needing no treatment).
+  - Post-trial-access and long-term follow-up studies for a drug the patient never had are not_relevant (as run 7);
+    a treatment trial requiring prior cilta-cel (selinexor maintenance post CAR-T) is excluded.
+  - Standard washouts (patient "just finished" a regimen) do not downgrade a label on their own (as v045); timing
+    criteria that cannot be met by waiting are judged normally.
+  - Progression on or right after KPd counts as pomalidomide- and carfilzomib-refractory (fails pomalidomide-refractory
+    exclusions); daratumumab given only in induction is not assumed refractory (unknown).
+  - "At least 3 lines OR no available therapies" is not_met for a fit patient after 2 lines (as run 4).
+  - Randomised trials whose comparator regimens all contain drugs the patient is refractory to, with an
+    "eligible for a standard regimen per investigator" criterion, are possibly (v069-2 NCT07391657).
+  - Title rule reused for NCT07764978 (NDMM-titled, no numbered newly-diagnosed criterion): possibly for RRMM (v069-5).
+  - Transplant-support studies (plerixafor, online education) are possibly when a further transplant is not stated;
+    "first transplant" studies are excluded after a prior ASCT.
+  - Alkylator exposure is not inferred from "stem cell transplant" (melphalan not stated): unknown.
+  - An RT trial whose ECOG text reads ">= 2" (likely a typo) was not cited; labelled possibly on lesion count (v069-1).
+
