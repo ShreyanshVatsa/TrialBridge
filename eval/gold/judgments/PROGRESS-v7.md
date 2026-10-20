@@ -31,6 +31,7 @@ Order: index.json order, skipping valid files.
 | 14 | 12 (v083-3..6, v084-1..3, v085-1, v086-1..4) | 289 | v087-1 |
 | 15 | 10 (v087-1, v088-1..4, v089-1..5) | 299 | v090-1 |
 | 16 | 13 (v090-1..4, v091-1..4, v092-1, v093-1..3, v094-1 empty) | 312 | v095-1 |
+| 17 | 12 (v095-1..5, v096-1..4, v097-1..3) | 324 | v098-1 |
 
 ### Run 1 notes
 - Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
@@ -442,3 +443,38 @@ Order: index.json order, skipping valid files.
     not_relevant; ones tied to undecided future chemo (weekly-paclitaxel neuropathy prevention) are possibly. Location-limited
     non-treatment programs near the patient (PAYMENT at PeaceHealth for a Portland patient, Healthy Oregon Project) are possibly
     (as v032-1); a palliative RT study is excluded for a patient on concurrent cytotoxic chemotherapy.
+
+### Run 17 (sequential, single agent, no forks)
+- Written + validated (read-only vcheck): v095-1..5, v096-1..4, v097-1..3 (12 chunks; vignettes v095 (40F recurrent platinum-resistant
+  HGSOC, gBRCA2, after carbo/paclitaxel + niraparib, second platinum, weekly paclitaxel + bev and topotecan, treated stable brain met,
+  controlled HIV), v096 (57M first-recurrence IDH-wt MGMT-methylated GBM after RT/TMZ + 6 adjuvant TMZ, low-dose dexamethasone) and
+  v097 (66F newly diagnosed IDH-wt MGMT-unmethylated GBM after subtotal resection, chemoradiation not yet started, ECOG 2) complete).
+- Totals after run 17: 324 / 545 valid (full vcheck: 324 ok, 0 invalid), 97 / 164 vignettes complete. Next chunk: v098-1.
+- Consistency calls this run:
+  - Controlled HIV (undetectable viral load, CD4 not stated): fails unqualified "HIV" / "history of HIV" / "positive HIV serology" /
+    "HIV on antiretroviral therapy" / "ongoing HIV infection" / "negative screen for infectious disease markers" criteria (excluded, as
+    runs 4/6/12); criteria that define well-controlled HIV with a CD4 threshold (CD4 >= 250/350) are unknown (possibly); "HIV with
+    exceptions / unless protocol-specific criteria" and "immunodeficiency" without HIV named are unknown.
+  - PROC line counting (v095): carbo/paclitaxel + niraparib maintenance = 1 line, second platinum = 2, weekly paclitaxel + bev = 3,
+    topotecan = 4; the last two are PROC regimens (2 cytotoxic PROC regimens). Caps of "1-3 prior lines", "no more than 3", "1 to 3
+    prior lines of cytotoxic therapy" and "no more than one PROC regimen" are not_met (excluded); caps of 4 or more are met. Multi-cohort
+    trials where only some cohorts fail (Rina-S Part K, ART0380 escalation) are possibly.
+  - Topotecan counts as prior topoisomerase-1 inhibitor (fails "no previous TOP1 agents"); it is not a TOP1 ADC (passes ADC-only exclusions).
+  - "Patients must have no available therapeutic options known to confer clinical benefit" is not_met for PROC after 4 lines while
+    standard single agents she has not had (PLD, gemcitabine) remain (run 13 'all/no options' rule).
+  - Glioma follows the subtype rule: IDH-mutant-only glioma trials/modules are excluded for IDH-wt GBM; meningioma, brain metastases,
+    leptomeningeal metastases, pediatric DMG and PCPG/NET trials are not_relevant. Newly diagnosed GBM trials (pre-RT, adjuvant-phase,
+    no-progression-after-RT) are excluded for a recurrent patient, and recurrent-GBM trials are excluded for a newly diagnosed one
+    (prior-therapy rule). MGMT status is a subtype-like fact: MGMT-unmethylated-only trials are excluded for a methylated tumor.
+  - Pre-operative studies (window-of-opportunity, sonobiopsy, intraoperative devices) after resection is done: a treatment window
+    trial is excluded on its "candidate for surgical resection" criterion; a diagnostic pre-op study is not_relevant (as run 13);
+    for a recurrence where re-resection is not stated, surgery-dependent criteria are unknown (possibly).
+  - Unspecified "low dose of dexamethasone" is unknown against dexamethasone caps <= 2-4 mg; it meets caps of <= 6-8 mg.
+  - ECOG 2 described as "up and about but not able to do her usual work" meets KPS >= 60 / > 60 criteria; KPS >= 70 is unknown.
+  - Open-ended advanced/metastatic or refractory solid-tumor baskets (or ones needing extracranial measurable disease) are excluded
+    for newly diagnosed, untreated GBM (as run 16); baskets whose tumor list omits GBM are not_relevant.
+  - Imaging/biomarker studies whose entry fits the patient's current stage (PET before cranial RT, T2* MRI during standard chemoRT)
+    are eligible; a supportive study during planned chemoRT (escitalopram) is eligible; taxane/platinum neuropathy-prevention studies
+    are excluded for a taxane-exposed ovarian patient and not_relevant for a GBM patient on temozolomide.
+  - Healthy Oregon Project (NCT04494945) kept possibly for a Baltimore patient (site encounter unknown), as v032-1/v090-2.
+
