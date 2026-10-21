@@ -1,228 +1,149 @@
 # TrialBridge
 
-TrialBridge helps people find recruiting **cancer clinical trials** in the United States. Patients use it free. It is an early-stage startup project, not a medical service, and it gives no medical advice.
+TrialBridge helps people with cancer find recruiting clinical trials they might fit, explains each trial's rules in plain language, and keeps their private answers on their own device.
 
-> **Status:** `PROGRESS.md` has the latest status and numbers. The code is changing, so this README describes stable design rather than exact counts. Design rationale lives in `DECISIONS.md`, and the UI/library contract in `API.md`.
+It is for patients and the family members who search for them, especially people who live far from a major cancer center or who do not read English comfortably. It is free, has no accounts, and gives no medical advice: every result is a "possible match to discuss with your care team," quoted from the trial's own text. Data comes from ClinicalTrials.gov; TrialBridge is not affiliated with it or with any sponsor.
 
-TrialBridge is not affiliated with any investor, accelerator, hospital, or trial sponsor. It uses public data from ClinicalTrials.gov.
+<p align="center">
+  <img src="docs/cac/screenshots/results-desktop.png" alt="Results page: possible matches with plain-language reasons and the trial's quoted criteria" width="860">
+</p>
+<p align="center">
+  <img src="docs/cac/screenshots/find-question-mobile.png" alt="Guided questionnaire on a phone" width="200">
+  <img src="docs/cac/screenshots/results-mobile.png" alt="Results on a phone" width="200">
+  <img src="docs/cac/screenshots/trial-qa-mobile.png" alt="Trial Q&A on a phone" width="200">
+  <img src="docs/cac/screenshots/access-mobile.png" alt="Access Intelligence on a phone" width="200">
+</p>
 
-## The four features
+## Quick start
+
+Requires Node.js 22 or newer. No API keys, accounts or paid services.
+
+```
+git clone <this repository> TrialBridge && cd TrialBridge
+npm install
+npm run demo
+```
+
+`npm run demo` downloads the embedding model once (about 23 MB), builds the committed seed dataset of 301 real trials if there is no data yet, builds the site, starts it at http://localhost:8787 with the built-in mock AI provider, runs a PASS/FAIL self-check and opens your browser. On macOS you can double-click `Start TrialBridge.command` instead. Ctrl+C stops it.
+
+- One-click demo: http://localhost:8787/find/?demo=1 loads a clearly labelled, made-up sample patient and goes straight to results. The "Try a sample patient" button on the Find page does the same with a summary step.
+- All ~5,700 national trials: `npm run local:national` (downloads from ClinicalTrials.gov, resumable, a few minutes the first time).
+- Real AI providers are optional: paste a key into `.dev.vars` and set `dataTermsVerified: true` for that provider in `config/ai-providers.ts` after reading its data terms. Without keys the deterministic mock provider is used, so explanations are placeholders.
+- The AI explanation step loads Cloudflare's Turnstile script from the internet (a test key locally). Offline, results still appear from retrieval and rules and the page says the AI step is unavailable.
+
+## Features
 
 | Feature | What it does |
-|---|---|
-| AI Trial Matching | Guided chat intake, hybrid retrieval (keyword + embeddings), then AI criterion-by-criterion analysis that quotes the real eligibility text. |
-| Trial Q&A | Ask a question about one trial. Answers come only from that trial's official text, with verified citations, or the app says it is not in the text. |
-| Access Intelligence | National view of access barriers (English required, upper age limit, disability exclusion) by state, cancer type, and site. |
-| Multilingual access | English, Spanish, Portuguese, and Haitian Creole. |
-
-Scope: recruiting, interventional cancer trials with at least one U.S. site.
-
-## Privacy and safety principles
-
-- **No medical advice.** The app never says a person is "eligible" or "qualifies". It says "possible match to discuss with your care team".
-- **Hard filters are deterministic.** Cancer type, age, and travel distance are applied in code, never by an AI model.
-- **Data minimization.** Matching runs in the browser. ZIP code, exact age, travel distance, and free text stay on the device.
-- **What can reach AI providers** (only via `lib/privacy/minimize.ts`, strict zod schema): cancer type group, age *bracket* (decade), spread, prior treatment categories, biomarkers, pregnancy flag, concurrent-trial flag, and language. Never ZIP, exact age, name, or typed intake text.
-- **Trial Q&A** scrubs personal info client-side before sending and warns users not to include personal details.
-- **Safety rules do not depend on the model.** Crisis, diagnosis, treatment-advice, and eligibility questions are handled by deterministic rules (crisis shows 988 / 911).
-- **AI output is verified.** Quotes must appear verbatim in the trial text or they are rejected.
-- **Graceful degradation.** If AI is unavailable, results still show with retrieval and rule-based checks.
-- No fake testimonials, logos, or user counts. Numbers shown come from real data.
+| --- | --- |
+| Guided questionnaire | Four essentials, then questions chosen by how much they narrow the candidates. Every optional question can be skipped; "not sure" never lowers a result. Answers stay in the browser tab. |
+| Private matching in the browser | Hard filters (cancer group, age, distance, stated sex) in code, then BM25 keyword search plus MiniLM sentence embeddings (a Web Worker) fused with Reciprocal Rank Fusion. ZIP code and exact age never leave the device. |
+| Requirement checklist | Each trial's criteria are split into numbered requirements and checked one by one: looks met, may not fit, or unknown, each with the trial's own sentence. Trials with a clear conflict are listed lower, with the exact wording. |
+| AI explanations with verified quotes | An optional AI judge reads only the requirements the rules could not settle, for the top trials, and must quote the trial text verbatim; quotes that do not match are discarded. |
+| Trial Q&A | Ask a question about one trial. Deterministic safety rules run first (crisis shows 988/911; diagnosis, treatment-advice and eligibility questions get fixed refusals). Answers cite the official text or say the answer is not in it. |
+| Access Intelligence | For every recruiting cancer trial in the data: which ones require English, cap age below 75, or exclude people with disabilities without a medical reason, by state, cancer type and site, with counts beside every percentage. |
+| Languages | English, Spanish, Portuguese and Hindi interfaces complete; Haitian Creole and French nearly complete; seven more partial with per-string English fallback. Machine-translated and labelled as not yet reviewed by native speakers. Official trial text stays in English. |
+| Works without the cloud | Static site plus a small Worker. Installable as a PWA; after the first load everything except AI features works offline. Degrades gracefully when AI is unavailable. |
 
 ## Architecture
 
 ```
-                    BROWSER (static export, Next.js)
-  +-----------------------------------------------------------+
-  | Intake chat -> minimize profile                            |
-  | Shards (/data/*) -> hard filters -> BM25 + embeddings      |
-  |   (Web Worker, MiniLM) -> RRF -> rule pre-check -> ranked  |
-  +----------------------+------------------------------------+
-                         | minimized profile / question only
-                         v
-          Worker API (functions/): /api/analyze, /api/ask
-  +-----------------------------------------------------------+
-  | same-origin + size limit + Turnstile + rate limit (D1)     |
-  | cache (D1) -> provider failover -> quote verification      |
-  +----------------------+------------------------------------+
-                         v
-        OpenAI-compatible providers (or built-in mock)
+                         BROWSER (Next.js static export)
+   +---------------------------------------------------------------------+
+   | Questionnaire  ->  hard filters  ->  BM25 + MiniLM embeddings (RRF)  |
+   |      |                                      |                       |
+   |      |                              rule resolver per requirement   |
+   |      |                                      |                       |
+   |   answers stay here            ranked results + checklist           |
+   +----------------------------+----------------------------------------+
+                                | coarse profile only (lib/privacy/minimize.ts)
+                                v
+            Cloudflare Worker (functions/): /api/match, /api/analyze, /api/ask
+   +---------------------------------------------------------------------+
+   | same-origin + 16 KB limit + Turnstile + D1 rate limits + budgets     |
+   | provider failover + circuit breaker -> schema check -> quote check  |
+   +----------------------------+----------------------------------------+
+                                v
+                 OpenAI-compatible provider, or the built-in mock
 
-  OFFLINE: ClinicalTrials.gov -> ingest -> facts, barriers,
-           embeddings, shards, access.json, D1 SQL copy
+   OFFLINE PIPELINE: ClinicalTrials.gov API v2 -> validate -> cancer groups (MeSH)
+     -> split criteria -> rule facts + barrier flags -> int8 embeddings
+     -> versioned shards, access.json, ZIP tables, D1 copy
 ```
 
-Stack: Next.js 16 (static export), React 19, TypeScript, Tailwind 4, shadcn (base-ui), MiniSearch, Transformers.js (in-browser embeddings), Recharts, zod, Vitest, Playwright. Backend target: Cloudflare Workers with static assets and D1 (`wrangler.jsonc`).
+## Tech stack
 
-## Project structure
+TypeScript throughout. Next.js 16 (static export), React 19, Tailwind CSS 4, zod, MiniSearch, Transformers.js with ONNX Runtime Web, Cloudflare Workers and D1 (Wrangler), Vitest, Playwright. Small Python scripts sample evaluation data.
 
-| Path | Contents |
-|---|---|
-| `app/` | Next.js routes: landing, `find`, `trial`, `access`, `for-sites`, `methodology`, `about`, `privacy`, `privacy-policy`, `terms`, `offline` |
-| `components/` | UI: `chat`, `find`, `results`, `trial`, `access`, `landing`, `site`, `session`, `i18n` (en/es/pt/ht), `ui` |
-| `lib/match/` | Filters, BM25 config, embedder + worker, cosine, RRF, pre-check, scoring, search |
-| `lib/ingest/` | CT.gov parsing, cancer groups (MeSH), barriers, rule facts, LLM facts, safety gates |
-| `lib/privacy/` | `minimize.ts` (what leaves the browser), `scrub.ts` (personal-info scrub) |
-| `lib/access/`, `lib/data/`, `lib/api/`, `lib/geo/`, `lib/types/` | Access aggregates, data loader, API clients, distance, shared zod types |
-| `functions/` | Worker entry (`index.ts`), `lib/` (analyze, ask, ai providers, cache, ratelimit, budget, turnstile, quotes, safety), `migrations/` (D1) |
-| `config/` | `ai-providers.ts`, `cancer-groups.ts`, `barriers.ts`, `biomarkers.ts`, `criteria.ts`, `embedding.ts` |
-| `prompts/` | Versioned prompts: `analyze-v1.ts`, `ask-v1.ts` |
-| `scripts/` | `ingest/` (national + seed + LLM), `eval/`, model/seed/ZIP fetchers, `postbuild.ts`, `ensure-data.ts` |
-| `data/` | `seed/` (committed seed trials), `geo/` (ZIP centroids), `build/` and `cache/` (generated) |
-| `eval/` | `RESULTS.md`, `results.json`, hand labels |
-| `tests/` | `unit/` (Vitest), `e2e/` (Playwright) |
-| `public/` | `_headers` (CSP etc.), service worker, generated data and models |
+### Open-source libraries
 
-## How matching works
+| Library | Purpose | License |
+| --- | --- | --- |
+| Next.js, React, React DOM | Framework and UI rendering | MIT |
+| MiniSearch | BM25 keyword index in the browser | MIT |
+| `@huggingface/transformers` (Transformers.js) | Runs the embedding model in a Web Worker | Apache-2.0 |
+| ONNX Runtime Web | WebAssembly inference, self-hosted | MIT |
+| `Xenova/all-MiniLM-L6-v2` weights | Sentence embeddings, pinned revision, hash-verified | Apache-2.0 |
+| zod | Validation of every input, output and data file | MIT |
+| Tailwind CSS, tw-animate-css | Styling | MIT |
+| shadcn (Base UI) | Button primitive and CSS variables | MIT |
+| lucide-react | Icons | ISC |
+| Lenis | Smooth scrolling on the landing page | MIT |
+| clsx, tailwind-merge | Class-name helpers | MIT |
+| class-variance-authority | Variant class-name helper | Apache-2.0 |
+| Anybody, Atkinson Hyperlegible Next, Noto Sans | Fonts, self-hosted | SIL OFL 1.1 |
+| Vitest, Playwright, `@axe-core/playwright` | Unit, end-to-end and accessibility tests | MIT, Apache-2.0, MPL-2.0 |
+| ESLint, tsx, fflate | Tooling | MIT |
+| TypeScript | Type checking | Apache-2.0 |
+| Wrangler | Cloudflare Workers tooling and local preview | MIT or Apache-2.0 |
 
-1. **Intake** in the browser: cancer type, age, ZIP, travel distance, spread, treatments, biomarkers, pregnancy, other trials, language.
-2. **Hard filters** (deterministic): cancer group, age range, travel distance from the ZIP centroid.
-3. **Hybrid retrieval**: BM25 keyword search (MiniSearch) plus embedding similarity (MiniLM, int8 vectors, computed in a Web Worker) combined with **Reciprocal Rank Fusion** (k = 60). If embeddings fail, the app falls back to keyword-only and says so.
-4. **Rule pre-check**: eligibility facts extracted at ingestion (age, biomarkers, prior treatment, and so on) add conflict/support signals. Uncertain facts are stored as "mentioned" and never penalize.
-5. **AI analysis** (optional, via the backend): criterion-by-criterion assessment (`likely_met`, `likely_not_met`, `needs_doctor`) with quoted criteria and an overall fit (strong, possible, unclear, unlikely).
-6. **Scoring** (`lib/match/score.ts`): normalized retrieval score, small penalties per rule conflict, small bonuses per support, and an adjustment from AI fit. Weights are listed in `DECISIONS.md`. The top results are shown, with "show more".
-
-## The AI layer
-
-- **Provider registry** (`config/ai-providers.ts`): OpenAI-compatible providers (Groq, Cerebras, OpenRouter are listed).
-- **`dataTermsVerified`**: a provider is used only if its API key is set **and** `dataTermsVerified: true`. All ship as `false`; the owner must read each provider's current data-use terms before flipping it.
-- **Mock provider**: used when no provider is enabled, so everything runs with zero keys. It is deterministic and for development and tests, not real analysis.
-- **Failover**: providers are tried in order with a circuit breaker and daily budgets. If real providers are enabled but all fail, the API degrades to retrieval + rules rather than falling back to mock output.
-- **Quote verification**: every quoted criterion must match the trial text. Failures get one repair retry, then the item is dropped or flagged.
-- **Validation and caching**: output is schema-validated; results are cached in D1 keyed by profile, data version, prompt version, and a hash of the trial text.
-- Prompts are versioned modules in `prompts/`.
-
-## Trial Q&A safety
-
-- Deterministic multilingual rules run **before** any AI call: crisis (shows 988 / 911), diagnosis, treatment advice, eligibility, and off-topic questions get fixed refusals.
-- Answers must include verified verbatim citations from the trial text, otherwise the response is "not in the text".
-- 300-character question limit, 10 questions per trial per session (client), and a server-side per-IP-hash daily backstop.
-- Personal info is scrubbed client-side; Turnstile and rate limiting protect the endpoint.
-
-## Data ingestion and sharding
-
-| | Seed | National |
-|---|---|---|
-| Command | `npm run ingest:seed` | `npm run ingest` |
-| Source | Committed `data/seed/studies.json` (real ClinicalTrials.gov records) | Live ClinicalTrials.gov API v2 |
-| Use | Offline builds, default `setup`, tests | Full U.S. recruiting cancer trials |
-
-Pipeline: fetch and cache pages (resumable, reruns reuse cached pages and embeddings), zod validation, scope filter (cancer terms / MeSH), cancer grouping, barrier detection, rule facts, int8 embeddings, then **shards**.
-
-- Shards are per cancer group, split into balanced parts, under a content-hash version path so browsers cache them immutably.
-- A lite cross-group index serves "not sure" searches; per-trial bucket files serve trial pages.
-- ZIP centroid tables (U.S. Census gazetteer) are sharded by 3-digit prefix. Access Intelligence is precomputed into `access.json`. A SQL copy is produced for D1.
-- **Safety aborts**: the run aborts if more than 5% of records are invalid or more than 40% are dropped. The output is swapped in atomically so a bad run cannot replace good data.
-- Generated data (`public/data`, `public/models`, `data/build`) is gitignored and regenerated; only the seed is committed.
-
-## Local LLM fact layer (optional)
-
-`npm run ingest:llm -- --limit=N` extracts eligibility facts with a local **llama.cpp** `llama-server` (Qwen3-14B Q4_K_M per `DECISIONS.md`). Facts are validated per item and must quote the source text; results are cached by trial, update date, and prompt version. Where the LLM disagrees with the rule layer, both facts are stored as "needs review" and the pre-check ignores them. It was tested on a small sample only. **The full run is deferred** (many hours for the national set).
-
-## Access Intelligence
-
-`/access/` shows, for the whole data set and filtered by state or cancer type: share of trials with each barrier (English required, upper age limit, disability exclusion), a U.S. tile-grid map, a barrier chart, and a ranked table of sites with 5 or more trials. Counts are shown beside percentages and the data date is shown. Each barrier stores the exact triggering sentence. "Disability exclusion" includes psychiatric or cognitive exclusions with no stated medical reason (see the note in `API.md`). Rules are heuristic, so treat results as indicators, not findings about any site.
-
-## Languages
-
-English, Spanish, Portuguese, and Haitian Creole (`components/i18n/`). Translations are **not yet reviewed by native speakers**, and Haitian Creole AI output is marked experimental. Official trial text stays in English. Server-rendered HTML is English and a saved language applies after hydration.
+Everything else in the repository was written for this project. Trial data is from ClinicalTrials.gov (see its terms of use); ZIP centroids are from the U.S. Census gazetteer; TREC Clinical Trials topics and judgments are used for evaluation only (`eval/trec/TERMS.md`).
 
 ## Evaluation
 
-```
-npm run eval          # regression eval, writes eval/REGRESSION.md and eval/results.json
-npm run eval:matching # v6 criterion matching on TREC (eval/matching/)
-npm run eval:labels   # regenerates the synthetic labels
-npm run eval:vignettes  # graded vignette benchmark (eval/gold/)
-```
+Full summary with confidence intervals and caveats: [`eval/RESULTS.md`](eval/RESULTS.md). Nothing here is a clinical-accuracy claim.
 
-`eval/RESULTS.md` is the hand-written summary (v5 baseline vs v6 matching, with CIs); `eval/REGRESSION.md` is the generated regression report. Regression headline numbers (national data, 5,726 trials, 40 synthetic profiles, nDCG@10 against **title/condition regex labels**, 95% bootstrap CI over profiles):
+| What | Result | Source |
+| --- | --- | --- |
+| TREC Clinical Trials, held-out cancer topics (human judgments): full pipeline vs retrieval baseline | nDCG@10 **+0.069** [0.015, 0.120]; P@10 +0.057; excluded trials shown in the top tier of the top 10 **40.0% to 22.9%** | `eval/RESULTS.md` section 1 |
+| Vignette benchmark, 164 synthetic patients, 5,389 labelled pairs (LLM-judged, second-judge kappa 0.841) | Beats BM25, embeddings and the ClinicalTrials.gov search on both splits | `eval/RESULTS.md` section 3 |
+| Hard filters vs an independent oracle on raw registry fields, national data | 0 violations in 600 top-15 results | `eval/REGRESSION.md` section 2 |
+| Criteria splitter vs a public gold standard | 95.6% of trials split into exactly the right number of items; boundary F1 0.986 | `docs/dev/PROGRESS.md` |
+| Automated tests | 1,281 unit tests, 84 end-to-end and accessibility tests | `npm test`, `npm run test:e2e` |
 
-| System | nDCG@10 |
-|---|---|
-| Random order over the same hard-filtered candidates | 0.377 [0.321, 0.432] |
-| BM25 keyword only | 0.700 [0.600, 0.790] |
-| Full pipeline | 0.784 [0.684, 0.870] |
+Caveats: the held-out set is 7 topics, so intervals are wide; vignette labels are not clinician-reviewed; live AI quality depends on a free-tier provider; no real patient has been evaluated.
 
-The pipeline beats random by +0.41 and BM25 by +0.08 (paired CIs exclude 0). On the 301-trial seed the same labels are a smoke test only: random scores 0.744, the pipeline 0.809, and the pipeline-minus-BM25 interval includes 0.
+## Privacy and safety
 
-**Hard filters** are checked against an independent oracle (`scripts/eval/oracle.ts`) that re-derives cancer group, age and distance from the raw ClinicalTrials.gov fields instead of calling the app's own filter functions. Age, sex and distance: 0 violations among results on the seed and in the top 15 on national data. Cancer group: no violations in the top 15 on national data, but 3.7% of all candidates the filters let through and 1.9% of seed results are flagged (mixed MeSH-hierarchy tags such as thyroid under head and neck, CLL under lymphoma, plus a few genuine mis-tags); the report lists them. The older "0% violations" line was true by construction and is no longer used as evidence.
+- No medical advice and no eligibility verdicts, by wording rule and by test.
+- Matching runs in the browser. ZIP code, exact age, travel distance and free text never leave the device.
+- What can reach an AI provider goes only through `lib/privacy/minimize.ts`: cancer type, age bracket, coarse disease, treatment and health-history categories, biomarkers and language. A network test asserts no raw questionnaire field appears in any request.
+- Crisis, diagnosis, treatment-advice and eligibility questions are handled by deterministic rules before any model call.
+- Every AI quote is verified against the trial text; unverifiable answers become "not in the text."
+- Strict CSP with no inline scripts, HSTS, same-origin checks, Turnstile, rate limits, daily budgets, a build-time secret scan, and self-hosted model files. See [`SECURITY.md`](SECURITY.md).
 
-Rule-fact precision on a 50-item hand-labeled sample is 66%. Mock AI JSON validity / quote verification is 100% / 99.9%.
+## Limitations
 
-**Limitations (honest):** profiles are synthetic, not real people. The regex labels are not clinician-reviewed and BM25 reads the same text, so they flatter keyword matching; they are not accuracy evidence. Graded, quote-backed evidence comes from the vignette benchmark (`eval/gold/`) and the TREC Clinical Trials cancer subset (`eval/trec/`). Labels ignore detailed eligibility (labs, performance status, prior lines). The pipeline's excluded-label share is not better than random. Live AI providers were not evaluated. Treat this as a regression baseline, not a clinical accuracy claim. Re-running `npm run eval` without the national data (a fresh clone has only the seed) rewrites `eval/REGRESSION.md` with the headline section marked as skipped.
+- Rule-based eligibility facts are heuristic; a precision gate keeps weak rule families from lowering any trial, and unknown never penalizes.
+- Translations are machine-generated and not yet reviewed by native speakers; Haitian Creole AI output is marked experimental.
+- Privacy policy and terms pages are drafts pending legal review.
+- Registry data is sometimes incomplete (missing site coordinates, truncated criteria); the app says when distance could not be applied.
+- Not yet deployed publicly; the Cloudflare target is configured in `wrangler.jsonc`.
 
-## Security measures
+## Development
 
-- Strict CSP with no inline scripts (build externalizes Next inline scripts), HSTS, `frame-ancestors none`, nosniff, Referrer and Permissions policies (`public/_headers`).
-- Same-origin check, 16 KB request limit, Cloudflare Turnstile (fails closed in production), D1 rate limits keyed by a daily-rotating salted IP hash.
-- Daily per-provider budgets, circuit breaker, strict zod validation of inputs and model output.
-- Build-output secret scan; model and ONNX runtime are self-hosted.
-- Secrets live only in `.dev.vars` (gitignored) locally and Cloudflare secrets in production.
-- Privacy policy and terms pages are **drafts and need legal review**.
+| Task | Command |
+| --- | --- |
+| UI only, hot reload (no API) | `npm run dev` |
+| Full local build and preview (site + API + local D1) | `npm run build` then `npm run preview` |
+| Lint, types, unit tests with coverage | `npm run lint`, `npm run typecheck`, `npm test` |
+| End-to-end and accessibility tests (after a build; first time `npx playwright install chromium`) | `npm run test:e2e` |
+| Everything CI runs | `npm run ci` |
+| Seed data, national data | `npm run ingest:seed`, `npm run ingest` |
+| Evaluation | `npm run eval`, `npm run eval:matching`, `npm run eval:vignettes` |
+| Regenerate the translation manifest after English changes | `npm run i18n:manifest` |
 
-## Testing
-
-| Type | Command | Notes |
-|---|---|---|
-| Unit | `npm run test:unit` | Vitest: matching, minimization, ingestion rules, backend, D1 code against real SQL |
-| Unit + coverage | `npm test` | Coverage thresholds enforced in `vitest.config.ts` |
-| End-to-end | `npm run test:e2e` | Playwright against a snapshot of `./out` served by `wrangler dev` with a local D1 (the script copies `out/`, migrates and seeds D1, then runs Playwright). Main flow, mobile, AI fallback, data-minimization network check, Q&A safety. Run `npm run build` first; the first run needs `npx playwright install chromium` |
-| Accessibility | included in `npm run test:e2e` | Automated axe checks (`@axe-core/playwright`) across pages, languages, themes, and 390 px width |
-| Static | `npm run lint`, `npm run typecheck` | |
-| Budgets and data | `npm run budgets`, `npm run data:verify` | Route JS, shard, asset and file-count budgets (after a build); data lock and model revision checks |
-| Everything | `npm run ci` | lint, typecheck, unit tests with coverage, build, budgets, data:verify (add `npm run test:e2e` for the browser tests) |
-
-## Run locally with one command
-
-Prerequisites: Node 22 or newer and `npm install` (the script never installs for you).
-
-```
-npm install
-npm run local            # add -- --open to open the browser, -- --port=8800 to change the port
-```
-
-What it does: checks Node and dependencies, fetches the embedding model and ONNX runtime if missing, keeps the data you already have (national data is never replaced by seed), builds the data from the committed seed if there is none, creates an empty `.dev.vars` if missing, runs `npm run build` only when `./out` is missing or older than sources/data (`-- --rebuild` forces it), then runs `npm run preview` and prints the URL (default http://localhost:8787). Ctrl+C stops it. Once the server answers it runs a PASS/FAIL self-check (pages, data, model, mock AI, service worker) and only then opens the browser (`--open`); `npm run local:check` re-runs it against a running server, and `npm run local -- --check` prints the plan without doing anything.
-
-- **National data (~5,700 cancer trials):** `npm run local:national` runs the resumable national ingest first (about 12 s when cached, longer the first time because it downloads from ClinicalTrials.gov). `npm run local:seed` explicitly switches back to the small seed dataset.
-- **API keys:** optional. Paste them into `.dev.vars` yourself (never in chat or the repo); with no usable keys the mock AI provider is used and the script says so. A provider also needs `dataTermsVerified: true` in `config/ai-providers.ts`.
-- **Offline:** after the first run (model files and data downloaded) everything works without internet except real AI providers and data refreshes.
-- **Troubleshooting:** "dependencies are not installed" means run `npm install`; "port in use" means pass `-- --port=N`; a stale or odd page means `npm run local -- --rebuild`; a failed ingest keeps the previous data, just rerun it (it resumes).
-
-## Quick start (no API keys needed)
-
-New to this? See [START_HERE.md](START_HERE.md): on a Mac, double-click `Start TrialBridge.command`.
-
-```
-npm install
-npm run setup      # fetches the embedding model, ingests the seed data
-npm run build      # Next static export + postbuild + wrangler dry-run
-npm run preview    # migrates/seeds local D1, runs wrangler dev (site + /api)
-```
-
-Then open http://localhost:8787.
-
-Notes:
-- Prerequisite: Node 22 or newer. Run these commands from the repository root.
-- `npm run build` produces a **static export in `out/`**. There is no `npm start`: `npm run preview` serves `out/` plus the `/api` Worker with `wrangler dev` (local D1, mock AI).
-- Always build with `npm run build`; a bare `next build` output is not deployable. `npm run dev` runs the UI only (no API; AI analysis shows as degraded). Without any keys, the mock AI provider is used.
-- `npm run setup` needs internet once, to fetch the embedding model and ONNX runtime files (`public/models`, `public/ort`, both gitignored).
-- To run against all ~5,700 national trials instead of the 301-trial seed, use `npm run local:national` (see above).
-
-**API keys:** paste them into `.dev.vars` yourself (`GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`; optional `TURNSTILE_SECRET_KEY`, `RATE_LIMIT_SALT`). Never put keys in chat, issues, or the repo; `.dev.vars` is gitignored. Then read the provider's data terms and set `dataTermsVerified: true` in `config/ai-providers.ts`. Set `NEXT_PUBLIC_PARTNER_EMAIL` at build time for the "Partner with us" link.
-
-## Deployment (deferred)
-
-The planned target is **Cloudflare Workers with static assets and D1**. Hosting, domain, CI, and monthly data refresh are deferred and not set up yet.
-
-## Known limitations
-
-- Rule-layer eligibility facts are heuristic; some criteria are misread (see precision above). The LLM fact layer has not been run at scale.
-- Eval is synthetic and provisional (see above).
-- Translations are not native-reviewed; the About page has no founder story yet.
-- Matching assists discussion with a care team. It does not confirm eligibility.
-- Not deployed; see `PROGRESS.md` for open issues.
+Project layout: `app/` routes, `components/` UI, `lib/` matching, privacy, data loading and ingestion logic, `config/` cancer groups, biomarkers, criteria rules and the questionnaire catalog, `functions/` the Worker API, `prompts/` versioned prompts, `scripts/` ingestion, evaluation and local tooling, `eval/` reports and gold labels, `tests/` unit and end-to-end suites. Design rationale and build history are in [`docs/dev/`](docs/dev/README.md); the competition packet is in [`docs/cac/`](docs/cac/).
 
 ## License
 
-License: TBD (placeholder). Trial data is from ClinicalTrials.gov; check its terms of use.
+Code license: TBD. Trial data is from ClinicalTrials.gov; check its terms of use.

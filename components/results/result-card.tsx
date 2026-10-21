@@ -85,18 +85,33 @@ function ContactLine({ trial }: { trial: RankedTrial }) {
 }
 
 /** `match` (per-criterion score + labels) is optional: without it the card renders as before. */
+function oncePerCriterion(points: Point[]): Point[] {
+  const seen = new Set<string>();
+  return points.filter((p) => {
+    const id = `${p.ref.section}-${p.ref.n}`;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 export function ResultCard({ trial, index, match }: { trial: RankedTrial; index: number; match?: TrialMatchView }) {
   const m = useMessages();
   const { card, analysis, nearest, precheck } = trial;
   const phase = formatPhases(card.phases);
   const titleId = `trial-${card.id}-title`;
 
-  const why: Point[] = analysis
-    ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_met"))
-    : precheck.filter((p) => p.kind === "support").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref }));
-  const ruleOut: Point[] = analysis
-    ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_not_met"))
-    : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref }));
+  // Two facts can point at one criterion (HER2 and HR in the same sentence); its quote is shown once.
+  const why: Point[] = oncePerCriterion(
+    analysis
+      ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_met"))
+      : precheck.filter((p) => p.kind === "support").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref })),
+  );
+  const ruleOut: Point[] = oncePerCriterion(
+    analysis
+      ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_not_met"))
+      : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref })),
+  );
   const needsDoctor: Point[] = analysis ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "needs_doctor")) : [];
   // Tier B: the requirement that may not fit is shown once, in its own note. The older wording (fit chip,
   // summary) and lists would contradict it or repeat it, so they give way.

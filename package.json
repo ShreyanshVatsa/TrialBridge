@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "demo": "tsx scripts/local.ts --mode=demo --open",
+    "cac:local": "tsx scripts/cac/local.ts",
     "dev:api": "wrangler dev",
     "local": "tsx scripts/local.ts",
     "local:national": "tsx scripts/local.ts --mode=national",
