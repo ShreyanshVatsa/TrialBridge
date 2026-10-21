@@ -39,9 +39,10 @@ import { ModeToggle, TierProgress } from "./progress";
 import { QuestionCard } from "./question-card";
 import { SummaryCard } from "./summary-card";
 import { IntroPanel } from "./intro-panel";
+import { demoRequested, samplePatientState } from "./sample-patient";
 import { useKeyT, variantKey } from "./t";
 
-type Notice = { kind: "resumed" | "cleared" } | { kind: "dropped"; ids: QuestionId[] } | null;
+type Notice = { kind: "resumed" | "cleared" | "sample" } | { kind: "dropped"; ids: QuestionId[] } | null;
 
 function poolKey(s: QuestionnaireState): string | null {
   const a = s.answers;
@@ -61,6 +62,7 @@ export function QuestionnaireFlow({
   onSearch,
   fillRequest,
   onFillHandled,
+  onSample,
 }: {
   state: QuestionnaireState;
   setState: (s: QuestionnaireState) => void;
@@ -68,6 +70,8 @@ export function QuestionnaireFlow({
   /** Question ids to reopen ("Fill in what you found out" on the results page). */
   fillRequest?: QuestionId[] | null;
   onFillHandled?: () => void;
+  /** The sample patient was loaded (so the results page can say so). */
+  onSample?: () => void;
 }) {
   const m = useMessages();
   const t = useKeyT();
@@ -106,17 +110,27 @@ export function QuestionnaireFlow({
     if (fillRequest && fillRequest.length > 0) onFillHandled?.();
   }, [fillRequest, onFillHandled]);
 
-  // Resume within this tab (sessionStorage, validated and expired by the engine's loadSession).
+  // Resume within this tab (sessionStorage, validated and expired by the engine's loadSession). `?demo=1` skips
+  // straight to the sample patient's results instead.
   useEffect(() => {
     if (resumeChecked.current) return;
     resumeChecked.current = true;
+    if (demoRequested()) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+      const sample = samplePatientState();
+      setState(sample);
+      onSample?.();
+      onSearch(sample, uiLang);
+      return;
+    }
     if (state.history.length > 0) return;
     const saved = loadSession();
     if (saved && saved.history.length > 0) {
       setState(saved);
       void Promise.resolve().then(() => setNotice({ kind: "resumed" }));
     }
-  }, [state.history.length, setState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount
+  }, []);
 
   // Mirror answers to sessionStorage (tab-scoped). Nothing is saved before the first answer.
   useEffect(() => {
@@ -204,6 +218,16 @@ export function QuestionnaireFlow({
   const currentIdx = currentQ ? (order.includes(currentQ.id) ? order.indexOf(currentQ.id) : order.length) : order.length;
   const backTarget = currentIdx > 0 ? order[currentIdx - 1] : undefined;
 
+  function loadSample() {
+    setState(samplePatientState());
+    setEditing(null);
+    setFillQueue([]);
+    setStopped(true);
+    setInteracted(true);
+    setNotice({ kind: "sample" });
+    onSample?.();
+  }
+
   function clearAll() {
     clearSession();
     setCaregiver(false);
@@ -258,13 +282,14 @@ export function QuestionnaireFlow({
         <p role="status" className="animate-enter rounded-2xl border border-border bg-secondary/60 px-4 py-3">
           {notice.kind === "resumed" && t("questionnaire.ui.resumed")}
           {notice.kind === "cleared" && t("questionnaire.ui.cleared")}
+          {notice.kind === "sample" && t("questionnaire.ui.sampleLoaded")}
           {notice.kind === "dropped" &&
             t("questionnaire.ui.dropped", { count: notice.ids.length, list: notice.ids.map((id) => (byId.has(id) ? t(byId.get(id)!.labelKey) : id)).join("; ") })}
         </p>
       )}
 
       <div role="log" aria-label={m.chat.logLabel} aria-live="polite" aria-relevant="additions" className="space-y-5">
-        {state.history.length === 0 && !interacted && <IntroPanel caregiver={caregiver} onCaregiver={setCaregiver} />}
+        {state.history.length === 0 && !interacted && <IntroPanel caregiver={caregiver} onCaregiver={setCaregiver} onSample={loadSample} />}
         {earlierCount > 0 && (
           <div>
             <Button variant="ghost" onClick={() => setShowEarlier((v) => !v)} aria-expanded={showEarlier} className="min-h-11">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadErrorCode } from "@/components/format";
 import { useMessages } from "@/components/i18n";
 import { emptyState, type QuestionnaireState } from "@/components/questionnaire/contract";
+import { clearSession } from "@/components/questionnaire/engine";
 import { QuestionnaireFlow } from "@/components/questionnaire/questionnaire-flow";
 import { ResultsView, SearchProgressView } from "@/components/results/results-view";
 import { useSession } from "@/components/session/session-provider";
@@ -48,6 +49,8 @@ export function FindFlow() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // "Fill in what you found out" from the results page reopens exactly those questions.
   const [fillRequest, setFillRequest] = useState<string[] | null>(null);
+  // Results came from the fictional sample patient: say so above them.
+  const [sample, setSample] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
 
@@ -210,31 +213,40 @@ export function FindFlow() {
     body = <ErrorView body={msg} onRetry={() => void runSearch(status.answers)} />;
   } else if (session) {
     body = (
-      <ResultsView
-        session={session}
-        {...(session.criteria ? { matches: session.criteria.byTrial, matchDegraded: session.criteria.degraded } : {})}
-        onEdit={() => {
-          if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
-          setSession(null);
-        }}
-        onFill={(ids) => {
-          if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
-          setFillRequest(ids);
-          setSession(null);
-        }}
-        onNewSearch={() => {
-          void import("@/components/questionnaire/engine").then((e) => e.clearSession());
-          setQuestionnaire(emptyState());
-          setSession(null);
-        }}
-        onWiden={() => {
-          const q = session.answers.questionnaire;
-          const widenedQ = q ? { ...q, answers: { ...q.answers, travel: "anywhere" }, updatedAt: Date.now() } : undefined;
-          if (widenedQ) setQuestionnaire(widenedQ);
-          const widened = { ...session.answers, travelMiles: null, ...(widenedQ ? { questionnaire: widenedQ } : {}) };
-          void runSearch(widened);
-        }}
-      />
+      <>
+        {sample && (
+          <p role="status" className="animate-enter mb-6 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-3">
+            {m.results.sampleNote}
+          </p>
+        )}
+        <ResultsView
+          session={session}
+          {...(session.criteria ? { matches: session.criteria.byTrial, matchDegraded: session.criteria.degraded } : {})}
+          onEdit={() => {
+            if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
+            setSample(false);
+            setSession(null);
+          }}
+          onFill={(ids) => {
+            if (session.answers.questionnaire) setQuestionnaire(session.answers.questionnaire);
+            setFillRequest(ids);
+            setSession(null);
+          }}
+          onNewSearch={() => {
+            clearSession();
+            setQuestionnaire(emptyState());
+            setSample(false);
+            setSession(null);
+          }}
+          onWiden={() => {
+            const q = session.answers.questionnaire;
+            const widenedQ = q ? { ...q, answers: { ...q.answers, travel: "anywhere" }, updatedAt: Date.now() } : undefined;
+            if (widenedQ) setQuestionnaire(widenedQ);
+            const widened = { ...session.answers, travelMiles: null, ...(widenedQ ? { questionnaire: widenedQ } : {}) };
+            void runSearch(widened);
+          }}
+        />
+      </>
     );
   } else {
     body = (
@@ -245,6 +257,7 @@ export function FindFlow() {
           setState={setQuestionnaire}
           fillRequest={fillRequest}
           onFillHandled={() => setFillRequest(null)}
+          onSample={() => setSample(true)}
           onSearch={(s, lang) => void searchFromQuestionnaire(s, lang)}
         />
         <Disclaimer className="mt-8" />

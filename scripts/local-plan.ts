@@ -1,6 +1,6 @@
 /** Pure decision logic for `npm run local` (no I/O, unit tested in scripts/local-plan.test.ts). */
 
-export type LocalMode = "default" | "national" | "seed";
+export type LocalMode = "default" | "national" | "seed" | "demo";
 
 export interface LocalState {
   mode: LocalMode;
@@ -40,6 +40,12 @@ export function planLocal(s: LocalState): LocalPlan {
   } else if (s.mode === "seed") {
     ingest = "seed";
     reasons.push("seed ingest requested explicitly");
+  } else if (s.mode === "demo") {
+    // `npm run demo` must work offline and in minutes: keep whatever data is there, else build the committed seed.
+    if (!haveData) {
+      ingest = "seed";
+      reasons.push("no data found, building the committed seed dataset");
+    }
   } else if (!haveData || !isNationalVersion(s.dataVersion)) {
     // National (all US cancer trials) is the standard. Seed data is never auto-chosen, but local.ts falls back to it if the download fails.
     ingest = "national";

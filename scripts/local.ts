@@ -4,7 +4,10 @@
  *   --rebuild    force `npm run build`
  *   --open       open the browser (macOS `open`) when the server is ready
  *   --port=N     wrangler port (default 8787)
- *   --mode=national|seed  (set by `npm run local:national` / `npm run local:seed`)
+ *   --mode=national|seed|demo  (set by `npm run local:national`, `npm run local:seed`, `npm run demo`)
+ *
+ * `npm run demo` is the judge/reviewer path: no API keys, no account, no national download. It keeps the data
+ * already on disk, builds the committed seed when there is none, and serves the app with the mock AI provider.
  */
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
@@ -135,7 +138,7 @@ async function main() {
     writeFileSync(".dev.vars", DEV_VARS_TEMPLATE, { flag: "wx" });
     say("\nCreated .dev.vars with empty entries (mock AI provider). Paste API keys there yourself if you want real AI.");
   }
-  if (usedSeed) {
+  if (usedSeed && mode !== "demo") {
     say("\nNote: this is the small seed dataset. Run `npm run ingest` (resumable, ~12 s when cached, longer the first time) for all ~5,700 national cancer trials, then `npm run local` again.");
   }
 

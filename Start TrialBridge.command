@@ -43,10 +43,10 @@ if [ ! -d node_modules ]; then
   npm install || fail "npm install did not finish." "Check your internet connection, then double-click this file again."
 fi
 
-npm run local -- --open "$@"
+npm run demo -- "$@"
 CODE=$?
 if [ $CODE -ne 0 ] && [ $CODE -ne 130 ] && [ $CODE -ne 143 ]; then
-  fail "TrialBridge stopped with an error (code $CODE). The lines just above explain which step failed." "Fix that step and double-click this file again. If the page looks out of date, run in Terminal: npm run local -- --rebuild. See START_HERE.md."
+  fail "TrialBridge stopped with an error (code $CODE). The lines just above explain which step failed." "Fix that step and double-click this file again. If the page looks out of date, run in Terminal: npm run local -- --rebuild. See README.md."
 fi
 echo "TrialBridge stopped."
 pause_and_exit 0

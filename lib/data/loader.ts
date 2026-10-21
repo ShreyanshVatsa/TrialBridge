@@ -110,15 +110,37 @@ async function fetchJson<T>(url: string, schema: z.ZodType<T>, opts?: FetchOptio
   return parsed.data;
 }
 
+/**
+ * A caller's view of a shared load: it rejects as soon as that caller's signal aborts, while the load itself
+ * keeps running for everyone else. (Passing a caller's signal into the shared fetch would let one consumer,
+ * e.g. the questionnaire's candidate pool unmounting, abort a download the search in progress also awaits.)
+ */
+function abortable<T>(p: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return p;
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    const settle = <R>(fn: (v: R) => void) => (v: R) => {
+      signal.removeEventListener("abort", onAbort);
+      fn(v);
+    };
+    p.then(settle(resolve), settle(reject));
+  });
+}
+
+/** `opts` for the shared load: everything but the caller's signal. */
+const shared = ({ signal: _, ...rest }: FetchOptions): FetchOptions => rest;
+
 /** Memoize promises; failed loads are evicted so they can be retried. */
 const cache = new Map<string, Promise<unknown>>();
-function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key);
-  if (hit) return hit as Promise<T>;
+function memo<T>(key: string, load: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  const hit = cache.get(key) as Promise<T> | undefined;
+  if (hit) return abortable(hit, signal);
   const p = load();
   cache.set(key, p);
   p.catch(() => cache.delete(key));
-  return p;
+  return abortable(p, signal);
 }
 
 /**
@@ -126,20 +148,20 @@ function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
  * (e.g. a prefetch started earlier) is told the current fraction and all later updates.
  */
 const progressState = new Map<string, { listeners: Set<(f: number) => void>; last: number }>();
-function memoProgress<T>(key: string, onProgress: ((f: number) => void) | undefined, load: (report: (f: number) => void) => Promise<T>): Promise<T> {
+function memoProgress<T>(key: string, onProgress: ((f: number) => void) | undefined, load: (report: (f: number) => void) => Promise<T>, signal?: AbortSignal): Promise<T> {
   const hit = cache.get(key) as Promise<T> | undefined;
   const state = progressState.get(key);
   if (hit && state) {
-    if (!onProgress) return hit;
+    if (!onProgress) return abortable(hit, signal);
     state.listeners.add(onProgress);
     onProgress(state.last);
     const done = () => state.listeners.delete(onProgress);
     hit.then(done, done);
-    return hit;
+    return abortable(hit, signal);
   }
   if (hit) {
     onProgress?.(1);
-    return hit;
+    return abortable(hit, signal);
   }
   const st = { listeners: new Set<(f: number) => void>(), last: 0 };
   if (onProgress) st.listeners.add(onProgress);
@@ -153,7 +175,7 @@ function memoProgress<T>(key: string, onProgress: ((f: number) => void) | undefi
     progressState.delete(key);
   };
   p.then(finish, finish);
-  return p;
+  return abortable(p, signal);
 }
 
 export function loadMeta(): Promise<Meta> {
@@ -211,7 +233,7 @@ const FullShardSchemas = { cards: z.array(TrialCardSchema), sites: ShardSitesSch
 const LiteShardSchemas = { cards: z.array(LiteCardSchema), sites: LiteSitesSchema };
 
 export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedShard> {
-  return memoProgress(`shard:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, FullShardSchemas, opts, emit));
+  return memoProgress(`shard:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, FullShardSchemas, shared(opts), emit), opts.signal);
 }
 
 /** The cross-group lite index used for "Other / not sure". */
@@ -225,7 +247,7 @@ export interface LoadedLiteShard {
 }
 
 export function loadLiteShard(info: ShardInfo, shardBase: string, opts: FetchOptions = {}): Promise<LoadedLiteShard> {
-  return memoProgress(`lite:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, LiteShardSchemas, opts, emit));
+  return memoProgress(`lite:${shardBase}/${info.id}`, opts.onProgress, (emit) => fetchShardFiles(info, shardBase, LiteShardSchemas, shared(opts), emit), opts.signal);
 }
 
 /** Response started by /theme-init.js on trial pages (see there); adopted once if the URL matches. */
@@ -252,8 +274,8 @@ async function adoptEarlyBucket(url: string): Promise<TrialBucket | null> {
 function loadBucket(trialBase: string, key: string, opts: FetchOptions = {}) {
   return memo(`bucket:${trialBase}/${key}`, async () => {
     const url = `${trialBase}/${key}.json`;
-    return (await adoptEarlyBucket(url)) ?? fetchJson(url, TrialBucketSchema, opts);
-  });
+    return (await adoptEarlyBucket(url)) ?? fetchJson(url, TrialBucketSchema, shared(opts));
+  }, opts.signal);
 }
 
 /** Load several trials (card + sites) by NCT ID from per-trial buckets. Unknown IDs are omitted. */
@@ -306,7 +328,7 @@ export async function lookupZip(zip: string, opts: FetchOptions = {}): Promise<(
   const prefix = zip.slice(0, 3);
   let table: Record<string, [number, number]>;
   try {
-    table = await memo(`zip:${prefix}`, () => fetchJson(`${DATA_BASE}/zip/${prefix}.json`, ZipTableSchema, opts));
+    table = await memo(`zip:${prefix}`, () => fetchJson(`${DATA_BASE}/zip/${prefix}.json`, ZipTableSchema, shared(opts)), opts.signal);
   } catch (err) {
     if (err instanceof DataLoadError && err.code === "not_found") return null;
     throw err;

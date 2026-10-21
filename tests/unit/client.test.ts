@@ -106,6 +106,15 @@ describe("data loader", () => {
     files["/data/zip/022.json"] = "{}";
     expect(await lookupZip("02201")).toBeNull();
   });
+  it("one caller aborting a shared load does not fail the others", async () => {
+    const ac = new AbortController();
+    const first = lookupZip("02115", { signal: ac.signal });
+    const second = lookupZip("02115");
+    ac.abort();
+    await expect(first).rejects.toBeDefined();
+    expect(await second).toEqual({ lat: 42.34, lon: -71.1 });
+    await expect(lookupZip("02115", { signal: AbortSignal.abort() })).rejects.toBeDefined();
+  });
   it("rejects invalid data and retries network errors before failing", async () => {
     files["/data/meta.json"] = "{not json";
     setFetchForTests(server);

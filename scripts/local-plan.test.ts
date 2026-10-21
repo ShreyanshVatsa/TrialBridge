@@ -23,6 +23,11 @@ describe("planLocal", () => {
     expect(planLocal({ ...base, criteriaSqlPresent: false }).ingest).toBe("national");
     expect(planLocal({ ...base, mode: "seed" }).ingest).toBe("seed");
   });
+  it("demo keeps existing data and builds the seed only when there is none", () => {
+    expect(planLocal({ ...base, mode: "demo" })).toMatchObject({ ingest: null, build: false });
+    expect(planLocal({ ...base, mode: "demo", dataVersion: "seed-1" }).ingest).toBeNull();
+    expect(planLocal({ ...base, mode: "demo", dataVersion: null, criteriaSqlPresent: false })).toMatchObject({ ingest: "seed", build: true });
+  });
   it("local:national always ingests national", () => {
     expect(planLocal({ ...base, mode: "national" })).toMatchObject({ ingest: "national", build: true });
   });

@@ -1,14 +1,15 @@
 "use client";
 
-import { Clock, HeartHandshake, Lock, SkipForward, Sparkles } from "lucide-react";
+import { Clock, FlaskConical, HeartHandshake, Lock, SkipForward, Sparkles } from "lucide-react";
 import { useId } from "react";
+import { Button } from "@/components/ui/button";
 import { useKeyT } from "./t";
 
 /**
  * First thing a patient sees: what this is, how long it takes, what stays on the device, and that every
  * optional question can be skipped. The caregiver switch only changes wording; no identity is stored.
  */
-export function IntroPanel({ caregiver, onCaregiver }: { caregiver: boolean; onCaregiver: (v: boolean) => void }) {
+export function IntroPanel({ caregiver, onCaregiver, onSample }: { caregiver: boolean; onCaregiver: (v: boolean) => void; onSample: () => void }) {
   const t = useKeyT();
   const id = useId();
   const items = [
@@ -61,6 +62,14 @@ export function IntroPanel({ caregiver, onCaregiver }: { caregiver: boolean; onC
           </span>
         </span>
       </label>
+      {/* Demo shortcut: a fictional patient's answers, clearly labelled, so a first visit can reach results in one click. */}
+      <div className="relative mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border px-4 py-3">
+        <span className="min-w-0 flex-1 text-base text-muted-foreground">{t("questionnaire.ui.sampleHelp")}</span>
+        <Button variant="outline" onClick={onSample} className="min-h-11">
+          <FlaskConical aria-hidden />
+          {t("questionnaire.ui.sampleButton")}
+        </Button>
+      </div>
     </section>
   );
 }
