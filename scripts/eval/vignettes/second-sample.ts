@@ -1,5 +1,5 @@
 /**
- * v7: seeded sample of vignettes for the independent second judge ("opus-2"):
+ * Seeded sample of vignettes for the independent second judge ("judge-b"):
  * `npx tsx scripts/eval/vignettes/second-sample.ts` writes eval/gold/judgments/second-sample.json.
  * Whole vignettes (build-gold only pairs vignettes a judge covered completely), stratified by split: dev and test
  * vignettes are shuffled separately and taken in turn until the sample holds at least 20% of the chunks.

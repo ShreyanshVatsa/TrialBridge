@@ -5,11 +5,11 @@
 - Regenerated packets with `npx tsx scripts/eval/vignettes/judge-packets.ts`: 545 chunks, 5389 trials, output
   byte-identical to the existing packets (index.json and all .md). No pooled trial is missing from current data;
   nothing dropped. Criterion numbering in the packets already matches current data.
-- judge-check on the 113 existing opus files: 112 ok, 1 invalid (v023-1, NCT07094204: quote "KRAS G12V, ..." not
+- judge-check on the 113 existing judge-a files: 112 ok, 1 invalid (v023-1, NCT07094204: quote "KRAS G12V, ..." not
   verbatim in I1). Fixed the quote (same label, same criterion); now 113 ok.
 
-## Primary judge (opus) runs
-Validate: `npx tsx scripts/eval/vignettes/judge-check.ts --judge=opus [--ids=v003]`
+## Primary judge (judge-a) runs
+Validate: `npx tsx scripts/eval/vignettes/judge-check.ts --judge=judge-a [--ids=v003]`
 Order: index.json order, skipping valid files.
 
 | run | chunks judged | total valid / 545 | next chunk |
@@ -54,14 +54,14 @@ Order: index.json order, skipping valid files.
 | 37 | 16 (v161-1..4, v162-1..5, v163-1/2, v164-1..5) | 545 | none (primary judging complete) |
 
 ### Run 1 notes
-- Consistency rule applied (and back-applied to all opus files): when the patient's structured answer is
+- Consistency rule applied (and back-applied to all judge-a files): when the patient's structured answer is
   "measurable: unknown" and the trial requires measurable disease, the label is "possibly", not "eligible"
   (7 labels changed: v013-1/3/4/5, v016-1, v033-2/4; 2 more in v029 fixed at review). Also no inferring an
   unstated biomarker (v029-1 NCT06625775 BRAF changed to unknown -> possibly).
 - Borderline kept: v028-3 NCT06400472 excluded (adjuvant stage II patient; "advanced" is only in the title).
 - Vignettes fully covered: 47 / 164. Some vignettes are partially covered from before v7 (e.g. v055-3/4 exist,
   v055-1/2 missing); index order handles them.
-- Judging is done by blind Opus sub-agents (forks), whole vignettes per fork, each file checked right after writing.
+- Judging is done by blind, independent LLM judge runs, whole vignettes per run, each file checked right after writing.
 
 ### Provenance fix (run 2)
 - judge-check.ts rewrites every valid file (judgedAt = today, normalised shape). The 111 pre-v7 files with unchanged
@@ -77,7 +77,7 @@ Order: index.json order, skipping valid files.
   (measurable rule); v029-1 NCT06625775 eligible -> possibly (BRAF status unknown; was inferred);
   v028-3 NCT06400472 excluded -> possibly ("advanced" only in title; no numbered criterion fails).
 
-### Run 2 (sequential, single agent, no forks)
+### Run 2 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v039-1..4, v042-1..5 (9 chunks, vignettes v039 and v042 complete).
 - Totals after run 2: 163 / 545 valid, 49 / 164 vignettes complete. Next chunk: v043-1.
 - Throughput note: one agent reads ~25-30k tokens per chunk, so about 10 chunks per run fit before context gets tight.
@@ -85,7 +85,7 @@ Order: index.json order, skipping valid files.
   biopsy (excluded); MSI-H counts as a known actionable alteration where a trial excludes those (possibly).
 - Validation: `npx tsx <scratchpad>/vcheck.ts [vNNN]` (read-only; judge-check.ts would rewrite judgedAt).
 
-### Run 3 (sequential, single agent, no forks)
+### Run 3 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v043-1..3, v046-1, v048-1..6 (10 chunks; vignettes v043, v046, v048 complete).
   v044-1, v045-1..5 and v047-1..4 already existed (pre-v7) and were skipped.
 - Totals after run 3: 173 / 545 valid, 52 / 164 vignettes complete. Next chunk: v049-1.
@@ -103,7 +103,7 @@ Order: index.json order, skipping valid files.
   - Supportive-services observational study (NCT05745285) kept "possibly", as in v047-2.
 
 
-### Run 4 (sequential, single agent, no forks)
+### Run 4 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v049-1, v053-1, v055-1, v055-2, v055-5, v055-6, v056-1..3, v057-1
   (10 chunks; vignettes v049, v053, v055, v056 complete; v057 partial, 1 of its chunks done). v055-3/4 already existed (pre-v7).
 - Totals after run 4: 183 / 545 valid, 56 / 164 vignettes complete. Next chunk: v057-2.
@@ -123,7 +123,7 @@ Order: index.json order, skipping valid files.
   - Patient-supplied R-CHOP implies CD20+ DLBCL for a "CD20+ B-cell NHL" criterion (v056-2 NCT06536049 eligible).
   - Different lymphoma entities (FL vs LBCL vs MCL vs T-cell) are not_relevant to each other, as with other diseases.
 
-### Run 5 (sequential, single agent, no forks)
+### Run 5 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v057-2, v057-3, v058-1..3, v059-1..4 (9 chunks; vignettes v057, v058, v059
   complete). Stopped at a vignette boundary (v060 has 5 chunks).
 - Totals after run 5: 192 / 545 valid (full vcheck: 192 ok, 0 invalid), 59 / 164 vignettes complete. Next chunk: v060-1.
@@ -143,7 +143,7 @@ Order: index.json order, skipping valid files.
   - Disease stated "on both sides of the diaphragm" fails stage I-II-only criteria (v059-3 NCT07029217 excluded).
   - MZL vs FL trials are different entities (not_relevant), consistent with the lymphoma-entity rule from run 4.
 
-### Run 6 (sequential, single agent, no forks)
+### Run 6 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v060-1..5, v061-1..3, v062-1, v063-1..3 (12 chunks; vignettes v060, v061,
   v062, v063 complete). v060-6/7 already existed (pre-v7) and were skipped.
 - Totals after run 6: 204 / 545 valid (full vcheck: 204 ok, 0 invalid), 63 / 164 vignettes complete. Next chunk: v064-1.
@@ -167,7 +167,7 @@ Order: index.json order, skipping valid files.
     (v063-2 NCT07101328 possibly).
   - GCB DLBCL fails "non-GCB DLBCL" criteria and GCB-DLBCL exclusions (excluded).
 
-### Run 7 (sequential, single agent, no forks)
+### Run 7 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v064-1..3, v065-1..4, v066-1..3 (10 chunks; vignettes v064, v065, v066
   complete; all three are myeloma).
 - Totals after run 7: 214 / 545 valid (full vcheck: 214 ok, 0 invalid), 66 / 164 vignettes complete. Next chunk: v067-1.
@@ -194,7 +194,7 @@ Order: index.json order, skipping valid files.
   - Observational/follow-up studies tied to a treatment she has not had (post-cilta-cel follow-up, post-CAR-T cytopenia)
     and a respiratory-virus treatment study are not_relevant.
 
-### Run 8 (sequential, single agent, no forks)
+### Run 8 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v067-1..3, v068-1..3, v069-1..6 (12 chunks; vignettes v067 (MGUS), v068 (AL
   amyloidosis) and v069 (high-risk RRMM after 2 lines) complete).
 - Totals after run 8: 226 / 545 valid (full vcheck: 226 ok, 0 invalid), 69 / 164 vignettes complete. Next chunk: v070-1.
@@ -222,7 +222,7 @@ Order: index.json order, skipping valid files.
   - Alkylator exposure is not inferred from "stem cell transplant" (melphalan not stated): unknown.
   - An RT trial whose ECOG text reads ">= 2" (likely a typo) was not cited; labelled possibly on lesion count (v069-1).
 
-### Run 9 (sequential, single agent, no forks)
+### Run 9 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v070-1/2, v071-1..3, v072-1..4 (9 chunks; vignettes v070 (78M myeloma on
   unnamed pill + weekly shot, markers rising), v071 (penta-exposed RRMM after cilta-cel, teclistamab and allo-HCT,
   chronic HBV on entecavir) and v072 (BRAF V600E stage IV cutaneous melanoma, 2 months into first-line ipi/nivo) complete).
@@ -252,7 +252,7 @@ Order: index.json order, skipping valid files.
     patient mid first-line (title rule, as run 5); a trial that explicitly adds a novel agent to ipi-then-nivo and allows
     prior PD-1 (alintegimod) is eligible.
 
-### Run 10 (sequential, single agent, no forks)
+### Run 10 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v073-1..4, v074-1..5 (9 chunks; vignettes v073 (69F BRAF-WT cutaneous melanoma
   after adjuvant pembrolizumab and nivolumab/relatlimab, treated stable brain met, immune colitis on low-dose budesonide)
   and v074 (60F metastatic uveal melanoma to liver, HLA-A*02:01 negative, systemic-treatment-naive) complete).
@@ -283,7 +283,7 @@ Order: index.json order, skipping valid files.
   - Survivorship / behavior / procedure-support studies (sun protection, sentinel-node anesthetic, abdominoplasty laser,
     actinic keratosis prevention, bone density on curative anti-PD-1) are not_relevant.
 
-### Run 11 (sequential, single agent, no forks)
+### Run 11 (sequential, one judge run at a time)
 - Melanoma-subtype relabel (consistency fix, applied before judging). Rule: melanoma subtypes (cutaneous, acral, mucosal,
   uveal) are subtypes of one disease. A trial limited to another melanoma subtype is "excluded" (not "not_relevant"),
   citing the inclusion criterion that names the subtype with verdict not_met. This supersedes the run 9/10 notes that kept
@@ -324,7 +324,7 @@ Order: index.json order, skipping valid files.
     oral-agent symptom monitoring, goals-of-care program) are possibly; procedure studies for a surgery the patient is not
     having (ALND/ILND lymphatic reconstruction) are not_relevant.
 
-### Run 12 (sequential, single agent, no forks)
+### Run 12 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v078-1, v079-1..5, v080-1..5 (11 chunks; vignettes v078 (66M locally advanced
   BCC after two hedgehog inhibitors, controlled HIV with CD4 > 600), v079 (34F BRAF V600K cutaneous melanoma after ipi/nivo,
   dabrafenib/trametinib and encorafenib/binimetinib, growing brain metastases after WBRT, ECOG 3-4) and v080 (63M metastatic
@@ -350,7 +350,7 @@ Order: index.json order, skipping valid files.
   - Eight FOLFIRINOX cycles (~16 weeks) meet "minimum of 16 weeks" and "8-12 cycles" maintenance criteria.
   - AIM-NIVO for a patient with no autoimmune disease and no prior PD-1 is not_relevant (as v015/v024).
 
-### Run 13 (sequential, single agent, no forks)
+### Run 13 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v081-1..3, v082-1..5, v083-1/2 (10 chunks; vignettes v081 (71F untreated borderline
   resectable PDAC, neoadjuvant chemo planned, no molecular testing, lives in South Dakota) and v082 (47F metastatic G2
   non-functional pNET after lanreotide and everolimus, KRAS/BRCA/MSI negative) complete; v083 (56M resected stage IIB PDAC,
@@ -373,7 +373,7 @@ Order: index.json order, skipping valid files.
     excluded (as run 11); pre-operative procedure studies (distal pancreatectomy fistula prevention, prehab before planned
     surgery) are not_relevant after his Whipple.
 
-### Run 14 (sequential, single agent, no forks)
+### Run 14 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v083-3..6, v084-1..3, v085-1, v086-1..4 (12 chunks; vignettes v083 (56M resected
   stage IIB PDAC, germline BRCA2, NED on adjuvant mFOLFIRINOX), v084 (68F MSI-H metastatic PDAC after gem/nab, FOLFOX and
   pembrolizumab, progressing, ECOG 2, bilirubin rising), v085 (79M pancreatic cancer of unstated histology on unnamed chemo
@@ -404,7 +404,7 @@ Order: index.json order, skipping valid files.
   - Basket trials whose histology list omits pancreatic cancer (TAK-505, MK-5684) are not_relevant; AIM-NIVO for a patient with
     prior pembrolizumab is excluded on E3, and not_relevant for one with no autoimmune disease and no prior PD-1 (as before).
 
-### Run 15 (sequential, single agent, no forks)
+### Run 15 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v087-1, v088-1..4, v089-1..5 (10 chunks; vignettes v087 (75M recurrent KRAS-WT PDAC
   after gem/cape adjuvant and gem/nab, possible NRG1 fusion, ECOG 3-4, chronic HBV on tenofovir), v088 (58F platinum-sensitive
   recurrent HGSOC, gBRCA1, after olaparib maintenance, partial response to second-line carboplatin/PLD, discussing maintenance)
@@ -432,7 +432,7 @@ Order: index.json order, skipping valid files.
     numbered criterion are eligible (NTB-928, HWK-016); ones gated on an unreported biomarker (CLDN6, BRAF, mesothelin, HER2) are
     possibly.
 
-### Run 16 (sequential, single agent, no forks)
+### Run 16 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v090-1..4, v091-1..4, v092-1, v093-1..3, plus v094-1 (0 trials; written as
   `{"labels":[]}` like v018-1/v041-1/v050-1). Vignettes v090 (29F newly diagnosed stage I ovarian immature teratoma, surgery
   planned), v091 (51F recurrent platinum-resistant KRAS G12V low-grade serous ovarian carcinoma after carboplatin/paclitaxel and
@@ -464,7 +464,7 @@ Order: index.json order, skipping valid files.
     non-treatment programs near the patient (PAYMENT at PeaceHealth for a Portland patient, Healthy Oregon Project) are possibly
     (as v032-1); a palliative RT study is excluded for a patient on concurrent cytotoxic chemotherapy.
 
-### Run 17 (sequential, single agent, no forks)
+### Run 17 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v095-1..5, v096-1..4, v097-1..3 (12 chunks; vignettes v095 (40F recurrent platinum-resistant
   HGSOC, gBRCA2, after carbo/paclitaxel + niraparib, second platinum, weekly paclitaxel + bev and topotecan, treated stable brain met,
   controlled HIV), v096 (57M first-recurrence IDH-wt MGMT-methylated GBM after RT/TMZ + 6 adjuvant TMZ, low-dose dexamethasone) and
@@ -499,7 +499,7 @@ Order: index.json order, skipping valid files.
   - Healthy Oregon Project (NCT04494945) kept possibly for a Baltimore patient (site encounter unknown), as v032-1/v090-2.
 
 
-### Run 18 (sequential, single agent, no forks)
+### Run 18 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v098-1..4, v099-1..3, v100-1..3 (10 chunks; vignettes v098 (36F recurrent grade 3
   IDH1-mutant 1p/19q-intact astrocytoma after two surgeries, RT/TMZ and PCV, new enhancement, ECOG 0-1, San Francisco), v099 (42M
   newly resected grade 2 IDH-mutant 1p/19q-codeleted oligodendroglioma with small residual, untreated, Richmond VA) and v100 (61F
@@ -529,7 +529,7 @@ Order: index.json order, skipping valid files.
     failing criterion are eligible (DCSZ11 escalation, RBS2418, SBO-154); ECOG 0-1 trials are excluded (ECOG 2 from resting much of
     the afternoon); a palliative RT study excluding intracranial targets is excluded. ECOG 2 meets KPS >= 60 (zanzalintinib eligible).
 
-### Run 19 (sequential, single agent, no forks)
+### Run 19 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v101-1, v102-1..4, v103-1/2, v104-1..3 (10 chunks; vignettes v101 (70F incidental 3 cm
   presumed grade 1 meningioma, unbiopsied, untreated, inactive lupus, cardiac stent), v102 (48M IDH-wt MGMT-unmethylated
   EGFR-amplified GBM after two resections, RT/TMZ, bevacizumab, lomustine and a trial immunotherapy, ECOG 3-4, dexamethasone 8 mg),
@@ -558,7 +558,7 @@ Order: index.json order, skipping valid files.
     reported), not excluded. A mRNA vaccine arm limited to NMIBC is excluded for metastatic MIBC (stage within the same disease).
   - Upper-tract surgical procedure study (nephroureterectomy LND) is not_relevant (procedure he is not having, as run 13).
 
-### Run 20 (sequential, single agent, no forks)
+### Run 20 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v105-1..4, v106-1..3, v107-1..4 (11 chunks; vignettes v105 (64M BCG-unresponsive high-grade
   NMIBC with CIS after induction + maintenance BCG, wants bladder preservation, no molecular testing), v106 (59F resected ypT2+ N1 MIBC
   with squamous features after ddMVAC + cystectomy/neobladder, NED on adjuvant nivolumab ~4 months, FGFR3-mutant, PD-L1 negative) and
@@ -586,7 +586,7 @@ Order: index.json order, skipping valid files.
   - Bellmunt score 0-2 is unknown for an ECOG 2 patient with liver metastases (hemoglobin decides): possibly.
   - Prior pembrolizumab excludes AIM-NIVO on E3; with no autoimmune disease and no prior PD-1 it is not_relevant (as before).
 
-### Run 21 (sequential, single agent, no forks)
+### Run 21 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v108-1/2, v109-1..3, v110-1/2, v111-1..6 (13 chunks; vignettes v108 (81F newly resected
   high-grade NMIBC, BCG planned, heart failure, weak kidneys, ECOG 2, Erie PA), v109 (52F untreated cT3 MIBC with two enlarged pelvic
   nodes, neoadjuvant chemo then cystectomy planned, cured HCV), v110 (77M bladder cancer of unknown stage on unnamed chemo + immunotherapy
@@ -619,7 +619,7 @@ Order: index.json order, skipping valid files.
   - Surgical procedure studies the patient is not having (nephroureterectomy lymph node dissection, ureteral stent at cystectomy) are
     not_relevant, as run 19.
 
-### Run 22 (sequential, single agent, no forks)
+### Run 22 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v112-1..3, v113-1..3, v114-1..3, v115-1 (10 chunks; vignettes v112 (58M newly diagnosed
   untreated stage IV ccRCC with biopsy-proven lung metastases, IO combination planned, head never scanned, never tested for hepatitis),
   v113 (66F metastatic ccRCC after nephrectomy, ipilimumab/nivolumab ~14 months then cabozantinib, now progressing, treated stable
@@ -654,7 +654,7 @@ Order: index.json order, skipping valid files.
   - "Advanced solid tumors, including ..." lists are read as non-exclusive (PYX-201 + pembrolizumab possibly for RCC); explicit tumor lists
     that omit RCC remain not_relevant.
 
-### Run 23 (sequential, single agent, no forks)
+### Run 23 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v116-1, v117-1..6, v118-1, v119-1/2 (10 chunks; vignettes v116 (81F newly biopsied RCC of
   unknown type, possible spine lesions, untreated, ECOG 3-4, heart failure, poor kidney function, Jackson), v117 (35M metastatic TFE3
   translocation RCC on fourth line lenvatinib/everolimus after sunitinib, nivolumab and cabozantinib, slowly progressing, ECOG 2, HIV
@@ -688,7 +688,7 @@ Order: index.json order, skipping valid files.
   - HCC diagnosed on MRI without a stated biopsy: "histological or cytological confirmation" is unknown (PET imaging study possibly);
     criteria that allow noninvasive diagnosis are met.
 
-### Run 24 (sequential, single agent, no forks)
+### Run 24 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v120-1..4, v121-1/2, v122-1..4, plus v123-1 (0 trials; written as `{"labels":[]}` like
   v094-1). Vignettes v120 (57F metastatic IDH1 R132C intrahepatic cholangiocarcinoma, six cycles into first-line gem/cis/durvalumab,
   last scan stable), v121 (71M recurrent metastatic HCC after resection, atezolizumab/bevacizumab then lenvatinib now failing, cured
@@ -717,7 +717,7 @@ Order: index.json order, skipping valid files.
     (no measurable disease; biliary not an adjuvant PD-1 indication), as v028-2.
   - Oral-agent symptom-monitoring study (NCT06279013) possibly when the next therapy is not stated (v121, as v076-1).
 
-### Run 25 (sequential, single agent, no forks)
+### Run 25 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v124-1..6, v125-1..4 (10 chunks; vignettes v124 (39F metastatic perihilar
   cholangiocarcinoma to peritoneum and nodes, FGFR2 fusion, IDH negative, after gem/cis, FOLFOX and pemigatinib now failing,
   single biliary stent with normal bilirubin, ECOG 2, Anchorage) and v125 (68M NASH-cirrhosis HCC resected two years ago,
@@ -755,7 +755,7 @@ Order: index.json order, skipping valid files.
   - HCC vs BTC entity rule both ways and HCC screening/chemoprevention studies not_relevant (as runs 23/24); AIM-NIVO not_relevant
     with no autoimmune disease and no prior PD-1.
 
-### Run 26 (sequential, single agent, no forks)
+### Run 26 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v126-1..3, v127-1..4, v128-1..5 (12 chunks; vignettes v126 (61M untreated HPV+ (p16+)
   base-of-tongue SCC with ipsilateral neck nodes, chemoradiation planned, asking about de-escalation trials, ECOG 0-1), v127 (55F
   HPV-negative oral tongue SCC, resected + RT/weekly cisplatin 2023, lung metastases this spring, first-line pembrolizumab +
@@ -798,7 +798,7 @@ Order: index.json order, skipping valid files.
     unknown (possibly).
   - AIM-NIVO excluded on E3 after pembrolizumab or toripalimab (as before).
 
-### Run 27 (sequential, single agent, no forks)
+### Run 27 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v129-1..5, v130-1, v131-1..3 (9 chunks; vignettes v129 (70F adenoid cystic carcinoma of the
   parotid, resected + proton RT 2016, slowly growing lung metastases, systemic-treatment-naive, DCIS 2014, ECOG 0-1), v130 (83M newly
   biopsied neck carcinoma of unknown type and primary, probably throat, untreated, ECOG 3-4, CKD, pacemaker, Salina) and v131 (33F
@@ -827,7 +827,7 @@ Order: index.json order, skipping valid files.
     curative treatment) are excluded; post-CRT consolidation for unresected disease (volrustomig) is excluded after primary resection. An
     anti-EGFR skin-toxicity prophylaxis study is not_relevant when the stated regimen is cisplatin-RT (as v109's stated-plan rule).
 
-### Run 28 (sequential, single agent, no forks)
+### Run 28 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v132-1..5, v133-1..4 (9 chunks; vignettes v132 (66M HPV-negative laryngeal SCC, CPS 5,
   lung/spine metastases after cisplatin-RT 2021, pembrolizumab, cetuximab/paclitaxel and docetaxel, untreated brain metastasis with
   RT being scheduled, trach/electrolarynx, ECOG 2, HIV undetectable for 15 years) and v133 (59M newly diagnosed untreated stage IV
@@ -861,7 +861,7 @@ Order: index.json order, skipping valid files.
   - Petosemtamab (NCT03526835) is not_relevant for gastric cancer: its expansion cohorts are HNSCC and colorectal only (as v128-5).
     Barrett's low-grade dysplasia study not_relevant (people without cancer).
 
-### Run 29 (sequential, single agent, no forks)
+### Run 29 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v134-1..3, v135-1..4, v136-1/2 (9 chunks; vignettes v134 (67F stage III lower-esophageal
   adenocarcinoma, HER2 negative, MSS, mid neoadjuvant CROSS with esophagectomy planned, Barrett's history), v135 (52M metastatic ESCC
   to chest nodes and lungs, PD-L1 TPS 10, progressed on cisplatin/5-FU + nivolumab, now on second-line paclitaxel with mixed results,
@@ -893,7 +893,7 @@ Order: index.json order, skipping valid files.
     chemo (as v109); a re-irradiation technique study and pre-treatment staging/pre-operative imaging studies are not_relevant or
     excluded on their timing criteria; MPN trials and post-cell-therapy follow-up are not_relevant.
 
-### Run 30 (sequential, single agent, no forks)
+### Run 30 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v137-1..5, v138-1, v139-1..4 (10 chunks; vignettes v137 (45M diffuse signet-ring gastric
   adenocarcinoma with peritoneal disease, third line TAS-102 after FOLFOX + nivolumab and ramucirumab/paclitaxel, ascites
   re-accumulating, HER2-, CPS < 1, MSS, CLDN18.2 75%, no measurable disease, ECOG 2, unnamed prior trial drug), v138 (80M newly
@@ -922,7 +922,7 @@ Order: index.json order, skipping valid files.
     not_relevant. Petosemtamab (NCT03526835) not_relevant for gastric, as v128-5/v133. ESCC-only substudies not_relevant for gastric
     adenocarcinoma (entity rule, run 29). Barrett's/screening studies not_relevant.
 
-### Run 31 (sequential, single agent, no forks)
+### Run 31 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v140-1/2, v141-1, v142-1..5, v143-1..6 (14 chunks; vignettes v140 (63F resected stage
   IIIC1 HER2 3+ p53-abnormal uterine serous carcinoma, NED, cycle 4 of 6 adjuvant carboplatin/paclitaxel/trastuzumab), v141 (41F
   untreated stage IIIC1 HPV16+ PD-L1+ cervical SCC, chemoradiation planned, controlled HIV), v142 (70F Lynch, recurrent dMMR
@@ -962,7 +962,7 @@ Order: index.json order, skipping valid files.
     (run 30 rule). A SC-vs-IV pembrolizumab preference study for patients already on front-line pembrolizumab is eligible.
   - Clear-cell-only gyn trial for a cervical adenocarcinoma of unstated subtype is possibly (variant not reported, as run 19).
 
-### Run 32 (sequential, single agent, no forks)
+### Run 32 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v144-1 (0 trials; written as `{"labels":[]}` like v123-1), v145-1..6, v146-1, v147-1..4
   (12 chunks; vignettes v144, v145 (56F metastatic uterine carcinosarcoma to lung/liver after carboplatin/paclitaxel,
   pembrolizumab + lenvatinib and doxorubicin, now progressing, HER2 2+, p53 abnormal, MSS, PD-L1 negative, SRS-treated stable
@@ -995,7 +995,7 @@ Order: index.json order, skipping valid files.
     trial (SPEARHEAD-3) and an advanced-solid-tumor trial with no numbered stage or prior-therapy rule (GI-102) are possibly (title
     rule); a pre-surgical FAP PET imaging cohort is possibly (FAP expression and timing around MAP unknown).
 
-### Run 33 (sequential, single agent, no forks)
+### Run 33 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v148-1..5, v149-1..4 (9 chunks; vignettes v148 (62F metastatic KIT exon 11 gastric GIST
   to liver, progressing on fourth-line ripretinib after imatinib, sunitinib and regorafenib, NTRK negative, ECOG 0-1) and v149 (54M
   recurrent retroperitoneal leiomyosarcoma with nearby nodes after resection + nephrectomy and RT, doxorubicin x6 then gem/docetaxel,
@@ -1026,7 +1026,7 @@ Order: index.json order, skipping valid files.
     Untested KRAS G12C, BRAF, FAP, SSR, XPO1, Trop-2/Nectin-4/HER2 and CCNE1 gates are possibly. FAP/any-malignancy imaging
     studies whose entry fits (FAP-2286 agnostic cohort, 89Zr-starPEG) are eligible.
 
-### Run 34 (sequential, single agent, no forks)
+### Run 34 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v150-1..6, v151-1/2, v152-1..5 (13 chunks; vignettes v150 (24F relapsed pelvic Ewing
   sarcoma after VDC/IE + pelvic RT, lung/rib relapse progressing on irinotecan/temozolomide, ECOG 2, NTRK untested), v151 (71M
   resected 11 cm thigh UPS, clear margins, no spread, finishing post-operative RT, no chemo, melanoma 6 years ago) and v152 (45F
@@ -1061,7 +1061,7 @@ Order: index.json order, skipping valid files.
     at scheduled resection/biopsy, local control for relapsed Ewing) are possibly; palliative RT/cryoablation studies needing lesions
     she does not have (superficial/skin lesions, bone metastases) are excluded.
 
-### Run 35 (sequential, single agent, no forks)
+### Run 35 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v153-1, v154-1..4, v155-1..5 (10 chunks; vignettes v153 (84M newly found large
   abdominal sarcoma of pending type, untreated, spread unknown, ECOG 3-4, weak heart pump, Fargo), v154 (52F RAI-refractory BRAF
   V600E papillary thyroid cancer with lung metastases progressing on first-line lenvatinib, RET/NTRK negative, ECOG 0-1) and v155
@@ -1093,7 +1093,7 @@ Order: index.json order, skipping valid files.
 - Note: within this run, MBRC-101 (NCT06014658) in v154-2 and v155-2 was first written as excluded and corrected to possibly
   before the run ended (its "ineligible or declines" prong is unknown); no earlier-run files were changed.
 
-### Run 36 (sequential, single agent, no forks)
+### Run 36 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v156-1..3, v157-1..3, v158-1, v159-1, v160-1..5 (13 chunks; vignettes v156 (68F newly
   diagnosed untreated BRAF V600E anaplastic thyroid cancer, bilateral neck nodes, no distant spread, dabrafenib/trametinib planned,
   ECOG 2), v157 (76M RAI-refractory papillary thyroid cancer, ETV6-NTRK3, lenvatinib then larotrectinib now progressing in the spine,
@@ -1129,7 +1129,7 @@ Order: index.json order, skipping valid files.
     thyroidectomy is not_relevant (procedure rule).
   - GM T-cell long-term follow-up (v158) and an AC/cisplatin antiemetic study that also bars thyroid tumors (v159) are not_relevant.
 
-### Run 37 (sequential, single agent, no forks)
+### Run 37 (sequential, one judge run at a time)
 - Written + validated (read-only vcheck): v161-1..4, v162-1..5, v163-1/2, v164-1..5 (16 chunks; vignettes v161 (54F metastatic G2
   small-intestine NET to liver after octreotide and Lutathera, progressing with carcinoid syndrome back, ECOG 0-1), v162 (47M recurrent
   cortisol-secreting adrenocortical carcinoma in lungs and surgical bed, progressing after six cycles of EDP + mitotane, ECOG 0-1), v163

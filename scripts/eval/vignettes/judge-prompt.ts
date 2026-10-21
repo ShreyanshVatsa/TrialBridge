@@ -1,7 +1,7 @@
 /**
  * Shared judging contract for the vignette benchmark: the label set and gains, the instructions every judge gets, the
  * per-vignette packet (patient + pooled trials), the judgment file schema and verbatim-quote verification.
- * Judges are language models (Claude-family subagents and a local Qwen3-14B); their output is LLM-judged, not
+ * Judges are large language models; their output is LLM-judged, not
  * clinician-reviewed, and is labelled as such everywhere it is reported.
  */
 import { z } from "zod";

@@ -128,7 +128,7 @@ Current checkpoint: P2 complete under the competition-first override (hosting/de
 - v6.1 finish: judge parser accepts top-level JSON arrays (unit tests), full verification, merged into v5.
 
 ## v7 (branch v7, 2026-10-18 to 10-19)
-- Audit (2026-10-18): judge unusable on the free tier, resolver ignored collected answers, v1 rule facts imprecise, eval too small. Plan: ~/.claude/plans (summary in eval/RESULTS.md, BUGS.md v7 section, DECISIONS.md v7 entries).
+- Audit (2026-10-18): judge unusable on the free tier, resolver ignored collected answers, v1 rule facts imprecise, eval too small. Plan summary in eval/RESULTS.md, BUGS.md v7 section, DECISIONS.md v7 entries.
 - Judge: parser recovers every cached failure shape; per-batch isolation; token budget (DAILY_TOKENS_GROQ 180000); retry-after waits within the 45 s deadline; rate limits never open the circuit; top 5 trials; screening-only items not sent; health-history categories sent (owner decision; privacy copy, spec and e2e updated); prompt analyze-v3.1.
 - Resolver: health-history exclusions; subgroup rules never fail; "checked at screening" group in the checklist; budget-exhausted banner.
 - Rule facts: rules 5 guards, held-out v1 labels (eval/facts-labels-v3.json), `belowGate` half-weight soft penalty, HR-positive inversion fixed, re-ingested national-20261007-284afe7d2e; data:verify checks the D1 seed.

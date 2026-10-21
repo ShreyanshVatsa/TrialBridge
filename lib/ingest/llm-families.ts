@@ -463,7 +463,7 @@ export function verifyFamilyFacts(family: LlmFamily, raw: readonly RawLlmFact[],
     else if (family === "stage" && f.value !== "required") reason = "bad_value"; // "excluded" settings were misreadings on dev
     else if (family === "other_malignancy" && f.value !== "excluded") reason = "bad_value";
     else if (family === "autoimmune" && f.value !== "excluded") reason = "bad_value";
-    // No gold examples exist for "hepatitis required" (coordinator decision): that value stays support-only.
+    // No gold examples exist for "hepatitis required", so that value stays support-only.
     else if (family === "hepatitis" && f.value === "required") reason = "support_only_value";
     else if (f.value === "required" && /^\s*[*\u2022-]\s/.test(loc.c.text)) reason = "list_item"; // orphan sub-bullet: one option or a definition
     else if (family === "histology" && /\bblast (?:phase|crisis)|\btransform\w*|\baccelerated phase|\btherapy[- ]related|\bexcept\b|\bunless\b|\bother than\b/i.test(critText)) reason = "qualified_histology";

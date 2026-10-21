@@ -49,7 +49,7 @@ resolver+LLM - baseline nDCG@10 +0.060 [0.002, 0.120] (distinguishable); v6 dev:
 
 ## 3. Vignette benchmark (164 synthetic patients, LLM-judged gold)
 
-`npm run eval:vignettes -- --split=dev|test` against `eval/gold/vignettes-gold-v1.json`: 164 hand-written synthetic vignettes, 5,389 pooled (vignette, trial) pairs labelled eligible / possibly / excluded / not_relevant by a Claude Opus judge (306 / 852 / 2,814 / 1,417), every evidence quote machine-checked verbatim against the cited criterion. An independent fresh-context Opus judge ("opus-2", blind to the primary labels and notes) re-judged a seeded 20% sample (32 vignettes, 109 chunks, 1,095 pairs): raw agreement 0.902, **Cohen's kappa 0.841** (dev 0.869, test 0.814), relevant-vs-not agreement 0.956. 107 contested pairs plus a 15% random sample are in `eval/gold/vignettes-review-packet-v1.md` for owner review. The pool and the gold were frozen before v7 rankings were added (`scripts/eval/vignettes/add-pipeline.ts`); 93-95% of the v7 top 10s were already pooled, unpooled trials count as non-relevant. **pipeline:v7+resolver** = what the app shows before the AI judge answers. The AI judge arm was not run here (164 patients x ~7k tokens is over the free daily quota).
+`npm run eval:vignettes -- --split=dev|test` against `eval/gold/vignettes-gold-v1.json`: 164 hand-written synthetic vignettes, 5,389 pooled (vignette, trial) pairs labelled eligible / possibly / excluded / not_relevant by an LLM judge (306 / 852 / 2,814 / 1,417), every evidence quote machine-checked verbatim against the cited criterion. An independent fresh-context LLM judge ("judge-b", blind to the primary labels and notes) re-judged a seeded 20% sample (32 vignettes, 109 chunks, 1,095 pairs): raw agreement 0.902, **Cohen's kappa 0.841** (dev 0.869, test 0.814), relevant-vs-not agreement 0.956. 107 contested pairs plus a 15% random sample are in `eval/gold/vignettes-review-packet-v1.md` for owner review. The pool and the gold were frozen before v7 rankings were added (`scripts/eval/vignettes/add-pipeline.ts`); 93-95% of the v7 top 10s were already pooled, unpooled trials count as non-relevant. **pipeline:v7+resolver** = what the app shows before the AI judge answers. The AI judge arm was not run here (164 patients x ~7k tokens is over the free daily quota).
 
 | split | system | nDCG@10 (graded) | recall@50 eligible | excluded share in top 10 | dNDCG vs v4 |
 | --- | --- | --- | --- | --- | --- |
@@ -87,7 +87,7 @@ Baselines (dev / test nDCG@10): BM25 0.219 / 0.256, embeddings 0.194 / 0.217, Cl
 - Free-tier throughput: about one full judgment per minute.
 
 ## What is unvalidated
-- The vignette gold is LLM-judged (two Opus judges, kappa 0.841), not clinician-reviewed; the owner review packet is unfilled.
+- The vignette gold is LLM-judged (two independent LLM judge runs, kappa 0.841), not clinician-reviewed; the owner review packet is unfilled.
 - The resolver's vignette gain does not replicate on the vignette test split (TREC held-out: +0.056 nDCG for the resolver alone, distinguishable; vignette test: -0.012, not distinguishable).
 - Precision of the judge's met/not-met labels item by item (only Tier B demotions are checked against TREC).
 - Translations of the new checklist and privacy text (English fallback where missing).
