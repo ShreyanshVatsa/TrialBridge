@@ -1,5 +1,5 @@
 /**
- * v7: criterion items the study team checks at screening, which no questionnaire answer can settle: consent and
+ * Criterion items the study team checks at screening, which no questionnaire answer can settle: consent and
  * visit logistics, lab and heart-test values, contraception agreements, tissue samples and life expectancy.
  * They stay "unknown" for scoring (display only), are grouped apart in the checklist instead of counting as an open
  * question for the patient, and are not sent to the criterion judge (it would answer "unknown" for them anyway).

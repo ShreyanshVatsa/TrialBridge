@@ -1,6 +1,6 @@
 /**
  * UI-side view of the questionnaire contracts (docs/dev/QUESTIONNAIRE_SPEC.md §1.2 C1, §2.5, §8 C3).
- * Types come from lib/types/questionnaire (WP2); this file adds UI helpers so components import from one place.
+ * Types come from lib/types/questionnaire; this file adds UI helpers so components import from one place.
  */
 import {
   DEFER,
@@ -62,7 +62,7 @@ export function isNonResponse(value: AnswerValue | undefined): boolean {
   return false;
 }
 
-export type NonResponseKind = "unknown" | "skip" | "prefer_not" | "deferred";
+type NonResponseKind = "unknown" | "skip" | "prefer_not" | "deferred";
 
 export function nonResponseKind(state: QuestionnaireState, id: string): NonResponseKind | null {
   if (isEssential(id)) return null; // travel null = "anywhere", not a non-response

@@ -38,7 +38,7 @@ export interface RankedTrial {
     /** Normalized retrieval relevance 0..1 (RRF / max possible). */
     retrieval: number;
     precheckPenalty: number;
-    /** Phase-preference nudge (v2 questionnaire), ±PHASE_PREF_BONUS or 0. */
+    /** Phase-preference nudge (questionnaire only), ±PHASE_PREF_BONUS or 0. */
     phaseBonus?: number;
     fit: FitLevel | null;
     /** The fusion features the final score is computed from (lib/match/fusion.ts); re-fused when the AI fit arrives. */

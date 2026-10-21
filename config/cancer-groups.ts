@@ -30,7 +30,7 @@ export const CANCER_GROUP_IDS = [
 
 export type CancerGroupId = (typeof CANCER_GROUP_IDS)[number];
 
-export interface CancerGroup {
+interface CancerGroup {
   id: CancerGroupId;
   /** English display label (UI translations key off the id). */
   label: string;

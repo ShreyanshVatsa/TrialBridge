@@ -35,7 +35,7 @@ function firstMatch(section: CriterionSection, list: Criterion[], test: (sentenc
   return null;
 }
 
-export interface BarrierInput {
+interface BarrierInput {
   inclusion: Criterion[];
   exclusion: Criterion[];
   maxAge: number | null;

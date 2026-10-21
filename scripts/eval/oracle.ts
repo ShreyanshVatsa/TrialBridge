@@ -148,7 +148,7 @@ export function oracleVerdict(s: OracleStudy, p: OraclePatient): Verdict {
     else {
       distanceStrict = d <= p.travelMiles;
       distance = d <= p.travelMiles + DISTANCE_SLACK_MILES;
-      // v7: a site the registry left without coordinates may be the near one (NCT03850574: "Huston", TX 77030 for a
+      // A site the registry left without coordinates may be the near one (NCT03850574: "Huston", TX 77030 for a
       // Houston patient; the app places it by its ZIP). Such a result cannot be judged, so it is not flagged.
       if (!distanceStrict && oracleUncodedSites(s) > 0) {
         distanceStrict = distance = true;

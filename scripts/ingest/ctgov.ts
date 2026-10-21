@@ -67,7 +67,7 @@ export async function fetchAllResumable(params: Record<string, string>, cacheDir
   let state: SnapshotState = { queryKey, pages: 0, nextPageToken: null, done: false };
   try {
     const prev = JSON.parse(await readFile(statePath, "utf8")) as SnapshotState;
-    // Pre-v5 snapshots keyed the query alone; a complete one is still readable (never extended) for exact comparisons.
+    // Older snapshots keyed the query alone; a complete one is still readable (never extended) for exact comparisons.
     const legacy = prev.queryKey === JSON.stringify(params) && prev.done;
     if (prev.queryKey === queryKey || legacy) state = prev;
     else if (prev.pages > 0) throw new Error(`${cacheDir} holds a different query or field list; use --refresh to fetch a new snapshot`);

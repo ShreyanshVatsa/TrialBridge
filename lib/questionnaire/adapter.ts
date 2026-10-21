@@ -1,5 +1,5 @@
 /**
- * Adapter from the v2 questionnaire state to the v1 `IntakeAnswers` shape (QUESTIONNAIRE_SPEC §3.4), so
+ * Adapter from the questionnaire state to the legacy `IntakeAnswers` shape (QUESTIONNAIRE_SPEC §3.4), so
  * `searchTrials`, `requestAnalysis` and existing code keep working. The full state rides along in
  * `answers.questionnaire`; matching uses it (catalog-driven pre-check) whenever it is present, and the
  * legacy fields below are only coarse summaries of it.
@@ -19,7 +19,7 @@ export function travelMiles(v: AnswerValue | undefined): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-/** spread option -> v1 spread ("yes" only for distant spread: catalog id "distant"). */
+/** spread option -> legacy spread ("yes" only for distant spread: catalog id "distant"). */
 export function legacySpread(v: AnswerValue | undefined): IntakeAnswers["spread"] {
   const s = str(v);
   if (s === null) return "not_sure";
@@ -30,11 +30,11 @@ const LEGACY_TREATMENTS: readonly string[] = TREATMENTS;
 export function legacyTreatments(v: AnswerValue | undefined): Treatment[] {
   if (!Array.isArray(v) || isNonResponse(v) || v.some((x) => isNonResponse(x))) return ["not_sure"];
   const kept = v.filter((t): t is Treatment => LEGACY_TREATMENTS.includes(t) && t !== "not_sure");
-  // Only new classes (e.g. hormone therapy): they were treated, but the v1 list cannot say how.
+  // Only new classes (e.g. hormone therapy): they were treated, but the legacy list cannot say how.
   return kept.length > 0 ? kept : ["not_sure"];
 }
 
-/** Both biomarker grids, merged; "not tested" / unknown -> dont_know. Only v1-known marker ids. */
+/** Both biomarker grids, merged; "not tested" / unknown -> dont_know. Only marker ids the legacy shape knows. */
 export function legacyBiomarkers(state: QuestionnaireState): IntakeAnswers["biomarkers"] {
   const out: IntakeAnswers["biomarkers"] = {};
   for (const qid of ["biomarkers", "deep_biomarkers"]) {
@@ -48,15 +48,15 @@ export function legacyBiomarkers(state: QuestionnaireState): IntakeAnswers["biom
   return out;
 }
 
-export function legacyPregnant(v: AnswerValue | undefined): IntakeAnswers["pregnant"] {
+function legacyPregnant(v: AnswerValue | undefined): IntakeAnswers["pregnant"] {
   if (v === "yes" || v === "no" || v === "prefer_not") return v;
   return "not_sure";
 }
 
 /**
- * v1 answers derived from the questionnaire state. Throws when an essential is missing or invalid
+ * Legacy answers derived from the questionnaire state. Throws when an essential is missing or invalid
  * (the UI only offers "Show my matches" after the essentials). `inAnotherTrial` is "yes" only on a definite
- * yes: v1 matching treats "no" as no signal, which is exactly what unknown must be.
+ * yes: legacy matching treats "no" as no signal, which is exactly what unknown must be.
  */
 export function toIntakeAnswers(state: QuestionnaireState, language: Language = "en"): IntakeAnswers {
   const cancerType = groupOf(state);

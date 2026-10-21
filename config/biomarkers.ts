@@ -25,7 +25,7 @@ export const BIOMARKERS: readonly Biomarker[] = [
   { id: "NTRK", label: "NTRK fusion", pattern: /\bNTRK\b/i },
   { id: "FLT3", label: "FLT3", pattern: /\bFLT-?3\b/i },
   { id: "IDH", label: "IDH1/2", pattern: /\bIDH-?[12]?\b/i },
-  // v2 (QUESTIONNAIRE_SPEC §1.4). Case-sensitive where the symbol is also an English word (MET, RET, KIT).
+  // Questionnaire markers (QUESTIONNAIRE_SPEC §1.4). Case-sensitive where the symbol is also an English word (MET, RET, KIT).
   { id: "MET", label: "MET", pattern: /\b(c-MET|MET)(ex14)?\b/ },
   { id: "RET", label: "RET fusion", pattern: /\bRET\b/ },
   { id: "HPV", label: "HPV / p16", pattern: /\b(HPV|human papilloma ?virus|p16)\b/i },

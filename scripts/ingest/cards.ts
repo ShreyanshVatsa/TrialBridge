@@ -8,7 +8,7 @@ import { buildRecord } from "../../lib/ingest/record";
 import { readDataLock, readSnapshotStudies, resolveSnapshotDir } from "../../lib/ingest/snapshot";
 import type { TrialCard } from "../../lib/types/trial";
 
-/** The national snapshot directory scripts read by default (lock file, else newest snapshot, else pre-v5 cache). */
+/** The national snapshot directory scripts read by default (lock file, else newest snapshot, else the older cache). */
 export function nationalSnapshotDir(): string {
   const dir = resolveSnapshotDir({ lock: readDataLock(), ...(process.env.SNAPSHOT_DIR ? { explicit: process.env.SNAPSHOT_DIR } : {}) });
   if (!dir) throw new Error("no national snapshot found; run `npm run ingest -- --refresh`");

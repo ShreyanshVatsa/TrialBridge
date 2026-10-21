@@ -17,7 +17,7 @@ import { ProviderError, type AiProvider, type ChatMessage } from "./ai/types";
 import { dailyBudget } from "./ai/providers";
 
 /** If more than this share of quotes fail verification, retry once with a repair prompt. */
-export const MAX_QUOTE_FAILURE_RATE = 0.5;
+const MAX_QUOTE_FAILURE_RATE = 0.5;
 
 export interface AnalyzeDeps {
   env: Env;

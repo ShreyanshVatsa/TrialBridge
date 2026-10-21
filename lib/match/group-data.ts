@@ -13,20 +13,20 @@ import type { Manifest, ShardInfo } from "@/lib/types/trial";
 import { liteToEntries } from "./lite";
 import type { RankEntry } from "./rank";
 
-export interface GroupShard {
+interface GroupShard {
   info: ShardInfo;
   /** Serialized MiniSearch index (parsed lazily by lib/match/keyword.ts). */
   indexJson: string;
   entries: RankEntry[];
 }
 
-export interface GroupData {
+interface GroupData {
   manifest: Manifest;
   shards: GroupShard[];
 }
 
 /** Shard descriptors a group searches: its own part(s) plus the basket shard, or the lite index for "not sure". */
-export function groupShardInfos(manifest: Manifest, cancerType: CancerGroupId): ShardInfo[] {
+function groupShardInfos(manifest: Manifest, cancerType: CancerGroupId): ShardInfo[] {
   const ids = cancerType === "other" ? [manifest.allShard] : (manifest.groups[cancerType] ?? []);
   return manifest.shards.filter((s) => ids.includes(s.id));
 }

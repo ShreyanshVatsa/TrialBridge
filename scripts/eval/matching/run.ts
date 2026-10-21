@@ -1,8 +1,8 @@
 /**
- * v6 step 8: matching eval on the TREC cancer subset (graded human qrels; 2021 = dev, 2022 = test).
+ * Matching eval on the TREC cancer subset (graded human qrels; 2021 = dev, 2022 = test).
  *
  * Three arms over the same candidate pool (the judged trials of each topic, hard filters applied):
- *   baseline  v5 pipeline order (BM25 + MiniLM + RRF + rule pre-check + fusion; scripts/eval/trec/pipeline.ts)
+ *   baseline  retrieval pipeline order (BM25 + MiniLM + RRF + rule pre-check + fusion; scripts/eval/trec/pipeline.ts)
  *   resolver  baseline order re-ranked by per-criterion labels from the deterministic resolver only (tiers A/B)
  *   llm       resolver + the LLM judge (functions/lib/match.ts judgeCriteria, Groq) on the unknown items of the top 10
  *
@@ -53,7 +53,7 @@ const flag = (n: string) => argv.includes(`--${n}`);
 const opt = (n: string) => argv.find((a) => a.startsWith(`--${n}=`))?.split("=")[1];
 const SPLIT = (opt("split") ?? "dev") as "dev" | "test";
 if (SPLIT !== "dev" && SPLIT !== "test") throw new Error("--split must be dev or test");
-/** v7: test = TREC 2022 (2 topics) + TREC 2023 breast-cancer templates (5 topics), held out from all v7 tuning. */
+/** test = TREC 2022 (2 topics) + TREC 2023 breast-cancer templates (5 topics), held out from all tuning. */
 const YEARS: readonly number[] = SPLIT === "dev" ? [2021] : [2022, 2023];
 const SPLIT_LABEL: Record<"dev" | "test", string> = { dev: "TREC 2021", test: "TREC 2022 + 2023" };
 const WAIT = flag("wait");
@@ -244,7 +244,7 @@ interface ArmMetrics {
   /** null for the baseline (no per-criterion labels). */
   unknownShare: number | null;
   top10: { id: string; grade: number; tier: "A" | "B" | null }[];
-  /** v7: for Tier B trials in the top 10, the failing criterion ids with label, source and reason (error analysis). */
+  /** For Tier B trials in the top 10, the failing criterion ids with label, source and reason (error analysis). */
   hardFailures?: { id: string; grade: number; items: { id: string; label: string; source: string; reason?: string }[] }[];
 }
 
@@ -302,7 +302,7 @@ function armMetrics(order: readonly string[], gains: Readonly<Record<string, num
 }
 
 async function main() {
-  // v7: a new log for the new test composition (2022 + 2023); test-runs.json keeps the v6 runs on 2022 alone.
+  // A separate log for the current test composition (2022 + 2023); test-runs.json keeps the earlier runs on 2022 alone.
   const testLog = path.join(OUT_DIR, "test-runs-v7.json");
   mkdirSync(OUT_DIR, { recursive: true });
   const priorTestRuns = existsSync(testLog) ? (JSON.parse(readFileSync(testLog, "utf8")) as { runs: { at: string; sha: string; llm: boolean }[] }).runs : [];
@@ -324,7 +324,7 @@ async function main() {
     const q = queries.find((x) => x.id === t.key);
     if (!q) throw new Error(`no query for ${t.key}`);
     const order = rankIds(q, FUSION_WEIGHTS);
-    // Production (find-flow) reorders only the results rankTrials returns (TOP_N); the rest keep the v5 order.
+    // Production (find-flow) reorders only the results rankTrials returns (TOP_N); the rest keep the retrieval order.
     const all = order.map((id) => ({ card: cards.get(id) as TrialCard }));
     const results = all.slice(0, POOL);
     const tail = order.slice(POOL);
@@ -356,8 +356,8 @@ async function main() {
       console.log(`${t.key}: ${inputs.length} trials, ${itemsSent} unknown items, ${batches.length} requests at ${EVAL_MAX_INPUT_CHARS} chars (overhead ${overhead})`);
     } else if (groq && inputs.length) {
       calls = [];
-      // v7: no request deadline here. The eval paces itself to the free tier (waits that production would not make in
-      // one request), and with the 45 s production deadline those waits cut later batches short (first v7 dev run:
+      // No request deadline here. The eval paces itself to the free tier (waits that production would not make in
+      // one request), and with the 45 s production deadline those waits cut later batches short (one dev run had
       // coverage 52.9%). The eval measures judge quality on full coverage; production coverage is checked live.
       const judged = await judgeCriteria(profile, inputs, { store: new MemoryKvStore(), providers: [groq], breakerFor: () => new CircuitBreaker(), consumeBudget: async () => true, deadlineMs: 30 * 60_000, log: (e) => { if (e.status !== "ok") console.warn("judge", JSON.stringify(e)); } });
       const quota = dailyLimitHit && !judged.ok;
@@ -484,7 +484,7 @@ function writeMarkdown() {
       for (const [d, v] of Object.entries(s.deltas)) for (const [m, ci] of Object.entries(v)) if (ci) lines.push(`- ${d} ${m}: ${fmtDiff(ci, m === "missedExclusions" || m === "unknownShare")}`);
       lines.push("");
     }
-    // v7 step 10: how often a Tier B demotion in the shown top 10 is right. TREC "excluded" (1) = correct,
+    // How often a Tier B demotion in the shown top 10 is right. TREC "excluded" (1) = correct,
     // "eligible" (2) = a false exclusion, "not relevant" (0) is counted apart. Pooled over topics.
     lines.push("Tier B precision (top 10, pooled over topics; correct = TREC excluded, wrong = TREC eligible):", "");
     for (const arm of ["resolver", "llm"] as const) {

@@ -38,7 +38,7 @@ function state(card: TrialCard, full: boolean): QuestionnaireState {
       sex: card.sex === "MALE" ? "male" : "female",
       measurable: "yes",
       other_cancer: "no",
-      // v7 health history (the resolver reads these since v7).
+      // Health history (the resolver reads these).
       hiv: "no",
       hepatitis: "no",
       transplant: "none",

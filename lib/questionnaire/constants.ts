@@ -44,7 +44,7 @@ export const TIER_FACTOR = {
   thorough: { essential: Number.POSITIVE_INFINITY, helpful: 1.0, deep: 1.0 },
 } as const;
 
-export interface StopRule {
+interface StopRule {
   /** Stop when the best remaining utility (bits per unit of answer difficulty) falls below this. */
   minUtility: number;
   /** Stop after this many adaptive (non-essential) questions. */
@@ -83,7 +83,7 @@ export const DEFAULT_P_UNKNOWN = 0.2;
 export const DEFAULT_BIOMARKER_PRIOR = { positive: 0.2, negative: 0.4, unknown: 0.4 } as const;
 
 /** P(female) by group, for the fallback sex prior (structured-sex evidence, §0.1: breast 99%+ female, etc.). */
-export const P_FEMALE: Partial<Record<CancerGroupId, number>> = { breast: 0.99, ovarian: 1, "uterine-cervical": 1, prostate: 0 };
+const P_FEMALE: Partial<Record<CancerGroupId, number>> = { breast: 0.99, ovarian: 1, "uterine-cervical": 1, prostate: 0 };
 /**
  * Fallback answer priors for questions the catalog gives none for. Without them every definite option is
  * equally likely, so "pregnant: yes" looked 40% likely and pregnancy was asked first in breast cancer.

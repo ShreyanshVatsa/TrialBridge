@@ -4,7 +4,7 @@ import { isScreeningItem } from "@/lib/match/screening";
 const inc = (text: string) => ({ section: "inclusion" as const, text });
 const exc = (text: string) => ({ section: "exclusion" as const, text });
 
-describe("isScreeningItem (v7)", () => {
+describe("isScreeningItem", () => {
   it("consent, visits, labs, heart tests, contraception, tissue and life expectancy", () => {
     for (const t of [
       "Signed informed consent",

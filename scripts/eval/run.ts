@@ -208,7 +208,7 @@ async function main(): Promise<void> {
   const v1Cmp = mean(sub(prodRows, false).map((r) => r.sysNdcg)), v2Cmp = mean(sub(v2Rows, false).map((r) => r.sysNdcg));
   const v1E2 = mean(sub(prodRows, true).map((r) => r.sysNdcg)), v2E2 = mean(sub(v2Rows, true).map((r) => r.sysNdcg));
   const nE2 = ecog2.filter(Boolean).length;
-  // Gate (v6 step 10, docs/dev/DECISIONS.md): v2 must not be distinguishably worse than v1 on these profiles (paired bootstrap 95% CI
+  // Gate (docs/dev/DECISIONS.md): the questionnaire pipeline must not be distinguishably worse than the legacy one on these profiles (paired bootstrap 95% CI
   // of v2 - v1 must not lie entirely below 0). The earlier point-estimate gate (v2 mean >= v1 mean) failed by 0.004 on
   // ~16 candidates per profile, inside the paired CI; the point comparison is still printed.
   const cmpCI = pairedBootstrapCI(sub(v2Rows, false).map((r) => r.sysNdcg), sub(prodRows, false).map((r) => r.sysNdcg));

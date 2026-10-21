@@ -35,7 +35,7 @@ If nothing qualifies, reply {"facts":[]}.`;
 const OUTPUT = (fields: string) => `Reply: {"facts":[{${fields.replace(/^("key":"[^"]*")/, '$1,"scope":"all|cohort|alternatives|unclear"')},"ref":"I1","quote":"..."}]}`;
 
 /** Plain descriptions so the model maps wording to our closed ids. */
-export const DRUG_CLASS_TEXT: Readonly<Record<DrugClassId, string>> = {
+const DRUG_CLASS_TEXT: Readonly<Record<DrugClassId, string>> = {
   checkpoint: "immune checkpoint inhibitors (anti-PD-1, anti-PD-L1, anti-CTLA-4: pembrolizumab, nivolumab, atezolizumab, durvalumab, ipilimumab)",
   platinum: "platinum chemotherapy (cisplatin, carboplatin, oxaliplatin)",
   taxane: "taxanes (paclitaxel, docetaxel, cabazitaxel, nab-paclitaxel)",
@@ -67,7 +67,7 @@ export const DRUG_CLASS_TEXT: Readonly<Record<DrugClassId, string>> = {
   auto_sct: "autologous stem cell transplant",
 };
 
-export const HISTOLOGY_TEXT: Readonly<Record<HistologyId, string>> = {
+const HISTOLOGY_TEXT: Readonly<Record<HistologyId, string>> = {
   nsclc: "non-small cell lung cancer (any NSCLC)",
   sclc: "small cell lung cancer",
   lung_squamous: "squamous non-small cell lung cancer",
@@ -120,7 +120,7 @@ export const HISTOLOGY_TEXT: Readonly<Record<HistologyId, string>> = {
   upper_tract_urothelial: "upper tract urothelial carcinoma",
 };
 
-export const BIOMARKER_V2_TEXT: Readonly<Record<string, string>> = {
+const BIOMARKER_V2_TEXT: Readonly<Record<string, string>> = {
   MET: "MET (amplification, exon 14 skipping, overexpression)",
   RET: "RET (fusion or mutation)",
   HPV: "HPV-positive or p16-positive tumor",

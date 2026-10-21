@@ -5,15 +5,15 @@ const TIMEOUT_MS = 30_000;
 /**
  * Longest `retry-after` worth waiting for on a 429 before failing over. Groq's free tier caps tokens per minute
  * (8000) and one judged patient costs about 7k, so a second patient within the same minute gets a 429 that clears in
- * under a minute (v7 live check); the caller's deadline signal still ends the wait. A daily-cap 429 asks for minutes
+ * under a minute (measured live); the caller's deadline signal still ends the wait. A daily-cap 429 asks for minutes
  * or hours and fails over at once.
  */
-export const MAX_RETRY_AFTER_MS = 40_000;
+const MAX_RETRY_AFTER_MS = 40_000;
 /** Rate-limit retries per request when the caller passes a deadline signal. */
-export const MAX_RATE_RETRIES = 6;
+const MAX_RATE_RETRIES = 6;
 
 /** `retry-after` in ms (seconds or an HTTP date); null when absent or unreadable. */
-export function retryAfterMs(headers: Headers, now = Date.now()): number | null {
+function retryAfterMs(headers: Headers, now = Date.now()): number | null {
   const v = headers.get("retry-after");
   if (!v) return null;
   const secs = Number(v);
@@ -70,7 +70,7 @@ export function createOpenAiCompatibleProvider(config: AiProviderConfig, apiKey:
         }
         if (res.status === 429) {
           // Wait and retry a short (per-minute) limit while the caller's deadline allows: the token bucket refills
-          // gradually, so a large request can need several waits (v7 live check). Without a deadline, retry once.
+          // gradually, so a large request can need several waits (measured live). Without a deadline, retry once.
           const ms = retryAfterMs(res.headers);
           const again = req.signal ? attempt < MAX_RATE_RETRIES : attempt === 0;
           if (again && ms !== null && ms <= MAX_RETRY_AFTER_MS && (await wait(Math.max(ms, 1000), req.signal))) continue;

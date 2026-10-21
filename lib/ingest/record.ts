@@ -6,7 +6,7 @@ import { mapGroups } from "./groups";
 import { detectBarriers } from "./barriers";
 import { extractRuleFacts } from "./facts";
 
-export type BuildResult = { ok: true; card: TrialCard; sites: Site[] } | { ok: false; id: string; reason: string };
+type BuildResult = { ok: true; card: TrialCard; sites: Site[] } | { ok: false; id: string; reason: string };
 
 const SUMMARY_MAX = 1200;
 export const OUT_OF_SCOPE = "no recruiting U.S. sites";

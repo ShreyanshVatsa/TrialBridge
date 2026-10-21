@@ -12,7 +12,7 @@ import { TREC_CACHE_DIR, TREC_EVAL_DIR } from "./paths";
 export const CANCER_TOPIC_IDS: Record<TrecYear, number[]> = {
   2021: [1, 4, 8, 11, 13, 15, 17, 25, 31, 61],
   2022: [6, 11],
-  // v7: TREC 2023 topics are templates per disorder; the "breast cancer" template is the only cancer one.
+  // TREC 2023 topics are templates per disorder; the "breast cancer" template is the only cancer one.
   2023: [16, 17, 18, 19, 20],
 };
 

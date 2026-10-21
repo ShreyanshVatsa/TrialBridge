@@ -17,9 +17,9 @@ import { useKeyT } from "./t";
  * Shared chip look: 44px+ targets, 16px text, visible focus, state not shown by color alone (check mark / pressed).
  * Chips are tactile keys (.tb-key): raised at rest, they sink when pressed and light up when chosen.
  */
-export const chipClass = "tb-key inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-start text-base leading-snug";
-export const chipIdle = "";
-export const chipOn = "tb-key-on";
+const chipClass = "tb-key inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-start text-base leading-snug";
+const chipIdle = "";
+const chipOn = "tb-key-on";
 const focusRing = "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring";
 
 export function travelLabel(miles: number | null, m: Messages): string {

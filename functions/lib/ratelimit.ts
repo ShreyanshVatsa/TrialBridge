@@ -2,8 +2,8 @@ import type { KvStore } from "./store";
 import { sha256Hex, utcDay } from "./crypto";
 
 /** Per-route hourly limits (per salted, daily-rotating IP hash). */
-export const RATE_LIMITS = { analyze: 10, ask: 30, match: 10 } as const;
-export type RateLimitedRoute = keyof typeof RATE_LIMITS;
+const RATE_LIMITS = { analyze: 10, ask: 30, match: 10 } as const;
+type RateLimitedRoute = keyof typeof RATE_LIMITS;
 
 const HOUR_SECONDS = 3600;
 
@@ -29,7 +29,7 @@ export function ipBucket(ip: string): string {
   return `${groups.slice(0, 4).map((g) => g.padStart(4, "0")).join(":")}::/64`;
 }
 
-export interface RateLimitResult {
+interface RateLimitResult {
   allowed: boolean;
   count: number;
   limit: number;

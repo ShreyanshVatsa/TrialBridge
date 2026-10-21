@@ -6,7 +6,6 @@
 import type { CancerGroupId } from "./cancer-groups";
 import type { DrugClassId, HistologyId } from "./questionnaire/ids";
 
-export const CRITERIA_RULES_VERSION = "5";
 
 /** Prior-treatment facts: a pattern that identifies the therapy type in a criterion. */
 export const THERAPY_PATTERNS = {
@@ -31,11 +30,11 @@ export const LOCAL_METASTASES_ONLY = /\b(brain|cns|central nervous system|leptom
 export const NON_METASTATIC = /\bnon-?metastatic\b|\bno (evidence of )?(distant )?metasta|\bwithout (distant )?metasta|\bm0\b|\bnegative for (?:any )?(?:distant )?metasta/i;
 
 export const NEWLY_DIAGNOSED = /\b(newly diagnosed|treatment[- ]na[iï]ve|previously untreated|untreated|no prior (systemic )?(therapy|treatment|anti-?cancer))\b/i;
-/** v7 (rules 5): bare "recurrent" is not here: a recurrence says nothing about systemic treatment (labeled errors). */
+/** Bare "recurrent" is not here: a recurrence says nothing about systemic treatment (labeled errors). */
 export const PREVIOUSLY_TREATED = /\b(relapsed|refractory|progress(ed|ion) (on|after|following|during)|previously treated|at least (one|1|two|2|three|3) (prior )?(line|regimen|therap))/i;
 
 /**
- * v7 (rules 5): a therapy word that is not about the patient's treatment history (labeled errors, eval/facts-labels.json):
+ * A therapy word that is not about the patient's treatment history (labeled errors, eval/facts-labels.json):
  * a tissue source ("tissue from prior surgery"), a planned procedure ("planned surgical resection"), an
  * organization ("Radiation Oncology Core"), or reproductive status ("surgical sterilization", "menopause by radiation").
  */
@@ -72,7 +71,7 @@ export const UNLESS = /\b(unless|other than|except|excluding)\b/i;
 export const LIST_CONTEXT = /\bone of the following\b|\bfollowing (cancers?|tumou?rs?|tumou?r types?|diseases?|histolog\w*|types?)\b|\btumou?r types?\b|\bcancer types\b/i;
 
 // ---------------------------------------------------------------------------------------------
-// v2 fact families (QUESTIONNAIRE_SPEC §1.4). Applied by lib/ingest/eligibility-facts.ts.
+// Catalog fact families (QUESTIONNAIRE_SPEC §1.4). Applied by lib/ingest/eligibility-facts.ts.
 // Same philosophy: a directional fact only when the reading is clear; otherwise "mentioned".
 // ---------------------------------------------------------------------------------------------
 
@@ -164,7 +163,7 @@ export const ADJUVANT_SETTING = /\b(completely resected|complete(ly)? (surgical 
 export const ADJUVANT_FUTURE = /\b(achievable|feasible|possible|planned|plan(ning)? to|candidates? for|eligible for|allowing|amenable|scheduled|will (undergo|have)|potentially|expected|intend|resectable)\b/i;
 
 /** Histology / subtype patterns; `groups` = only for trials in these cancer groups. */
-export interface HistologyPattern {
+interface HistologyPattern {
   id: HistologyId;
   groups: readonly CancerGroupId[];
   re: RegExp;
@@ -262,7 +261,7 @@ export const WITH_OR_WITHOUT = /\bwith or without\b|\bwith\/without\b|\+\/-|±/i
 
 // ---------------------------------------------------------------------------------------------
 // Rules version 4 (precision work on histology, lines, prior drugs, stage, relapsed/refractory,
-// other cancer, hepatitis, autoimmune and v2 biomarkers). Tuned on the development partition only.
+// other cancer, hepatitis, autoimmune and catalog biomarkers). Tuned on the development partition only.
 // ---------------------------------------------------------------------------------------------
 
 /** A header line that introduces alternatives ("one of the following indications:"); clauses below it are options, not requirements. */
@@ -278,7 +277,7 @@ export const LINES_MODAL_CLASS = /\b(?:lines?|regimens?)(?:\s+of\s+(?:\w+\s+){0,
 /** Permission wording: a range of lines "may" have been received, so the minimum is not required. */
 export const LINES_MAY = /\b(?:may|can|could|are allowed to|is allowed to|allowed to)\s+(?:have\s+)?(?:previously\s+)?(?:received|had|been treated|undergone)\b|\b(?:is|are)\s+(?:allowed|permitted|acceptable|permissible)\b|\bpermissible\b/i;
 
-// --- Prior drug classes (rules v4) ---
+// --- Prior drug classes ---
 /** Dosing, reproductive and counseling text that names the study drug (not a treatment history). */
 export const DRUG_REPRODUCTIVE = /\b(contracepti\w*|pregnan\w*|breast-?feed\w*|embryo\w*|fet(?:al|us)|foetal|sperm|condoms?|abstinen\w*|childbearing|fertility|reproductive|teratogen\w*|REMS|donat\w+ (?:sperm|eggs?|ova))\b/i;
 /** Elapsed-time, interval and duration wording: a washout or timing rule, not a "ever received" rule. */
@@ -294,7 +293,7 @@ export const DRUG_HISTORY_STRONG = /\b(prior(?! to)|previous(?:ly)?|received|rec
 /** Progression/relapse wording that lets "after"/"following" count as history in an inclusion criterion. */
 export const DRUG_PROGRESSION = /\b(progress\w*|relaps\w*|refractory|resistan\w*|fail\w*|recurr\w*|PD)\b/i;
 
-// --- Histology / subtype (rules v4) ---
+// --- Histology / subtype ---
 /** Diagnosis-confirming words right before a histology term. */
 export const HISTOLOGY_CONFIRM = /\b(histolog\w*|cytolog\w*|patholog\w*|biops\w*|confirmed|documented|proven|diagnos\w*|established|verified)\b/i;
 /** Response/definition clauses ("CR and PR are defined by iwCLL") are not diagnosis rules. */
@@ -311,7 +310,7 @@ export const HISTOLOGY_TRANSFORMED = /\b(?:transformation|transformed|Richter\w*
 /** Testing/biomarker notes in exclusions ("molecular testing should be considered"). */
 export const HISTOLOGY_TESTING = /\b(?:testing|tested|test results?|should be considered|not necessary|not required|is not exclusionary|not exclusionary)\b/i;
 
-// --- Lines of therapy: alternatives and conditionals (rules v4) ---
+// --- Lines of therapy: alternatives and conditionals ---
 /** "still eligible if they failed more than one line": who MAY join, not a requirement. */
 export const LINES_ELIGIBLE_IF = /\b(?:still |also )?eligible (?:if|even if|provided|when)\b|\b(?:even if|regardless of|irrespective of)\b/i;
 /** An alternative route to eligibility next to the line count: "ineligible for standard therapy or ...", "for whom no standard therapy". */
@@ -319,7 +318,7 @@ export const LINES_ALT = /\b(?:ineligible|not (?:a )?candidates?|no (?:standard|
 /** Another route after the count: "... 2 prior lines of therapy OR refractory to initial therapy". */
 export const LINES_ALT_AFTER = /\b(?:lines?|regimens?|treatments?|therap(?:y|ies))\b[^.;]{0,40}[,;]?\s+\bor\s+(?:relaps\w+|refractory|primary refractory|progress\w+|ineligible|not (?:a )?candidates?|intolerant|who|those|patients|participants|have|has)\b|\sOR\s/;
 
-// --- Stage setting (rules v4) ---
+// --- Stage setting ---
 /** "No evidence of disease" only counts as an adjuvant/post-treatment state next to surgery or therapy wording. */
 export const ADJUVANT_NED = /\b(?:no (?:radiographic |clinical |radiologic )?evidence of (?:residual |measurable )?disease(?! (?:progression|recurrence|relapse))|NED)\b/;
 export const ADJUVANT_NED_CONTEXT = /\b(?:after|following|post|status post|s\/p|completion of|completed|undergone|underwent)\b[^.;]{0,50}\b(?:surgery|resection|surgical|therapy|treatment|chemoradi\w*|chemotherapy|radiation|radiotherapy|prostatectomy|mastectomy|colectomy)\b/i;
@@ -328,10 +327,10 @@ export const ADJUVANT_NOT_STATUS = /\b(?:history of (?:other|another|prior|a pri
 /** Locally advanced disease named inside a negation, a prior-therapy statement or a subgroup. */
 export const LOCALLY_ADVANCED_NOT_STATUS = /\b(?:will not|must not|should not|not (?:be )?(?:admitted|eligible|amenable|required)|(?:treated|treatment|therapy|received|administered)\b[^.;]{0,40}\b(?:in the adjuvant|only in|for locally advanced)|in the context of|multimodal)\b/i;
 
-// --- Relapsed / refractory (rules v4) ---
+// --- Relapsed / refractory ---
 export const RECURRENT_NOT_DISEASE_V4 = /\bsteroid[- ](?:refractory|resistant)\b|\b(?:acute|chronic) (?:GVHD|graft)\b|\bGVHD\b|\bat (?:the time of )?(?:relapse|recurrence|progression)\b|\b(?:counts? as|considered as) (?:a )?(?:separate|one|an?)\b|\b(?:can|may) be considered\b|\bafter discussion with\b|\bto be considered (?:measurable|evaluable)\b|\b(?:treatment|therapy|regimens?) for (?:the )?(?:relapsed|recurrent|refractory|progressive)\b|\bor for whom\b|\b(?:is|are) defined as documentation\b|\brelapse(?:d)? is defined\b|\beither\b/i;
 
-// --- v2 biomarkers (rules v4) ---
+// --- Catalog biomarkers ---
 /** Wording that makes a marker mention permissive, procedural or conditional rather than a requirement. */
 export const V2_MARKER_PERMISSIVE = /\b(?:(?:are|is) (?:also )?eligible|also eligible|may be (?:enrolled|included|considered|eligible|resolved)|can be (?:enrolled|included|resolved)|(?:not|is not|are not) (?:be )?required|not acceptable|acceptable|allowed|permitted|approved by|discussion with|resolved by|uncertainty|if (?:available|applicable|presenting|diagnosed)|should be (?:considered|tested)|may include|include but|kinase domain|dose escalation|(?:mutation|methylation|expression|fusion|amplification) status|\+\/-|±)\b|\+\/-|±/i;
 /** Specimen/testing procedure text ("tissue sample for detection of X", "may undergo genomic testing"). */

@@ -12,9 +12,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
-export const SNAPSHOTS_DIR = "data/cache/snapshots";
-/** The pre-v5 snapshot location (no fetchedAt in its state file). */
-export const LEGACY_SNAPSHOT_DIR = "data/cache/national";
+const SNAPSHOTS_DIR = "data/cache/snapshots";
+/** The older snapshot location (no fetchedAt in its state file). */
+const LEGACY_SNAPSHOT_DIR = "data/cache/national";
 export const DATA_LOCK_FILE = "data/data-lock.json";
 
 export interface SnapshotState {
@@ -46,7 +46,7 @@ export const DataLockSchema = z.strictObject({
   query: z.record(z.string(), z.string()),
   fields: z.string(),
   fetchedAt: z.string(),
-  /** True when fetchedAt was inferred from file times (pre-v5 snapshot). */
+  /** True when fetchedAt was inferred from file times (older snapshot). */
   fetchedAtApproximate: z.boolean().optional(),
   pages: z.array(z.strictObject({ file: z.string(), sha256: z.string().length(64) })),
   model: z.strictObject({ id: z.string(), revision: z.string(), files: z.record(z.string(), z.string().length(64)) }),
@@ -67,7 +67,7 @@ export function snapshotPageHashes(dir: string): { file: string; sha256: string 
     .map((file) => ({ file, sha256: sha256Hex(readFileSync(path.join(dir, file))) }));
 }
 
-/** state.json of a snapshot, with fetchedAt inferred from the file time for pre-v5 snapshots. */
+/** state.json of a snapshot, with fetchedAt inferred from the file time for older snapshots. */
 export function readSnapshotState(dir: string): (SnapshotState & { fetchedAtApproximate?: boolean }) | null {
   const file = path.join(dir, "state.json");
   if (!existsSync(file)) return null;
@@ -93,7 +93,7 @@ export function readDataLock(file: string = DATA_LOCK_FILE): DataLock | null {
 
 /**
  * Which snapshot an ingest should read: an explicit `--snapshot`, else the lock file's snapshot (when present on
- * disk), else the newest directory under data/cache/snapshots, else the pre-v5 location. Returns null when nothing
+ * disk), else the newest directory under data/cache/snapshots, else the older location. Returns null when nothing
  * exists yet (the caller then fetches a new snapshot).
  */
 export function resolveSnapshotDir(opts: { explicit?: string; lock?: DataLock | null } = {}): string | null {

@@ -1,5 +1,5 @@
 /**
- * Deterministic criterion splitter (v6 step 2, no LLM): ClinicalTrials.gov eligibilityCriteria text ->
+ * Deterministic criterion splitter (no LLM): ClinicalTrials.gov eligibilityCriteria text ->
  * numbered, atomic-as-written items `{ id: "I1".."In" | "E1".."En", section, text, scope? }`.
  *
  * Two layers:
@@ -25,7 +25,7 @@ export interface SplitCriterion {
   scope?: string;
 }
 
-export interface Segment {
+interface Segment {
   section: SplitSection;
   /** 0 = top level. */
   depth: number;

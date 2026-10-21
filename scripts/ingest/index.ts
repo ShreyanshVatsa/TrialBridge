@@ -8,7 +8,7 @@
  *
  * Flags: `--source=seed|national` (default national), `--snapshot=<dir>` (read exactly these ClinicalTrials.gov pages),
  * `--refresh` (fetch a new snapshot into data/cache/snapshots/<stamp>/). Without either, the snapshot named in
- * data/data-lock.json is used (else the newest one, else the pre-v5 cache), so a rebuild reproduces the dataset.
+ * data/data-lock.json is used (else the newest one, else the older cache), so a rebuild reproduces the dataset.
  *
  * Safety: aborts (keeping the last good dataset) if >5% of records fail validation or the trial
  * count drops >40% versus the previous dataset of the same source.
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
     console.log(`LLM v2 layer [${[...gated].join(", ")}]: ${withLlm} trials with verified-LLM results; demoted when missing: [${[...demote].join(", ")}]`);
   }
 
-  // 2. Embeddings, cached by NCT id + hash of the embedded text + model + dtype (pre-v5 entries are adopted after a spot check).
+  // 2. Embeddings, cached by NCT id + hash of the embedded text + model + dtype (older entries are adopted after a spot check).
   const vectors = await embedTexts(cards.map((c) => ({ key: embeddingKey(c.id, embeddingText(c)), text: embeddingText(c), legacyKey: `${c.id}|${c.lastUpdated}|${EMBEDDING_MODEL}` })), { label: "trials" });
   const quantized = new Map(cards.map((c, i) => [c.id, quantize(vectors[i] as Float32Array)]));
 
@@ -270,8 +270,8 @@ async function main(): Promise<void> {
       groups: c.groups,
       minAge: c.minAge,
       maxAge: c.maxAge,
-      // Directional, non-review facts only, as [key, value] or [key, value, param] (v2 thresholds/carve-outs).
-      // v7: lite facts carry no quote, so biomarker facts with qualifier wording ("other than EGFR") are left out
+      // Directional, non-review facts only, as [key, value] or [key, value, param] (thresholds/carve-outs).
+      // Lite facts carry no quote, so biomarker facts with qualifier wording ("other than EGFR") are left out
       // here; on full cards the pre-check skips them by their quote (lib/match/marker-qualifier.ts).
       f: c.facts.filter((x) => x.value !== "mentioned" && !x.needsReview && !qualifiedMarkerFact(x)).map((x): LiteCard["f"][number] => (x.param !== undefined ? [x.key, x.value, x.param] : [x.key, x.value])),
       ...(c.sex !== "ALL" ? { s: c.sex } : {}),

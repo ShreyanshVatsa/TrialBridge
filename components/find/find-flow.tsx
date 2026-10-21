@@ -93,7 +93,7 @@ export function FindFlow() {
         if (!prev || !isCurrent(prev)) return prev;
         if (response.status === "ok") {
           const applied = applyAnalysis(prev.results, response);
-          // The per-criterion tiers decide the order (step 5); the AI fit level only explains.
+          // The per-criterion tiers decide the order; the AI fit level only explains.
           return { ...prev, results: prev.criteria ? orderResults(applied, prev.criteria.order) : applied, analysis: { status: "ok", experimental: response.experimental } };
         }
         return { ...prev, analysis: { status: "degraded" } };
@@ -105,7 +105,7 @@ export function FindFlow() {
   }
 
   /**
-   * Step 5: LLM judge for the criteria the resolver left unknown (top N), then tier A / tier B order. Without a
+   * LLM judge for the criteria the resolver left unknown (top N), then tier A / tier B order. Without a
    * Turnstile token (or on any failure) the resolver-only ranking stays and is marked degraded.
    */
   async function runCriteriaJudge(
@@ -130,9 +130,6 @@ export function FindFlow() {
           if (!getToken || !container) throw new Error("no turnstile");
           const token = await withTimeout(getToken(container), TURNSTILE_TIMEOUT_MS);
           return requestCriteriaJudgement(a, trials, token, signal ? { signal } : {});
-        },
-        log: (e) => {
-          if (process.env.NODE_ENV !== "production") console.info(`[match] judge provider=${e.provider ?? "none"} status=${e.status}${e.degradedReason ? ` reason=${e.degradedReason}` : ""} trials=${e.judged}`);
         },
       });
       setSession((prev) => {

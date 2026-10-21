@@ -1,6 +1,6 @@
 /**
  * Simulated patients (QUESTIONNAIRE_SPEC §7.2): adaptive vs fixed question order. Pure and seeded, so unit
- * tests and the eval script (scripts/eval/simulate.ts, WP5) can share it.
+ * tests and the eval script (scripts/eval/simulate.ts) can share it.
  *
  * A patient has hidden "true" answers sampled from the catalog priors and answers "don't know" with a
  * per-question probability. The oracle ranking uses every true answer. A flow is scored by nDCG@10 of its
@@ -14,10 +14,10 @@ import { applyAnswer, nextQuestion, optionPriors, rankPool, setMode, type Candid
 import { appliesToGroup, isNonResponseId, prerequisitesHold } from "./rules";
 
 /** Probability a patient says "don't know" (spec §7.2). Keyed by question id, then by answer type. */
-export const DONT_KNOW_RATE: Readonly<Record<string, number>> = { biomarkers: 0.4, deep_biomarkers: 0.4, daily_activity: 0.2, lines: 0.25, subtype: 0.3 };
-export const DEFAULT_DONT_KNOW_RATE = 0.1;
+const DONT_KNOW_RATE: Readonly<Record<string, number>> = { biomarkers: 0.4, deep_biomarkers: 0.4, daily_activity: 0.2, lines: 0.25, subtype: 0.3 };
+const DEFAULT_DONT_KNOW_RATE = 0.1;
 
-export interface SimPatient {
+interface SimPatient {
   /** True answer for every question that applies (given the other true answers). */
   truth: Record<string, AnswerValue>;
   /** Questions this patient would answer "don't know". */
@@ -139,7 +139,7 @@ export function runAdaptiveCurve(ctx: SimContext, kMax: number, mode: "quick" | 
   return curve;
 }
 
-/** Fixed flow: eligible questions in catalog order (the v1 style), truncated at k. */
+/** Fixed flow: eligible questions in catalog order (the original fixed intake), truncated at k. */
 export function runFixed(ctx: SimContext, k: number): FlowResult {
   const curve = runFixedCurve(ctx, k);
   return curve[curve.length - 1] as FlowResult;

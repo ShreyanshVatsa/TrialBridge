@@ -31,15 +31,15 @@ export type BiomarkerStatus = z.infer<typeof BiomarkerStatusSchema>;
 export const PregnancySchema = z.enum(["yes", "no", "not_sure", "prefer_not"]);
 export type Pregnancy = z.infer<typeof PregnancySchema>;
 
-export const YesNoSchema = z.enum(["yes", "no"]);
+const YesNoSchema = z.enum(["yes", "no"]);
 
 /** Selected cancer group, or "other" for "Other / not sure" (searches the cross-group index). */
-export const IntakeCancerTypeSchema = CancerGroupIdSchema;
+const IntakeCancerTypeSchema = CancerGroupIdSchema;
 
 export const ZipSchema = z.string().regex(/^\d{5}$/, "Enter a 5-digit ZIP code");
 /** Travel distance in miles; null means "willing to travel anywhere". */
 export const TRAVEL_OPTIONS = [25, 50, 100, 250, 500, null] as const;
-export const TravelMilesSchema = z.number().int().positive().max(5000).nullable();
+const TravelMilesSchema = z.number().int().positive().max(5000).nullable();
 /** Intake accepts 18-110. Under 18 is handled by the UI with a pediatric-resources message. */
 export const AgeSchema = z.number().int().min(18).max(110);
 
@@ -54,7 +54,7 @@ export const IntakeAnswersSchema = z.strictObject({
   biomarkers: z.partialRecord(BiomarkerIdSchema, BiomarkerStatusSchema),
   pregnant: PregnancySchema,
   inAnotherTrial: YesNoSchema,
-  /** v2 adaptive questionnaire state (browser-only). When present, matching uses the catalog-driven pre-check. */
+  /** Adaptive questionnaire state (browser-only). When present, matching uses the catalog-driven pre-check. */
   questionnaire: QuestionnaireStateSchema.optional(),
 });
 export type IntakeAnswers = z.infer<typeof IntakeAnswersSchema>;

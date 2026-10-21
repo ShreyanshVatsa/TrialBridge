@@ -22,7 +22,7 @@ export interface SearchSession {
   results: RankedTrial[];
   analysis: AnalysisState;
   /**
-   * v6 per-criterion ranking (lib/match/criteria-rank.ts): per-trial TrialMatchScore + merged labels, the degraded
+   * Per-criterion ranking (lib/match/criteria-rank.ts): per-trial TrialMatchScore + merged labels, the degraded
    * flag and the Find-out priority. `results` is kept in `criteria.order`. Absent before the first ranking.
    */
   criteria?: CriteriaRanking;

@@ -1,7 +1,7 @@
 /**
  * Score fusion: the final ranking score is a weighted sum of named features. The default weights reproduce the
  * original hand-set formula in score.ts exactly for the original features (retrieval, penalty, bonus, phase, fit), and
- * add weights for the structured features introduced in v5. `FUSION_WEIGHTS` is the shipped set (fusion-weights.json);
+ * add weights for the structured features (subtype, markers, lines) added later. `FUSION_WEIGHTS` is the shipped set (fusion-weights.json);
  * it can be refit offline with scripts/eval/fit-fusion.ts, which only ever reads the dev split of the vignette benchmark.
  *
  * Every feature is non-negative and computed from the patient's definite answers only: a non-response contributes 0 to

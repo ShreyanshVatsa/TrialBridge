@@ -8,7 +8,7 @@ import { findOutKey, has, lacks, nonResponseEffects, options, priors, question }
 import { DEFERRED, PREFER_NOT, SKIP, UNKNOWN, type QuestionDef } from "./types";
 
 /** Solid-tumor groups (spread, brain metastases). "other" = not sure, so it is included. */
-export const SOLID_GROUPS: readonly CancerGroupId[] = CANCER_GROUP_IDS.filter((g) => !HEMATOLOGIC_GROUPS.includes(g));
+const SOLID_GROUPS: readonly CancerGroupId[] = CANCER_GROUP_IDS.filter((g) => !HEMATOLOGIC_GROUPS.includes(g));
 /** Groups where "measurable disease" rules are common (solid, myeloma, lymphoma). */
 const MEASURABLE_GROUPS: readonly CancerGroupId[] = CANCER_GROUP_IDS.filter((g) => g !== "leukemia");
 

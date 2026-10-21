@@ -1,8 +1,8 @@
 /**
- * v7 live check of the production judge path on the Groq free tier: 5 TREC dev patients, judged one right after
+ * Live check of the production judge path on the Groq free tier: 5 TREC dev patients, judged one right after
  * another exactly as /api/match would (production judgeCriteria with its 45 s request deadline, the production
  * OpenAI-compatible client with its 429 retry, the daily token budget), with NO eval pacing or response cache.
- * Trials and unknown items are what the app would send: the top MATCH_JUDGE.topN of the v5 order after the
+ * Trials and unknown items are what the app would send: the top MATCH_JUDGE.topN of the retrieval order after the
  * resolver, screening-only items left out. Not run in CI (it spends real quota).
  *
  *   npx tsx scripts/eval/matching/live-check.ts [--patients=5]

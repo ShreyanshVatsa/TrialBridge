@@ -17,7 +17,7 @@ export interface GroupCatalog {
   deepBiomarkers?: QuestionDef;
 }
 
-export interface SubtypeOption {
+interface SubtypeOption {
   id: SubtypeId;
   /** Histologies the patient's cancer IS: required => support, excluded => conflict. */
   is: readonly HistologyId[];
@@ -57,7 +57,7 @@ export function subtypeQuestion(group: CancerGroupId, opts: readonly SubtypeOpti
   });
 }
 
-export interface StatusOption {
+interface StatusOption {
   id: GroupStatusId;
   facts: FactRule[];
   queryTerms: string[];
@@ -108,7 +108,7 @@ export function priorDrugsQuestion(group: CancerGroupId, classes: readonly DrugC
 }
 
 /** Grid status ids (per marker). "not_tested" and "unknown" carry no facts. */
-export const GRID_STATUSES = ["positive", "negative", "not_tested"] as const;
+const GRID_STATUSES = ["positive", "negative", "not_tested"] as const;
 
 function gridEffects(markers: readonly BiomarkerId[]): OptionEffect[] {
   return markers.flatMap((b): OptionEffect[] => [

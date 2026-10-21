@@ -1,10 +1,10 @@
 /**
- * LLM criterion judge (v6 step 4) settings. The judge runs on the top N trials after retrieval and sees only
+ * LLM criterion judge settings. The judge runs on the top N trials after retrieval and sees only
  * the criterion items the deterministic resolver left "unknown".
  */
 export const MATCH_JUDGE = {
   /**
-   * Trials judged per request (top N after retrieval). v7: 5 (was 10). One patient cost about 20k tokens at 10
+   * Trials judged per request (top N after retrieval). Five, not ten: one patient cost about 20k tokens at 10
    * (eval/matching/RESULTS.md), against Groq's free tier of 8000 tokens/minute and 200k/day.
    */
   topN: 5,

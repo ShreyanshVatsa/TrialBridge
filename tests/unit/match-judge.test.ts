@@ -478,7 +478,7 @@ describe("parseMatchJson top-level arrays", () => {
   it("still accepts a plain object", () => {
     expect(parseMatchJson(JSON.stringify({ trials: [t1] })).trials).toHaveLength(1);
   });
-  // Shapes from the cached gpt-oss-120b failures (data/cache/matching-llm, v7 replay).
+  // Shapes from the cached gpt-oss-120b failures (data/cache/matching-llm, replayed).
   const items = t1.items;
   it("keeps trials that follow an early-closed wrapper: [{trials:[T1,T2]}, T3]", () => {
     const raw = JSON.stringify([{ trials: [t1, t2] }, { trialId: "NCT3", items }]);

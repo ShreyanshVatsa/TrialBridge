@@ -22,8 +22,8 @@ export const DEFERRED = "deferred";
 export const NON_RESPONSE_IDS: readonly string[] = [UNKNOWN, PREFER_NOT, SKIP, DEFERRED];
 
 /**
- * English message key. Strings live in components/i18n/en.ts under `questionnaire.*` / `findOut.*`
- * (WP3 writes them); defaults for every key are in ./en-defaults.ts. Kept as a template type so the
+ * English message key. Strings live in components/i18n/en.ts under `questionnaire.*` / `findOut.*`;
+ * defaults for every key are in ./en-defaults.ts. Kept as a template type so the
  * catalog compiles independently of the i18n rewrite; tests check every key exists.
  */
 export type MessageKey = `questionnaire.${string}` | `findOut.${string}`;
@@ -98,7 +98,7 @@ export interface QuestionDef {
   aiField?: AiFieldId;
   /** P(option), including unknown; used by the engine. */
   priors?: Partial<Record<CancerGroupId, Record<string, number>>>;
-  /** false until the backing facts pass the precision gate (§7, WP1). */
+  /** false until the backing facts pass the precision gate (§7). */
   enabled: boolean;
   /** Why the question is off (precision gate, no backing facts). Present iff enabled is false. */
   disabledReason?: string;
@@ -106,7 +106,7 @@ export interface QuestionDef {
   evidence: string;
   /** Fact families backing this question (keys of FACT_FAMILIES); [] for hard filters or soft-only questions. */
   families: readonly string[];
-  /** Also backed by v1 rule facts (metastatic, prior_*, pregnancy, ...), which keep v1 matching behavior. */
+  /** Also backed by legacy rule facts (metastatic, prior_*, pregnancy, ...), which keep the legacy matching behavior. */
   legacyFacts?: boolean;
   /** Ask only when the patient's age is at most this (e.g. pregnancy: under 60). */
   maxAge?: number;

@@ -13,7 +13,7 @@ export const ServerTrialSchema = z.object({
   groups: z.array(CancerGroupIdSchema),
   facts: z.array(FactSchema),
   barriers: z.array(BarrierSchema),
-  /** v6 split criteria (optional: rows ingested before v6 have none, and the criterion judge then skips the trial). */
+  /** Split criteria (optional: rows from older ingests have none, and the criterion judge then skips the trial). */
   criteria: z.array(SplitCriterionSchema).optional(),
   criteriaVersion: z.number().int().positive().optional(),
 });

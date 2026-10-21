@@ -23,7 +23,7 @@ export interface TranslateOptions {
 }
 
 export const BATCH_SIZE = 40;
-export const DO_NOT_TRANSLATE = ["TrialBridge", "ClinicalTrials.gov", "988", "911", "ZIP", "NCT", "HIPAA", "U.S."] as const;
+const DO_NOT_TRANSLATE = ["TrialBridge", "ClinicalTrials.gov", "988", "911", "ZIP", "NCT", "HIPAA", "U.S."] as const;
 
 const CJK = new Set(["zh-Hans", "zh-Hant", "ko", "ja"]);
 
@@ -35,7 +35,7 @@ function strip(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
-export type Rejection = "numbers" | "not_string" | "empty" | "placeholders" | "html" | "length" | "identical" | "banned" | "plural_forms";
+type Rejection = "numbers" | "not_string" | "empty" | "placeholders" | "html" | "length" | "identical" | "banned" | "plural_forms";
 
 /** Validate one translation. Returns null when acceptable, else the reason. */
 export function validateTranslation(key: string, en: string, out: unknown, opts: TranslateOptions): Rejection | null {
@@ -69,7 +69,7 @@ export function validateTranslation(key: string, en: string, out: unknown, opts:
 const CATS = ["zero", "one", "two", "few", "many", "other"];
 
 /** Base paths of English plural groups: keys that have both `.one` and `.other` (a lone `.other` is just a label). */
-export function pluralBases(enFlat: FlatMessages): string[] {
+function pluralBases(enFlat: FlatMessages): string[] {
   return Object.keys(enFlat).filter((k) => k.endsWith(".other") && `${k.slice(0, -6)}.one` in enFlat).map((k) => k.slice(0, -6));
 }
 
@@ -149,7 +149,7 @@ RULES
 - No HTML, no markdown, no emojis, no explanations. Translate meaning, not word for word. Keep roughly the same length.${g?.style ? `\n- ${g.style}` : ""}${terms}${banned}`;
 }
 
-export function buildUserPrompt(batch: Record<string, string>): string {
+function buildUserPrompt(batch: Record<string, string>): string {
   return `Translate these strings. The key path is context only (do not translate it).\n${JSON.stringify(batch, null, 1)}`;
 }
 
@@ -208,7 +208,7 @@ export function parseJsonObject(text: string): Record<string, unknown> | null {
   }
 }
 
-export interface TranslateResult {
+interface TranslateResult {
   accepted: FlatMessages;
   rejected: Record<string, Rejection | "missing">;
 }

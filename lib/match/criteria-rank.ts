@@ -1,5 +1,5 @@
 /**
- * v6 step 5 orchestration (client): resolver labels for the ranked results -> LLM judge for the unknown items of the
+ * Criteria ranking orchestration (client): resolver labels for the ranked results -> LLM judge for the unknown items of the
  * top N -> merged labels -> per-trial TrialMatchScore -> tier A / tier B order (rank.ts rankByCriteria).
  * `resolveRanking` is synchronous (no I/O) so results can show at once; `rankWithCriteria` adds the judge call.
  * The judge request carries only the minimized profile, NCT ids and criterion ids (lib/api/match.ts).
@@ -17,7 +17,7 @@ import { normalizeMarkers, profileFromState, resolveCriteria, unresolved, type R
 import { isScreeningItem } from "./screening";
 import { orderResults, rankByCriteria, type JudgeLabels } from "./rank";
 
-export type CriteriaCard = Pick<TrialCard, "id" | "groups" | "conditions" | "criteria" | "criteriaVersion">;
+type CriteriaCard = Pick<TrialCard, "id" | "groups" | "conditions" | "criteria" | "criteriaVersion">;
 type Entry = { card: CriteriaCard };
 
 /** A real model answered (not the mock, not nobody). */
@@ -114,7 +114,7 @@ export function rankingFromJudge(results: readonly Entry[], resolver: ReadonlyMa
   return build(results, resolver, { results: response.results, real }, answers, catalog, head);
 }
 
-export interface RankWithCriteriaOptions {
+interface RankWithCriteriaOptions {
   catalog?: readonly QuestionDef[];
   /** The judge call (default: lib/api/match.ts requestCriteriaJudgement); injected in tests. */
   judge: (answers: IntakeAnswers, trials: readonly UnknownCriteria[]) => Promise<MatchResponse>;

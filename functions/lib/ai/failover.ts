@@ -50,7 +50,7 @@ export async function runWithFailover<T>(providers: readonly AiProvider[], attem
         continue;
       }
       lastError = err instanceof ProviderError ? err.kind : "server";
-      // v7: a free-tier rate limit (8000 tokens/minute on Groq) is expected under load, not a broken provider: it
+      // A free-tier rate limit (8000 tokens/minute on Groq) is expected under load, not a broken provider: it
       // does not count toward opening the circuit.
       if (lastError === "rate_limited") breaker.releaseProbe();
       else breaker.recordFailure();

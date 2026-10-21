@@ -19,7 +19,7 @@ export const CriterionSchema = z.object({ n: z.number().int().positive(), text: 
 export type Criterion = z.infer<typeof CriterionSchema>;
 
 /**
- * v6 split criterion (lib/ingest/criteria-split.ts, criteriaVersion 1): one atomic-as-written item with a stable id
+ * Split criterion (lib/ingest/criteria-split.ts, criteriaVersion 1): one atomic-as-written item with a stable id
  * (I1..In / E1..En), verbatim whitespace-normalized text and an optional cohort/arm/part scope.
  */
 export const SplitCriterionSchema = z.object({
@@ -57,7 +57,7 @@ export const BASE_FACT_KEYS = [
   "previously_treated",
   "pregnancy",
   "concurrent_trial",
-  // v2 (QUESTIONNAIRE_SPEC §1.4, contract C2). Thresholds live in Fact.param.
+  // Catalog fact families (QUESTIONNAIRE_SPEC §1.4, contract C2). Thresholds live in Fact.param.
   "ecog_max", // param: highest ECOG allowed (number)
   "brain_mets", // param "active_only": only active/untreated brain metastases are excluded
   "measurable_disease",
@@ -86,7 +86,7 @@ export const BASE_FACT_KEYS = [
 export type BaseFactKey = (typeof BASE_FACT_KEYS)[number];
 
 /** Closed-vocabulary id used in template fact keys (histology:<id>, prior_drug:<id>); the id lists live in config. */
-export const FactIdSegmentSchema = z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/);
+const FactIdSegmentSchema = z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/);
 export const FactKeySchema = z.union([
   z.enum(BASE_FACT_KEYS),
   z.templateLiteral(["biomarker:", BiomarkerIdSchema]),
@@ -107,7 +107,7 @@ export type FactParam = z.infer<typeof FactParamSchema>;
  * "within_28_days"). Such exclusions only apply inside the window, so they never act as a blanket exclusion. Numbers
  * (thresholds, carve-out years) and "active_only" / "uncontrolled_only" are not scoped in this sense.
  */
-export const SCOPED_PARAM_RE = /^(?:window|limited|within_\d+_(?:day|week|month|year)s?)$/;
+const SCOPED_PARAM_RE = /^(?:window|limited|within_\d+_(?:day|week|month|year)s?)$/;
 export const isScopedParam = (p: FactParam | undefined): boolean => typeof p === "string" && SCOPED_PARAM_RE.test(p);
 
 export const FactSchema = z.object({
@@ -231,7 +231,7 @@ export const LiteCardSchema = z.object({
   maxAge: z.number().nullable(),
   /** Facts as [key, value, param?] (quotes omitted; full cards are loaded for the final top results). */
   f: z.array(z.union([z.tuple([FactKeySchema, FactValueSchema]), z.tuple([FactKeySchema, FactValueSchema, FactParamSchema])])),
-  /** Structured sex restriction; absent = ALL (v2, used by the definite-sex hard filter). */
+  /** Structured sex restriction; absent = ALL (used by the definite-sex hard filter). */
   s: z.enum(["FEMALE", "MALE"]).optional(),
   /** Barrier types present. */
   b: z.array(BarrierTypeSchema),

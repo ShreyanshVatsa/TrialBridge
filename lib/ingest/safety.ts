@@ -1,8 +1,8 @@
 /** Ingestion safety gates: keep the last good dataset when a run looks wrong. */
-export const MAX_INVALID_FRACTION = 0.05;
-export const MAX_DROP_FRACTION = 0.4;
+const MAX_INVALID_FRACTION = 0.05;
+const MAX_DROP_FRACTION = 0.4;
 
-export interface SafetyInput {
+interface SafetyInput {
   rawCount: number;
   invalidCount: number;
   builtCount: number;

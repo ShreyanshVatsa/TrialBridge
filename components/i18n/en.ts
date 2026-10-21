@@ -330,7 +330,7 @@ export const en = {
       search: "Search trials",
       privacyNote: "Your ZIP code and exact age never leave this device. Your answers are kept only in this browser tab until you close it.",
     },
-    // Catalog text (English defaults from config/questionnaire/en-defaults.ts, WP1).
+    // Catalog text (English defaults from config/questionnaire/en-defaults.ts).
     common: {
       unknown: "Not sure",
       skip: "Skip",

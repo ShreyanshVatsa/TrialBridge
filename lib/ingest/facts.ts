@@ -36,8 +36,8 @@ import type { CancerGroupId } from "@/config/cancer-groups";
 import type { Criterion, CriterionSection, Fact, FactKey, FactParam, FactValue } from "@/lib/types/trial";
 import { cohortSpecific, diseasePopulationClause, effectiveSection, moreLenient, subPopulationClause, v2FactsForSegment } from "./eligibility-facts";
 
-/** `quote` is set for v2 families (the clause); v1 facts quote the whole criterion. */
-/** Biomarkers added in v2 (§1.4): stricter direction rules (no history in v1 tests). */
+/** `quote` is set for catalog families (the clause); legacy facts quote the whole criterion. */
+/** Biomarkers added with the questionnaire (§1.4): stricter direction rules than the first markers. */
 const V2_BIOMARKERS = new Set<string>(["MET", "RET", "HPV", "CLDN18", "PH", "NPM1", "TP53", "MGMT", "PIK3CA", "ESR1", "PALB2", "KIT"]);
 
 type Candidate = { key: FactKey; value: FactValue; param?: FactParam; quote?: string };
@@ -96,7 +96,7 @@ const NOT_RECEIVED_PRIOR = /\b(?:not|never)\s+(?:have\s+|has\s+)?(?:previously\s
 const WINDOW_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, eight: 8, twelve: 12 };
 
 /**
- * v7: the two narrow "previously treated is excluded" patterns ("prior systemic therapy for metastatic disease",
+ * The two narrow "previously treated is excluded" patterns ("prior systemic therapy for metastatic disease",
  * "have not received any prior therapy"). The previously_treated key as a whole is below the precision gate
  * (eval/facts-labels-v3.json, 6/10), but none of its labeled errors came from these, so the resolver may still settle
  * them.
@@ -109,7 +109,7 @@ export function preciseTreatedExclusion(section: CriterionSection, text: string)
  * Washout window of an exclusion clause as a scoped param ("within 4 weeks" -> "within_4_weeks", "28 days prior to"
  * -> "within_28_days"; half-lives or an unparsed window -> "window"); null when the clause states no window.
  */
-export function washoutParam(text: string): string | null {
+function washoutParam(text: string): string | null {
   const m = /\bwithin\s+(?:the\s+)?(?:(?:last|past|previous|prior)\s+)?(\d{1,3}|one|two|three|four|five|six|eight|twelve)\s*(?:\(\d+\)\s*)?(day|week|month|year)s?\b/i.exec(text) ?? /\b(\d{1,3})\s*(day|week|month|year)s?\s+(?:prior|before|of)\b/i.exec(text);
   if (m) {
     const n = WINDOW_WORDS[(m[1] ?? "").toLowerCase()] ?? Number(m[1]);
@@ -143,7 +143,7 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     if (!m || (!PRIOR_CONTEXT.test(text) && !win)) continue;
     const before = text.slice(Math.max(0, m.index - 60), m.index);
     const after = text.slice(m.index + m[0].length, m.index + m[0].length + 30);
-    // v7: tissue sources, planned procedures, organization names and reproductive status are not treatment history;
+    // Tissue sources, planned procedures, organization names and reproductive status are not treatment history;
     // in inclusion text, a therapy offered as one option ("relapse after HSCT or CAR T") is not required.
     if (THERAPY_SPECIMEN_LEAD.test(before) || THERAPY_SPECIMEN_AFTER.test(after) || THERAPY_PLANNED_LEAD.test(before) || THERAPY_NOT_HISTORY.test(text) || (incl && OR_NEAR.test(text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)))) {
       out.push({ key, value: "mentioned" });
@@ -192,7 +192,7 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   if (incl && pt) {
     // "No documented progression ...", "previously untreated ... or recurrent" do not mean "previously treated".
     const lead = text.slice(Math.max(0, pt.index - 40), pt.index);
-    // v7: an alternative after the match counts too ("relapsed or newly diagnosed"), but not another treated word
+    // An alternative after the match counts too ("relapsed or newly diagnosed"), but not another treated word
     // ("relapsed or refractory").
     if (untreatedWording || NEGATION.test(lead) || ALTERNATIVE_NEAR.test(text.slice(Math.max(0, pt.index - 25), pt.index)) || /^\s*(?:\w+\s+)?(?:or|and\/or)\s+(?!(?:relapsed|refractory|progressive|progressing|previously treated|resistant)\b)/i.test(text.slice(pt.index + pt[0].length, pt.index + pt[0].length + 25))) {
       out.push({ key: "previously_treated", value: "mentioned" });
@@ -218,21 +218,21 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
   }
 
   // Biomarkers: direction from positive/negative wording near the marker.
-  // v7: an inclusion list of three or more markers ("driver mutation (EGFR, ALK, ROS1, RET)") offers options.
+  // An inclusion list of three or more markers ("driver mutation (EGFR, ALK, ROS1, RET)") offers options.
   const markerCount = BIOMARKERS.filter((b) => b.pattern.test(text)).length;
   const markerList = incl && markerCount >= 3 && (text.match(/,/g) ?? []).length >= 2;
   for (const b of BIOMARKERS) {
     const m = b.pattern.exec(text);
     if (!m) continue;
-    // v7: "anti-EGFR antibody" names a drug, not the patient's marker status.
+    // "anti-EGFR antibody" names a drug, not the patient's marker status.
     if (/\banti-?\s*$/i.test(text.slice(Math.max(0, m.index - 6), m.index))) {
       if (!out.some((o) => o.key === `biomarker:${b.id}`)) out.push({ key: `biomarker:${b.id}`, value: "mentioned" });
       continue;
     }
     // The marker's own suffix ("HER2-", "HER2+", "HER2-negative", "EGFR mutation") is decisive;
     // otherwise look at nearby words. This keeps "HR+/HER2-" from reading as HER2-positive.
-    // v7 (rules 5): "HR-positive" / "ER-negative": the pattern's own "[+-]" ate the hyphen of a joined word, which
-    // read "HR-positive" as HR-negative (inverted rule). A sign followed by a letter is a hyphen; re-read the word.
+    // "HR-positive" / "ER-negative": the pattern's own "[+-]" would eat the hyphen of a joined word and
+    // read "HR-positive" as HR-negative. A sign followed by a letter is a hyphen; re-read the word.
     const joined = /[+-]$/.test(m[0]) && /^[a-z]/i.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1));
     const token = joined ? m[0].slice(0, -1) : m[0];
     const suffix = text.slice(m.index + token.length, m.index + token.length + 16);
@@ -256,11 +256,11 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
       neg = NEGATIVE_WORDS.test(window);
     }
     let value: FactValue = "mentioned";
-    // v2 markers: test-status or permissive wording without a decisive suffix stays "mentioned".
+    // Catalog markers: test-status or permissive wording without a decisive suffix stays "mentioned".
     const decisive = token.endsWith("+") || token.endsWith("-") || /^\s*(\+|\(\+\)|-?\s*positive|-?\s*negative|amplif|mutat|fusion|rearrang|(promoter )?(un)?methylat|-?\s*high\b|-?\s*low\b)/i.test(suffix);
-    // v2 markers offered as one of several alternatives ("MET or RET", lists) are never required/excluded.
+    // Catalog markers offered as one of several alternatives ("MET or RET", lists) are never required/excluded.
     if (V2_BIOMARKERS.has(b.id) && (OR_NEAR.test(text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)) || LIST_CONTEXT.test(text) || /,\s*$/.test(text.slice(Math.max(0, m.index - 3), m.index)) || /^\s*,/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 3)))) pos = neg = false;
-    // v2 markers: permissive/procedural/conditional wording, specimen-testing text, sub-group clauses and bare list bullets never decide.
+    // Catalog markers: permissive/procedural/conditional wording, specimen-testing text, sub-group clauses and bare list bullets never decide.
     const v2Weak = V2_BIOMARKERS.has(b.id) && (V2_MARKER_PERMISSIVE.test(text) || (V2_MARKER_TESTING.test(text) && !V2_MARKER_ASSERTED.test(text)) || /\bor\s*$/i.test(text.trim()) || diseasePopulationClause(text, { groups }) || /^\s*(?:participants|patients|subjects)\s+with\s+(?:\w+\s+){0,3}(?:cancers?|carcinomas?)\s+(?:will|must|should|are)\b/i.test(text) || (/^\s*[*\u2022]\s/.test(text) && text.trim().split(/\s+/).length <= 6) || (section === "exclusion" && V2_MARKER_SUBGROUP_AFTER.test(text.slice(m.index + m[0].length, m.index + m[0].length + 40))));
     if (v2Weak) pos = neg = false;
     if (V2_BIOMARKERS.has(b.id) && !decisive && (/\b(status|analys[ie]s|testing|tested|test results?|assay|performed|known|may have|regardless|independent of|either|unknown|pending|e\.g|such as|including)\b/i.test(text) || insideParens(text, m.index))) pos = neg = false;
@@ -271,7 +271,7 @@ function factsForSegment(section: CriterionSection, text: string, groups: readon
     if (pos !== neg && !optional) {
       // inclusion+positive => required; inclusion+negative => positive patients excluded;
       // exclusion+positive => excluded; exclusion+negative => negative patients excluded (positive required).
-      // v2 markers read inclusion text phrased as an exclusion ("... will be excluded") as an exclusion.
+      // Catalog markers read inclusion text phrased as an exclusion ("... will be excluded") as an exclusion.
       const inclusionLike = V2_BIOMARKERS.has(b.id) ? effectiveSection(section, text) === "inclusion" : incl;
       if (inclusionLike) value = pos ? "required" : "excluded";
       else value = pos ? "excluded" : "required";
@@ -294,7 +294,7 @@ export function extractRuleFacts(inclusion: Criterion[], exclusion: Criterion[],
         const prev = best.get(cand.key);
         if (prev && STRENGTH[prev.value] > STRENGTH[cand.value]) continue;
         if (prev && STRENGTH[prev.value] === STRENGTH[cand.value] && !moreLenient(cand.key, prev, cand)) continue;
-        // v2 facts quote the clause; it must be a verbatim substring of the criterion (else quote the criterion).
+        // Catalog facts quote the clause; it must be a verbatim substring of the criterion (else quote the criterion).
         const quote = cand.quote && c.text.includes(cand.quote) ? cand.quote : c.text;
         best.set(cand.key, { key: cand.key, value: cand.value, quote, ref: { section, n: c.n }, source: "rule", ...(cand.param !== undefined ? { param: cand.param } : {}) });
       }

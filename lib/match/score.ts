@@ -20,27 +20,27 @@ import { maxRrfScore, RRF_K } from "./rrf";
  */
 
 /** Retrieval relevance (normalized RRF) is the backbone of the ranking. */
-export const RETRIEVAL_WEIGHT = 1.0;
+const RETRIEVAL_WEIGHT = 1.0;
 /** Each likely conflict with a stated criterion pushes a trial down noticeably... */
 export const CONFLICT_PENALTY = 0.15;
-/** ...but only the first few count, so one strict trial isn't buried by repeated signals. Raised from 3 to 4
- *  in v2: more questions mean more legitimate signals, and it is still capped. */
+/** ...but only the first few count, so one strict trial isn't buried by repeated signals. Four, not three:
+ *  the questionnaire's extra questions mean more legitimate signals, and it is still capped. */
 export const MAX_COUNTED_CONFLICTS = 4;
 /** Matching a stated requirement (e.g. HER2-positive required, user is HER2-positive) helps slightly. */
 export const SUPPORT_BONUS = 0.03;
-export const MAX_COUNTED_SUPPORTS = 3;
+const MAX_COUNTED_SUPPORTS = 3;
 
 /** How much one conflict on a fact key counts, relative to a typical rule (1.0). */
-export const DEFAULT_FACT_WEIGHT = 1.0;
+const DEFAULT_FACT_WEIGHT = 1.0;
 /** Keys with a high carve-out rate ("unless treated more than 2 years ago", "unless controlled") or that patients
  *  describe only coarsely: half weight, because the criterion often has an exception we cannot see. */
 export const LOW_CERTAINTY_FACT_WEIGHT = 0.5;
-export const LOW_CERTAINTY_KEYS: readonly string[] = ["other_malignancy", "kidney_disease", "liver_disease", "heart_disease", "measurable_disease"];
+const LOW_CERTAINTY_KEYS: readonly string[] = ["other_malignancy", "kidney_disease", "liver_disease", "heart_disease", "measurable_disease"];
 /** A trial that REQUIRES a specific subtype or biomarker is the most specific gate there is. */
 export const SPECIFIC_REQUIREMENT_WEIGHT = 1.2;
 /** Rule facts are trusted as extracted (families below the precision gate are already switched off by fact
  *  policy); LLM facts count in proportion to the model's stated confidence. */
-export const RULE_RELIABILITY = 1.0;
+const RULE_RELIABILITY = 1.0;
 
 /** A required biomarker the patient has is strong positive evidence (counted once per trial). */
 export const BIOMARKER_MATCH_BONUS = 0.08;
@@ -110,18 +110,18 @@ export function finalScore(input: { retrieval: number; precheck: readonly NoteLi
 }
 
 // ---------------------------------------------------------------------------------------------
-// v6 step 5: per-criterion scoring (TrialGPT-style). Labels come from the deterministic resolver
+// Per-criterion scoring (TrialGPT-style). Labels come from the deterministic resolver
 // (criteria-resolve.ts) and, for the items it left unknown, the LLM judge (POST /api/match).
 // ---------------------------------------------------------------------------------------------
 
 /** Keeps incScore finite for a trial with no counted inclusion items. */
-export const INC_SCORE_EPSILON = 1e-9;
+const INC_SCORE_EPSILON = 1e-9;
 
 const INCLUSION_LABELS: ReadonlySet<string> = new Set(["met", "not_met", "unknown", "not_applicable"]);
 const EXCLUSION_LABELS: ReadonlySet<string> = new Set(["excluded", "not_excluded", "unknown", "not_applicable"]);
 
 /** True when `label` is a valid value for the criterion's section. */
-export function labelFitsSection(l: Pick<CriterionLabel, "section" | "label">): boolean {
+function labelFitsSection(l: Pick<CriterionLabel, "section" | "label">): boolean {
   return (l.section === "inclusion" ? INCLUSION_LABELS : EXCLUSION_LABELS).has(l.label);
 }
 

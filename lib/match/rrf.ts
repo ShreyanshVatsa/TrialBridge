@@ -13,7 +13,7 @@
 import { RRF_K } from "@/config/retrieval";
 export { RRF_K };
 
-export interface FusedResult {
+interface FusedResult {
   id: string;
   /** Fused RRF score (higher is better). */
   score: number;

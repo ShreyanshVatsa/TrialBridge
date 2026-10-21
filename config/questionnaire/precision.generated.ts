@@ -3,7 +3,7 @@ import type { FactFamily } from "@/lib/ingest/eligibility-facts";
 
 export interface FamilyPrecision { labeled: number; correct: number; precision: number; passes: boolean; layer?: "rules" | "llm" }
 
-/** Precision per v2 fact family: layer "rules" = provisional hand labels (held-out round); layer "llm" = verified-LLM layer on the blind gold sets (AI-reader labels, not clinicians). */
+/** Precision per fact family: layer "rules" = provisional hand labels (held-out round); layer "llm" = verified-LLM layer on the blind gold sets (AI-reader labels, not clinicians). */
 export const FAMILY_PRECISION: Readonly<Partial<Record<FactFamily, FamilyPrecision>>> = {
   "autoimmune": {
     "labeled": 50,

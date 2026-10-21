@@ -27,29 +27,29 @@ export interface RankEntry {
 
 export type RankAnswers = Pick<IntakeAnswers, "cancerType" | "age" | "travelMiles" | "language" | "spread" | "treatments" | "biomarkers" | "pregnant" | "inAnotherTrial" | "questionnaire">;
 
-/** v2 questionnaire matching context: the catalog (and fact policy) that give answers their meaning. */
+/** Questionnaire matching context: the catalog (and fact policy) that give answers their meaning. */
 export interface MatchContext {
   catalog?: readonly QuestionDef[];
   policy?: FactPolicyMap;
 }
 
 /**
- * Pre-check for either intake, prepared once per search: the v2 questionnaire (catalog-driven, answers compiled a
- * single time, plus the phase preference) when a questionnaire state and catalog are present, else the v1
+ * Pre-check for either intake, prepared once per search: the questionnaire (catalog-driven, answers compiled a
+ * single time, plus the phase preference) when a questionnaire state and catalog are present, else the legacy
  * fixed-flow `precheck`. Also returns the definite-sex hard filter (null = no filter), read from the same
  * compiled answers.
  */
-export type MatchCard = Pick<TrialCard, "facts" | "phases"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>;
-export interface PrecheckResult {
+type MatchCard = Pick<TrialCard, "facts" | "phases"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>;
+interface PrecheckResult {
   notes: PrecheckNote[];
   phase: number;
   /** Structured subtype match against the trial's registered conditions: 1 match, -1 conflict, 0 neutral. */
   subtype: -1 | 0 | 1;
-  /** Directional criteria the answers say nothing about (see unknownCounter); undefined for the v1 intake. */
+  /** Directional criteria the answers say nothing about (see unknownCounter); undefined for the legacy intake. */
   unknowns?: number;
 }
 
-export function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { precheck: (card: MatchCard) => PrecheckResult; sex: "FEMALE" | "MALE" | null } {
+function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { precheck: (card: MatchCard) => PrecheckResult; sex: "FEMALE" | "MALE" | null } {
   const state = answers.questionnaire;
   if (state && ctx.catalog) {
     const compiled = compileState(state, ctx.catalog);
@@ -108,7 +108,7 @@ export function sexFilter(answers: RankAnswers, ctx: MatchContext = {}): "FEMALE
   return prepareMatching(answers, ctx).sex;
 }
 
-export interface RankInput extends MatchContext {
+interface RankInput extends MatchContext {
   entries: RankEntry[];
   answers: RankAnswers;
   /** User's ZIP centroid; null if unknown (distance filter is then skipped). */
@@ -168,7 +168,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
   const fusedIds = new Set(fused.map((f) => f.id));
   for (const id of [...ids].sort()) if (!fusedIds.has(id)) fused.push({ id, score: 0, ranks: rankings.map(() => null) });
 
-  // 4. Pre-check (v1 rules or the v2 catalog) + final score.
+  // 4. Pre-check (legacy rules or the questionnaire catalog) + final score.
   const ranked: RankedTrial[] = fused.map((f) => {
     const c = candidates.get(f.id) as RankEntry & { nearest: ReturnType<typeof nearestSite> };
     const { notes, phase, subtype, unknowns } = matching.precheck(c.card);
@@ -217,7 +217,7 @@ export function rankTrials(input: RankInput): SearchOutcome {
 }
 
 // ---------------------------------------------------------------------------------------------
-// v6 step 5: criteria tiers. Re-ranks results that rankTrials already ordered (that order is the retrieval rank).
+// Criteria tiers. Re-ranks results that rankTrials already ordered (that order is the retrieval rank).
 // ---------------------------------------------------------------------------------------------
 
 /** What the LLM judge returned, as rankByCriteria needs it. `real` = a real (non-mock) provider answered. */

@@ -1,5 +1,5 @@
 /**
- * v2 rule-layer fact families (QUESTIONNAIRE_SPEC §1.4): performance status, brain metastases,
+ * Rule-layer fact families (QUESTIONNAIRE_SPEC §1.4): performance status, brain metastases,
  * histology, lines of therapy, prior drug classes, measurable disease, relapsed/refractory, other
  * cancers, HIV, hepatitis, transplant, autoimmune disease, disease-named organ problems, and
  * group-specific status (castration, platinum, muscle-invasive, resectability, RAI, stage setting).
@@ -109,7 +109,7 @@ import type { CancerGroupId } from "@/config/cancer-groups";
 import type { DrugClassId } from "@/config/questionnaire/ids";
 import { isScopedParam, type CriterionSection, type FactKey, type FactParam, type FactValue } from "@/lib/types/trial";
 
-export interface V2Candidate {
+interface V2Candidate {
   key: FactKey;
   value: FactValue;
   param?: FactParam;
@@ -117,7 +117,7 @@ export interface V2Candidate {
   quote: string;
 }
 
-export interface ExtractContext {
+interface ExtractContext {
   /** The trial's cancer groups (histology patterns only run for their own groups). */
   groups: readonly CancerGroupId[];
   /** The criterion starts with a cohort/part header, so every clause in it is cohort-specific. */
@@ -149,7 +149,7 @@ export const FACT_FAMILIES = {
 } as const satisfies Record<string, readonly string[]>;
 export type FactFamily = keyof typeof FACT_FAMILIES;
 
-/** The family a fact key belongs to, or null for v1 keys. */
+/** The family a fact key belongs to, or null for legacy keys. */
 export function familyOf(key: string): FactFamily | null {
   for (const [fam, keys] of Object.entries(FACT_FAMILIES) as [FactFamily, readonly string[]][]) {
     for (const k of keys) if (k === key || (k.endsWith(":*") && key.startsWith(k.slice(0, -1)))) return fam;
@@ -976,7 +976,7 @@ function histologyFacts(section0: CriterionSection, seg: string, ctx: ExtractCon
   return out;
 }
 
-/** All v2 candidate facts in one clause of one criterion. Pure; exported for tests. */
+/** All family candidate facts in one clause of one criterion. Pure; exported for tests. */
 /** The clause (or its criterion's header) limits the rule to one cohort, part, arm or subgroup. */
 export function cohortSpecific(seg: string): boolean {
   return COHORT_PREFIX.test(seg) || /\(\s*[\w\s-]{1,25}\s+(?:cohort|arm|group)\s*\)/i.test(seg) || /\bbackfill\s+cohorts?\b|\bin the (?:dose[- ])?(?:expansion|escalation)\b|\b[Rr]egimens?\s+[A-Z]\d?\b/.test(seg) || /\bcohorts?\s+only\b|\b(?:dose[- ])?(?:expansion|escalation)\s+(?:cohorts?|parts?|phase)\b/i.test(seg) || /\b([Cc]ohorts?|[Pp]arts?|[Aa]rms?|[Mm]odules?|[Gg]roups?|[Ss]teps?|[Ee]scalation|[Ee]xpansion|[Bb]ackfill)\s+[A-Z0-9]{1,3}[a-z]?\b(?!\s*(cells?|years?|weeks?|months?|days?|%))/.test(seg) || /\b(additional|specific) (inclusion|exclusion|eligibility) criteria for\b|\bfor (participants|patients|subjects) (with|in|enrolled|receiving)\b|\b(dose[- ]escalation|dose[- ]expansion|backfill|phase 1[ab]?|phase 2)( cohort| part| portion)?\s*(only)?\s*[:)]/i.test(seg);

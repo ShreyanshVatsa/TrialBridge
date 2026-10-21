@@ -18,7 +18,7 @@ export { format };
 /** Every message key as a dot path, e.g. `"questionnaire.ui.whyAsk"`. A missing English key is a compile error. */
 export type MessageKey = Paths<typeof en>;
 /** Base of a plural group (`x.one` / `x.other` ...): pass with `{ count }` to `t`. */
-export type PluralKey = MessageKey extends infer K ? (K extends `${infer B}.other` ? B : never) : never;
+type PluralKey = MessageKey extends infer K ? (K extends `${infer B}.other` ? B : never) : never;
 
 /** UI languages = locale registry tags. A language is a BCP 47 tag string. */
 export type Language = LocaleTag;
@@ -28,7 +28,7 @@ export interface T {
   (key: MessageKey | PluralKey, vars?: Vars): string;
 }
 
-export interface UseT {
+interface UseT {
   t: T;
   lang: LocaleTag;
   dir: "ltr" | "rtl";
@@ -76,7 +76,7 @@ const listeners = new Set<() => void>();
 
 const fontLinks = new Set<FontPackId>();
 /** Inject the font pack stylesheet (same-origin, CSP-safe) only when a language that needs it is chosen. */
-export function ensureFontPack(pack: FontPackId | undefined): void {
+function ensureFontPack(pack: FontPackId | undefined): void {
   if (!pack || fontLinks.has(pack) || typeof document === "undefined") return;
   fontLinks.add(pack);
   const link = document.createElement("link");

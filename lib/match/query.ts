@@ -18,7 +18,7 @@ const TREATMENT_WORDS: Record<string, string> = {
  */
 export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" | "treatments" | "biomarkers" | "questionnaire">, catalog?: readonly QuestionDef[]): string {
   const parts: string[] = [groupText(a.cancerType)];
-  // v2: the chosen options' English query terms, in catalog order. Unknown / skip / prefer not add nothing.
+  // Questionnaire: the chosen options' English query terms, in catalog order. Unknown / skip / prefer not add nothing.
   if (a.questionnaire && catalog) return [...parts, ...queryTermsOf(compileState(a.questionnaire, catalog))].join(" ");
   if (a.spread === "yes") parts.push("Metastatic advanced stage IV disease.");
   else if (a.spread === "no") parts.push("Localized early stage disease.");

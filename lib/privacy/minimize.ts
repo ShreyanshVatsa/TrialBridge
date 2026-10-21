@@ -50,7 +50,7 @@ function oneOf<T extends string>(v: AnswerValue | undefined, allowed: readonly T
 }
 
 /**
- * The coarse v2 fields (QUESTIONNAIRE_SPEC §4.2) and the v7 health-history categories, copied one by one from the
+ * The coarse fields (QUESTIONNAIRE_SPEC §4.2) and the health-history categories, copied one by one from the
  * questionnaire state. Nothing else in the state (phase preference, deferred and find-out lists) is ever read here.
  */
 function v2Fields(state: QuestionnaireState): Partial<MinimizedProfile> {
@@ -79,7 +79,7 @@ function v2Fields(state: QuestionnaireState): Partial<MinimizedProfile> {
   return { ...out, ...historyFields(state) };
 }
 
-/** v7 health-history categories (owner decision 2026-10-19): closed option ids only, unanswered ones omitted. */
+/** Health-history categories: closed option ids only, unanswered ones omitted. */
 function historyFields(state: QuestionnaireState): Partial<MinimizedProfile> {
   // A question left for the doctor is never sent, even if an earlier answer is still stored.
   const a = Object.fromEntries(Object.entries(state.answers).filter(([k]) => !state.deferred.includes(k as (typeof state.deferred)[number])));

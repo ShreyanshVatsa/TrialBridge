@@ -124,7 +124,7 @@ export function renderTrialBlock(t: MatchPromptTrial): string {
   return lines.join("\n");
 }
 
-export function renderAnswers(answers: readonly NumberedAnswer[]): string {
+function renderAnswers(answers: readonly NumberedAnswer[]): string {
   return answers.map((a) => `${a.id}. ${a.text}`).join("\n");
 }
 

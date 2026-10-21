@@ -1,7 +1,7 @@
 /**
- * Criterion judge (v6 step 4): the LLM labels, one by one, the criterion items the deterministic resolver left
+ * Criterion judge: the LLM labels, one by one, the criterion items the deterministic resolver left
  * "unknown" for the top N trials. Prompt: prompts/analyze-v3.ts (TrialGPT port). Output: TrialCriteriaLabels with
- * source "llm" (or "default" for items the model skipped). v1/v2 (/api/analyze) stay as they are for fallback.
+ * source "llm" (or "default" for items the model skipped). The explanation endpoint (/api/analyze) stays as it is for fallback.
  *
  * Same guard rails as /api/analyze: same-origin, Turnstile, per-IP rate limit, daily per-provider budget reserved
  * before every request, circuit breaker and failover (Groq, then Cerebras when its key and data terms are set,
@@ -44,7 +44,7 @@ export interface JudgeDeps {
   deadlineMs?: number;
 }
 
-export type JudgeOutcome =
+type JudgeOutcome =
   | { ok: true; provider: string | null; results: TrialCriteriaLabels[]; cachedIds: string[] }
   | { ok: false; reason: Extract<FailoverResult<unknown>, { ok: false }>["reason"]; results: TrialCriteriaLabels[]; cachedIds: string[] };
 
@@ -56,7 +56,7 @@ export async function judgeCacheKey(trialId: string, criteriaVersion: number, pr
   return `mj:${await sha256Hex(stableStringify({ trialId, criteriaVersion, promptVersion, profile, contentHash }))}`;
 }
 
-export const criteriaContentHash = async (items: readonly SplitCriterion[]) => (await sha256Hex(stableStringify(items))).slice(0, 16);
+const criteriaContentHash = async (items: readonly SplitCriterion[]) => (await sha256Hex(stableStringify(items))).slice(0, 16);
 
 /** Prompt characters one trial chunk costs. */
 export const chunkChars = (t: MatchPromptTrial) => renderTrialBlock(t).length + 2;

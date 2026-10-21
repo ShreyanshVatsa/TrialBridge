@@ -9,7 +9,7 @@ import { useKeyT } from "./t";
 const TIERS: Tier[] = ["essential", "helpful", "deep"];
 
 /** "N possible trials near you · M with no likely conflicts", debounced 500 ms, announced politely only on change. */
-export function LiveCounter({ count, className }: { count: LiveCount | null; className?: string }) {
+function LiveCounter({ count, className }: { count: LiveCount | null; className?: string }) {
   const t = useKeyT();
   const text = count
     ? `${t("questionnaire.ui.counter", { count: count.total })}${count.noConflict !== count.total ? ` · ${t("questionnaire.ui.counterNoConflict", { count: count.noConflict })}` : ""}`

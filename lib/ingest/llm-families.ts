@@ -1,6 +1,6 @@
 /**
- * High-precision LLM layer for v2 fact families (lines, prior drugs, stage, relapsed/refractory, other
- * cancer, hepatitis, v2 biomarkers, histology, autoimmune). Pure helpers; the runner is scripts/ingest/llm.ts.
+ * High-precision LLM layer for the catalog fact families (lines, prior drugs, stage, relapsed/refractory, other
+ * cancer, hepatitis, catalog biomarkers, histology, autoimmune). Pure helpers; the runner is scripts/ingest/llm.ts.
  *
  * Only PUBLIC ClinicalTrials.gov trial text (registered conditions + numbered criteria) is ever sent to the
  * model. No patient data exists at ingestion time and none of these functions accept any.
@@ -100,7 +100,7 @@ export function histologyIdsIn(text: string, groups: readonly CancerGroupId[]): 
   return ids.includes("nsclc") ? ids.filter((i) => i !== "lung_squamous") : ids;
 }
 
-/** v2 marker ids named in the trial's criteria. */
+/** Catalog marker ids named in the trial's criteria. */
 export function markerIdsIn(text: string): string[] {
   return V2_MARKERS.filter((id) => MARKER_RE.get(id)?.test(text));
 }
@@ -276,7 +276,7 @@ export function decisionProbs(content: string, tokens: readonly { token: string;
 // -------------------------------------------------------------------------------------------------
 // Verification
 // -------------------------------------------------------------------------------------------------
-export interface VerifyOptions {
+interface VerifyOptions {
   /**
    * Minimum confidence to commit (chosen on the dev split). Confidence = the token probability of the fact's
    * decisive choices (value, scope, param, time) from logprobs; the model's self-rated number was always ~0.95

@@ -1,5 +1,5 @@
 /**
- * Small contract-shaped test catalog for the WP2 engine and matching tests (QUESTIONNAIRE_SPEC §1.2/§1.3).
+ * Small contract-shaped test catalog for the engine and matching tests (QUESTIONNAIRE_SPEC §1.2/§1.3).
  * It encodes the v1 pre-check semantics (spread, treatments, biomarkers, pregnancy, concurrent trial) as
  * catalog data, so evaluateAnswers can be checked against the legacy precheck, plus the new parameterized
  * rules (ECOG, lines, brain mets carve-out, histology, HIV carve-out, sex hard filter).

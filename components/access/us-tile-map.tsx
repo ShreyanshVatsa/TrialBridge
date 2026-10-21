@@ -36,7 +36,7 @@ export const STATE_NAMES: Record<string, string> = {
 /** Sequential ramp (light -> dark). Text on the two darkest steps is white, otherwise ink (AA contrast on every step). */
 const RAMP = ["#ece6ff", "#cfc2ff", "#a68ff2", "#6544d0", "#36228f"] as const;
 
-export interface StateRate {
+interface StateRate {
   state: string;
   trials: number;
   count: number;

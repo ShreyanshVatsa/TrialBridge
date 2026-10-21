@@ -4,7 +4,7 @@ import type { Fact } from "@/lib/types/trial";
  * Local LLM eligibility-fact layer: merging cached LLM facts with the rule layer, and the cache key.
  * The prompt, output parsing and quote checks live in scripts/ingest/llm.ts.
  */
-export const LLM_PROMPT_VERSION = "facts-v1";
+const LLM_PROMPT_VERSION = "facts-v1";
 
 /**
  * Merge rule and LLM layers. Same key + same value: keep the rule fact (adds LLM confidence).

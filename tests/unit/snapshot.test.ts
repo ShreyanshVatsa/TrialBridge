@@ -35,7 +35,7 @@ describe("snapshot helpers", () => {
   it("names new snapshot directories by UTC time", () => {
     expect(newSnapshotDir(new Date("2026-10-09T21:05:07.123Z"))).toBe(path.join("data/cache/snapshots", "20261009-210507"));
   });
-  it("reads page hashes, infers fetchedAt for pre-v5 snapshots and resolves the newest snapshot", () => {
+  it("reads page hashes, infers fetchedAt for older snapshots and resolves the newest snapshot", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "tb-snap-"));
     const legacy = path.join(root, "legacy");
     mkdirSync(legacy);

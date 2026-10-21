@@ -1,5 +1,5 @@
 /**
- * v7: replay every cached judge completion (data/cache/matching-llm) through the production parser.
+ * Replay every cached judge completion (data/cache/matching-llm) through the production parser.
  * The request bodies are not cached (only their hash), so this checks the parse step only: a completion is "ok"
  * when parseMatchJson accepts it and it names at least one trial with at least one item.
  *

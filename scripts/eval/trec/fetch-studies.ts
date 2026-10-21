@@ -22,7 +22,7 @@ const BATCH_SIZE = 150; // ids per request; keeps the URL under ~3 KB
 
 export interface StudiesIndex {
   fetchedAt: string;
-  /** v7: when judged ids missing from the earlier batches (TREC 2023) were fetched into "extra" batches. */
+  /** When judged ids missing from the earlier batches (TREC 2023) were fetched into "extra" batches. */
   extraFetchedAt?: string;
   fields: string;
   batchSize: number;
@@ -92,7 +92,7 @@ async function main(): Promise<void> {
   const ids = judgedIds();
   console.log(`${ids.length} judged NCT ids for the cancer topics; ${Math.ceil(ids.length / BATCH_SIZE)} batches of ${BATCH_SIZE}`);
 
-  // v7: batches already fetched stay as they are (the 2021/2022 pools keep their 2026-10-09 records); judged ids
+  // Batches already fetched stay as they are (the 2021/2022 pools keep their 2026-10-09 records); judged ids
   // not in them (TREC 2023) go to new "extra" batches. --refresh refetches everything.
   const indexFile = path.join(TREC_STUDIES_DIR, "index.json");
   const prevIndex = !refresh && existsSync(indexFile) ? (JSON.parse(readFileSync(indexFile, "utf8")) as StudiesIndex) : null;

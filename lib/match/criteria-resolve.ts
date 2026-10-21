@@ -1,9 +1,9 @@
 /**
- * Deterministic per-criterion resolver (v6 step 3). Each split criterion item (lib/ingest/criteria-split.ts) is run
+ * Deterministic per-criterion resolver. Each split criterion item (lib/ingest/criteria-split.ts) is run
  * through the rule fact extractor ON ITS OWN, and the facts are compared with the patient's questionnaire answers:
  *   inclusion -> "met" | "not_met" | "unknown";  exclusion -> "excluded" | "not_excluded" | "unknown".
  * Only these facts settle an item: age, sex, cancer group/subtype (histology), ECOG, prior lines / treated status,
- * brain metastases, measurable disease, biomarkers, other malignancy and (v7) the health-history answers: HIV,
+ * brain metastases, measurable disease, biomarkers, other malignancy and the health-history answers: HIV,
  * hepatitis B/C, organ transplant, donor stem cell transplant, autoimmune disease, kidney/liver/heart disease,
  * pregnancy and another treatment trial (exclusion items only). Everything else stays "unknown" for the LLM judge, and so does:
  *  - any fact whose question was answered "don't know", skipped, deferred or never asked (never "not_met");
@@ -48,7 +48,7 @@ export interface ResolverProfile {
   brainMets?: "none" | "treated_stable" | "active";
   measurable?: boolean;
   otherCancer?: "no" | "over_2y" | "recent";
-  // v7 health history (definite answers only).
+  // Health history (definite answers only).
   hiv?: "no" | "controlled" | "other";
   hepatitis?: "no" | "hep_b" | "hep_c";
   transplant?: "none" | "organ" | "allo" | "auto";
@@ -231,13 +231,13 @@ interface Checked {
 }
 
 /**
- * v7: health-history fact keys, settled from the deep-dive answers, on exclusion items only: inclusion items naming
+ * Health-history fact keys, settled from the deep-dive answers, on exclusion items only: inclusion items naming
  * them are conditional ("HIV-infected participants must have controlled HIV", "the donor must be HIV negative").
  * "metastatic" is not here: the rule extractor also fires on brain-metastasis and radiosurgery wording.
  */
 const HISTORY_KEYS = ["hiv", "hepatitis_b", "hepatitis_c", "organ_transplant", "allo_sct", "autoimmune", "kidney_disease", "liver_disease", "heart_disease", "pregnancy", "concurrent_trial"] as const;
 const isHistoryKey = (k: string) => (HISTORY_KEYS as readonly string[]).includes(k);
-/** Fact keys the resolver may settle (spec STEP 3, plus the v7 health-history keys). */
+/** Fact keys the resolver may settle (docs/dev/QUESTIONNAIRE_SPEC.md §3, plus the health-history keys). */
 const ALLOWED_KEYS = new Set<string>(["ecog_max", "min_prior_lines", "max_prior_lines", "previously_treated", "newly_diagnosed", "brain_mets", "measurable_disease", "other_malignancy", ...HISTORY_KEYS]);
 const allowedKey = (k: string) => ALLOWED_KEYS.has(k) || k.startsWith("biomarker:") || k.startsWith("histology:");
 
@@ -293,7 +293,7 @@ const inRange = (r: Range | undefined, ok: (lo: number, hi: number) => boolean |
 };
 
 /** Verdict of one extracted fact against the profile. Scoped (time-window) params are always open. */
-export function checkFact(f: { key: string; value: FactValue; param?: FactParam }, p: ResolverProfile): Verdict {
+function checkFact(f: { key: string; value: FactValue; param?: FactParam }, p: ResolverProfile): Verdict {
   if (f.value === "mentioned" || isScopedParam(f.param)) return "open";
   const n = typeof f.param === "number" ? f.param : undefined;
   switch (f.key) {
@@ -469,7 +469,7 @@ const BENIGN_OR = [
   /\b(?:tissue|blood|plasma|serum|archival|fresh|liquid)\s+(?:biopsy\s+)?(?:or|and\/or)\s+(?:tissue|blood|plasma|serum|archival|fresh|liquid)\b/gi,
   /\b(?:locally advanced|advanced|metastatic|unresectable)\s+(?:or|and\/or)\s+(?:metastatic|unresectable|recurrent)\b/gi,
   /\b(?:surgical resection|surgery|resection)\s+(?:or|and\/or)\s+(?:radiation(?: therapy)?|radiotherapy)\b/gi,
-  // v7: one excluding condition named two ways, or two infections both settled by one answer.
+  // One excluding condition named two ways, or two infections both settled by one answer.
   /\b(?:pregnant|pregnancy)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:(?:are|is)\s+)?(?:breast-?\s?feeding|lactating|nursing)\b/gi,
   /\b(?:hepatitis\s*B|HBV)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:hepatitis\s*)?(?:C|HCV)\b/gi,
   /\b(?:FISH|IHC|NGS|PCR|ctDNA|cfDNA|CISH)\b[^.;]{0,60}?\b(?:or|and\/or)\s*(?:\(\d\)\s*)?(?:a |an |the )?(?:fluorescence|immuno\w*|next|tissue|circulating|cell-free|cfDNA|ctDNA|FISH|IHC|NGS|PCR|CISH|blood|plasma|polymerase|sequencing|in situ)/gi,
@@ -488,7 +488,7 @@ const FILLER = new Set(
 const TOKEN = /[A-Za-z][A-Za-z0-9-]*/g;
 
 /**
- * v7: words that name a health-history fact. They count as explained only when that fact was checked, so
+ * Words that name a health-history fact. They count as explained only when that fact was checked, so
  * "adequate liver function" (a lab rule) is never read as settled by the organ answer.
  */
 const HISTORY_WORDS: Record<string, string> = {
@@ -540,12 +540,12 @@ export function normalizeMarkers(text: string): string {
 // ---------------------------------------------------------------------------------------------
 
 /** A resolver label. `questions` = questionnaire ids the verdict rests on (the LLM judge numbers answers A1..An). */
-export interface ResolvedLabel extends CriterionLabel {
+interface ResolvedLabel extends CriterionLabel {
   source: "rule" | "default";
   questions?: string[];
 }
 
-export interface ResolveContext {
+interface ResolveContext {
   groups: readonly CancerGroupId[];
   conditions?: readonly string[];
   /** Question id -> numbered answer id ("A3"), when the caller numbers answers; fills `answerIds`. */
@@ -595,7 +595,7 @@ const TREATED_KEYS = new Set(["previously_treated", "newly_diagnosed", "min_prio
 const UNTREATED_NON_CANCER = /\buntreated\s+(?:\w+\s+){0,2}(?:brain|cns|metasta\w*|lesions?|infections?|spinal|cord compression|leptomeningeal|hypertension|thyroid|disease of)\b/i;
 const CARVE_OUT = /\b(?:unless|except|other than|with the exception of|permitted|allowed|acceptable|may (?:be|have)|eligible if|are eligible)\b/i;
 /**
- * v7: a rule addressed to a subgroup ("ER/PR+ patients must be refractory to...", "Patients with brain metastases
+ * A rule addressed to a subgroup ("ER/PR+ patients must be refractory to...", "Patients with brain metastases
  * must be stable..."): it sets a condition for that subgroup, so the subgroup's own fact never fails the patient
  * (TREC 2021-61, NCT01677455: an HR-negative patient was excluded by an ER/PR+ condition).
  */
@@ -618,14 +618,14 @@ function markerList(text: string): boolean {
 
 /**
  * MSI status words. MSI-H, MSI-high and dMMR name the positive state of our "MSI-H / dMMR" marker on their own; MSS,
- * microsatellite stable, pMMR and MSI-low name the negative state, which the shared extractor does not read (docs/dev/BUGS.md,
- * step 9: an MSS trial ranked #1 for an MSI-high answer). Negative wording is matched first and removed, so
+ * microsatellite stable, pMMR and MSI-low name the negative state, which the shared extractor does not read (seen as an MSS
+ * trial ranked #1 for an MSI-high answer). Negative wording is matched first and removed, so
  * "non-MSI-H" and "not MSI-H" read as negative.
  */
 const MSI_NEG = /\b(?:non-?|not\s+)(?:MSI-?H(?:igh)?|dMMR)\b|\bMSS\b|\bmicrosatellite[- ]stab(?:le|ility)\b|\bpMMR\b|\bmismatch[- ]repair[- ]proficien\w*|\bproficient\s+mismatch[- ]repair\b|\bMMR[- ]proficien\w*|\bMSI-?L(?:ow)?\b/gi;
 const MSI_POS = /\bMSI-?H(?:igh)?\b|\bmicrosatellite[- ]instability[- ]high\b|\bhigh(?:[- ]level)?\s+microsatellite[- ]instability\b|\bdMMR\b|\bmismatch[- ]repair[- ]deficien\w*|\bdeficient\s+mismatch[- ]repair\b|\bMMR[- ]deficien\w*/i;
 /** "required" / "excluded" for biomarker:MSI-H from MSI status words; null when absent, mixed, optional or qualified. */
-export function msiDirection(section: "inclusion" | "exclusion", text: string): "required" | "excluded" | null {
+function msiDirection(section: "inclusion" | "exclusion", text: string): "required" | "excluded" | null {
   const neg = MSI_NEG.test(text);
   MSI_NEG.lastIndex = 0;
   const pos = MSI_POS.test(text.replace(MSI_NEG, " "));
@@ -683,7 +683,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
   // Positive labels: every directional fact is one we checked and fits, nothing else is asked, no drug is named.
   const allOk = checks.every((c) => c.verdict === "ok");
   const mentionedAllowed = facts.some((f) => f.value === "mentioned" && allowedKey(f.key));
-  // v7: health-history items allow one unexplained word ("significant", "uncontrolled"); an item ending in ":"
+  // Health-history items allow one unexplained word ("significant", "uncontrolled"); an item ending in ":"
   // introduces a list we do not see, so it never gets a positive label.
   const maxResidual = checks.some((c) => c.key === "cancer_type") ? 0 : checks.some((c) => isHistoryKey(c.key)) ? 1 : MAX_RESIDUAL;
   if (allOk && !/:\s*$/.test(text) && outside.length === 0 && !mentionedAllowed && !carveOut && !mentionsDrug(text) && residualWords(text, p, checks.map((c) => c.key)).length <= maxResidual) {

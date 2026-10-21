@@ -3,7 +3,7 @@ import type { Env } from "./env";
 import { isProduction } from "./env";
 
 /** Max accepted JSON body size for AI endpoints. */
-export const MAX_BODY_BYTES = 16 * 1024;
+const MAX_BODY_BYTES = 16 * 1024;
 
 const API_HEADERS: Record<string, string> = {
   "Content-Type": "application/json; charset=utf-8",

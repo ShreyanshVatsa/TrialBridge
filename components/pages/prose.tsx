@@ -6,7 +6,7 @@ import { useMessages } from "@/components/i18n";
 import { PageHead } from "@/components/site/page-head";
 import { SectionRail } from "@/components/site/section-rail";
 
-export interface ProseSection {
+interface ProseSection {
   readonly title: string;
   readonly body: readonly string[];
   readonly items: readonly string[];
@@ -49,7 +49,7 @@ export function ProseBlock({ id, n, title, children }: { id: string; n: number; 
 }
 
 /** Bulleted list with a short violet rule as the marker. */
-export function RuleList({ items }: { items: readonly string[] }) {
+function RuleList({ items }: { items: readonly string[] }) {
   return (
     <ul className="space-y-3 pt-1">
       {items.map((it) => (

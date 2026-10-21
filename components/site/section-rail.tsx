@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "@/components/landing/motion";
 import { cn } from "@/lib/utils";
 
-export interface RailItem {
+interface RailItem {
   id: string;
   label: string;
 }

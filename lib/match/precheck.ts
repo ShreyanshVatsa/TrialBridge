@@ -28,9 +28,9 @@ const TREATMENT_FACTS: Record<string, Exclude<Treatment, "none" | "not_sure">> =
  * "prefer not to say" never penalize. "mentioned" facts (direction unknown) and facts where the
  * rule and LLM layers disagree (needsReview) are ignored.
  */
-export interface PrecheckAnswers {
+interface PrecheckAnswers {
   spread: IntakeAnswers["spread"];
-  /** v1 treatments; the AI-side profile may also list hormone_therapy / stem_cell_transplant (no v1 facts). */
+  /** Legacy treatment list; the AI-side profile may also list hormone_therapy / stem_cell_transplant (no rule facts for those). */
   treatments: readonly string[];
   biomarkers: IntakeAnswers["biomarkers"];
   pregnant: IntakeAnswers["pregnant"];
@@ -87,7 +87,7 @@ export function precheck(answers: PrecheckAnswers, facts: readonly Fact[]): Prec
 }
 
 /**
- * Catalog-driven pre-check (v2 questionnaire, QUESTIONNAIRE_SPEC §3.1). Each answered question's chosen
+ * Catalog-driven pre-check (QUESTIONNAIRE_SPEC §3.1). Each answered question's chosen
  * option(s) carry FactRules; a trial fact becomes a conflict if any answer conflicts with it, else a support
  * if any answer supports it. Non-responses (unknown, skip, prefer not, deferred, not tested) compile to no
  * rules, so they never create notes. "mentioned" and needsReview facts are ignored, and the fact policy

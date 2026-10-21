@@ -126,7 +126,7 @@ function invert(r: FactRelation): FactRelation {
 }
 
 const BIOMARKER_LABEL = new Map(BIOMARKERS.map((b) => [b.id as string, b.label]));
-/** Biomarker grid semantics (same as the v1 pre-check): positive => required supports, excluded conflicts;
+/** Biomarker grid semantics (same as the legacy pre-check): positive => required supports, excluded conflicts;
  *  negative => required conflicts. "not_tested" / "unknown" => nothing. */
 const BIOMARKER_RULES: Record<"positive" | "negative", Omit<FactRule, "fact">> = {
   positive: { whenRequired: "support", whenExcluded: "conflict" },

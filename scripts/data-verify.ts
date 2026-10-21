@@ -3,7 +3,7 @@
  *  - every pinned embedding model file is present with the pinned sha256;
  *  - data/data-lock.json parses, its snapshot pages exist with the recorded hashes, and its query/field list match the code;
  *  - when public/data holds national data, its manifest's dataVersion equals the lock's;
- *  - v7: the D1 seed (data/build/criteria.sql) carries the same dataVersion as public/data and the current
+ *  - the D1 seed (data/build/criteria.sql) carries the same dataVersion as public/data and the current
  *    CRITERIA_VERSION on every row, since /api/match silently skips trials whose criteriaVersion differs.
  * Exit 1 on any problem (prints each one). Used by CI and the refresh workflow.
  */

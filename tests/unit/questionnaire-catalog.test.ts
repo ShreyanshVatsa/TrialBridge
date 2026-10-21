@@ -81,7 +81,7 @@ describe("precision gate", () => {
     expect(gate({ ...base, enabled: true, disabledReason: undefined, families: [] } as QuestionDef).enabled).toBe(true);
     expect(gate({ ...base, enabled: true, disabledReason: undefined, legacyFacts: true } as QuestionDef).enabled).toBe(true);
   });
-  it("FACT_POLICY penalizes only gated families; v1 keys below the gate keep a half-weight soft penalty (v7)", () => {
+  it("FACT_POLICY penalizes only gated families; legacy keys below the gate keep a half-weight soft penalty", () => {
     expect(factPolicy("metastatic").belowGate === true).toBe(V1_KEY_PRECISION.metastatic?.passes !== true);
     expect(factPolicy("prior_radiation")).toEqual({ penalize: true, weight: 0.5, belowGate: true });
     expect(factPolicy("pregnancy")).toEqual({ penalize: true, weight: 1 });

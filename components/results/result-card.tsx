@@ -84,7 +84,7 @@ function ContactLine({ trial }: { trial: RankedTrial }) {
   );
 }
 
-/** `match` (v6 step 5 per-criterion score + labels) is optional: without it the card renders as before. */
+/** `match` (per-criterion score + labels) is optional: without it the card renders as before. */
 export function ResultCard({ trial, index, match }: { trial: RankedTrial; index: number; match?: TrialMatchView }) {
   const m = useMessages();
   const { card, analysis, nearest, precheck } = trial;
@@ -98,14 +98,14 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
     ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_not_met"))
     : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref }));
   const needsDoctor: Point[] = analysis ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "needs_doctor")) : [];
-  // Tier B: the requirement that may not fit is shown once, in its own note. The older v5 wording (fit chip,
+  // Tier B: the requirement that may not fit is shown once, in its own note. The older wording (fit chip,
   // summary) and lists would contradict it or repeat it, so they give way.
   const tierB = match?.score.tier === "B";
   const failTexts = tierB
     ? match.score.hardFailures.map((f) => card.criteria?.find((c) => c.id === f.id)?.text).filter((t): t is string => Boolean(t)).map(norm)
     : [];
   const keep = (p: Point) => !sameRequirement(p.quote, failTexts);
-  // Tier A: the checklist and the "nothing we found rules you out" line say no requirement clearly fails, so a v5
+  // Tier A: the checklist and the "nothing we found rules you out" line say no requirement clearly fails, so a
   // pre-check conflict (a rule the checklist could not settle) is shown as something to check, not as a rule-out.
   const lists = tierB
     ? { why: why.filter(keep), ruleOut: ruleOut.filter(keep), needsDoctor: needsDoctor.filter(keep) }

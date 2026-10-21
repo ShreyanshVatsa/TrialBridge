@@ -1,7 +1,7 @@
 /**
  * Engine adapter for the questionnaire UI (contracts C1 + C3). Components import engine and catalog functions
- * only from here. The engine is lib/questionnaire (WP2); the catalog, find-out items and fact policy come from
- * config/questionnaire (WP1) via ./catalog-source. This file only binds them (policy and items are passed in).
+ * only from here. The engine is lib/questionnaire; the catalog, find-out items and fact policy come from
+ * config/questionnaire via ./catalog-source. This file only binds them (policy and items are passed in).
  */
 import type { CancerGroupId } from "@/config/cancer-groups";
 import * as engine from "@/lib/questionnaire/engine";

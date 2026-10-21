@@ -42,7 +42,7 @@ export function subtypeProfile(compiled: readonly CompiledAnswer[]): SubtypeProf
 const tagCache = new Map<string, ReadonlySet<string>>();
 
 /** Histology ids a trial's registered conditions and titles name, for a cancer group. Cached per trial text. */
-export function trialHistologies(card: Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): ReadonlySet<string> {
+function trialHistologies(card: Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): ReadonlySet<string> {
   const text = [...(card.conditions ?? []), card.title ?? "", card.officialTitle ?? ""].join(" ; ");
   const cacheKey = `${group}|${text}`;
   const hit = tagCache.get(cacheKey);

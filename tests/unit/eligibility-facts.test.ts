@@ -354,7 +354,7 @@ describe("extractRuleFacts with v2 families", () => {
   });
 });
 
-describe("rules v4 precision guards", () => {
+describe("precision guards", () => {
   it("lines: ceilings, alternatives, subgroups and class-specific counts stay mentioned", () => {
     expect(inc("Only 1 prior line of systemic therapy is allowed").min_prior_lines).toBeUndefined();
     expect(inc("Only 1 prior line of systemic therapy is allowed").max_prior_lines).toBe("required(1)");

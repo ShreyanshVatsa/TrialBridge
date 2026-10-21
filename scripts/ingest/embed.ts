@@ -3,7 +3,7 @@
  * (identical weights to the browser). Results are cached on disk by key
  * `<id>|sha1(text)|<model>|<dtype>`, so a vector is reused only while the embedded text itself is unchanged.
  *
- * Pre-v5 caches were keyed `<id>|<lastUpdated>|<model>`; `legacyKey` lets a caller adopt such an entry. Adopted
+ * Older caches were keyed `<id>|<lastUpdated>|<model>`; `legacyKey` lets a caller adopt such an entry. Adopted
  * entries are spot-checked by re-embedding a sample: if any differs, the whole legacy set is re-embedded.
  */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -25,7 +25,7 @@ export const embeddingKey = (id: string, text: string, model: string = EMBEDDING
 export interface EmbedItem {
   key: string;
   text: string;
-  /** Pre-v5 cache key to adopt when `key` is missing. */
+  /** Older cache key to adopt when `key` is missing. */
   legacyKey?: string;
 }
 

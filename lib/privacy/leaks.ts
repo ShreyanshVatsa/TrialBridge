@@ -4,7 +4,7 @@
  */
 
 /**
- * Keys that must never appear anywhere in a request body (raw questionnaire ids and v1 intake names). v7: the
+ * Keys that must never appear anywhere in a request body (raw questionnaire ids and legacy intake names). The
  * health-history answers may be sent, but only under their minimized names (hivStatus, organProblems, ...), so the
  * raw ids below still must not appear.
  */

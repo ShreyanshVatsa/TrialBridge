@@ -3,7 +3,7 @@ import { STATE_CODES } from "@/lib/ingest/parse";
 import type { AccessData, AccessSite, CountsTuple } from "@/lib/types/access";
 import type { Site, TrialCard } from "@/lib/types/trial";
 
-export const MIN_SITE_TRIALS = 5;
+const MIN_SITE_TRIALS = 5;
 
 const zero = (): CountsTuple => [0, 0, 0, 0, 0];
 

@@ -16,7 +16,7 @@ export function passesGroup(card: Pick<TrialCard, "groups"> & Partial<Pick<Trial
  * titles name the patient's group (e.g. "Pleural Effusion, Malignant" for lung). Trials with any group tag are not
  * second-guessed here. Found on the TREC subset, where 37 judged-eligible mesothelioma trials sat in "other".
  */
-export function untaggedNamesGroup(card: Pick<TrialCard, "groups"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): boolean {
+function untaggedNamesGroup(card: Pick<TrialCard, "groups"> & Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): boolean {
   if (card.groups.length !== 1 || card.groups[0] !== "other" || group === "solid-tumors") return false;
   const text = [...(card.conditions ?? []), card.title ?? "", card.officialTitle ?? ""].join(" ; ");
   return getCancerGroup(group).text.some((re) => re.test(text));

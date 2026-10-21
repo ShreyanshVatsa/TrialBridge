@@ -200,7 +200,7 @@ test.describe("adaptive questionnaire", () => {
     const allowed = [
       "v", "cancerType", "ageBracket", "spread", "treatments", "biomarkers", "pregnant", "concurrentTrial", "language",
       "subtype", "stageCategory", "diseaseStatus", "priorLines", "activityBand", "brainMets", "groupStatus", "priorDrugClasses",
-      // v7: coarse health-history categories (closed enums) may be sent for the criterion judge.
+      // Coarse health-history categories (closed enums) may be sent for the criterion judge.
       "sexListed", "measurableDisease", "otherCancer", "hivStatus", "hepatitisStatus", "transplantType", "autoimmuneStatus", "organProblems",
     ];
     const browserOnly = ["zip", "age", "travel", "travelMiles", "sex", "hiv", "hepatitis", "transplant", "autoimmune", "organ_problems", "other_cancer", "measurable", "phase_pref", "deferred", "questionnaire", "answers", "history", "findOut"];

@@ -13,14 +13,14 @@ import { parseAskOutput, verifyCitations } from "./ai/ask-output";
 import type { AnalyzeDeps } from "./analyze";
 
 /** Q&A answers are cached for 30 days (hash keys only; questions are never stored in plain text). */
-export const ASK_TTL_SECONDS = 30 * 86_400;
+const ASK_TTL_SECONDS = 30 * 86_400;
 /**
  * Server-side backstop per (IP hash, trial, day). The UI enforces 10 questions per trial per
  * session; this catches clients that bypass it.
  */
-export const ASK_DAILY_PER_TRIAL = 20;
+const ASK_DAILY_PER_TRIAL = 20;
 
-export type AskDeps = AnalyzeDeps;
+type AskDeps = AnalyzeDeps;
 
 /** Lowercase, collapse whitespace, strip trailing punctuation: "Who can JOIN?? " -> "who can join". */
 export function normalizeQuestion(q: string): string {

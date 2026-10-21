@@ -39,7 +39,7 @@ const LooseOutput = z.object({
   trials: z.array(z.object({ trialId: z.coerce.string(), items: z.array(z.unknown()).default([]) })),
 });
 
-export interface SentTrial {
+interface SentTrial {
   trialId: string;
   items: readonly SplitCriterion[];
 }
@@ -73,7 +73,7 @@ function cleanReason(raw: string | undefined): string | undefined {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
 /**
- * Collect trial answers from whatever shape came back. Seen on gpt-oss-120b (v7 replay of data/cache/matching-llm):
+ * Collect trial answers from whatever shape came back. Seen on gpt-oss-120b (replaying cached completions in data/cache/matching-llm):
  *  - the wrapper closed early and later trials follow it: [{"trials":[T1,T2]}, T3]
  *  - a trial written as loose tokens inside an array: "trialId", ":", "NCT…", "items", ":", [items]
  * Wrappers ({trials}) are flattened, objects with a trialId are taken as they are, and a token run is rebuilt

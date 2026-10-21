@@ -57,7 +57,6 @@ export const LOCALES: readonly LocaleDef[] = [
 ];
 
 export const DEFAULT_LOCALE = "en";
-export const LOCALE_TAGS: readonly LocaleTag[] = LOCALES.map((l) => l.tag);
 
 /** BCP 47 tags the AI may answer in. The prompt gets englishName from this registry, never raw user text. */
 export const AI_LANGUAGE_TAGS = LOCALES.filter((l) => l.aiSupported).map((l) => l.tag) as unknown as readonly [LocaleTag, ...LocaleTag[]];

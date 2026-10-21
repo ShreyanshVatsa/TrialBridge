@@ -255,7 +255,7 @@ function TrialBody({ card, sites, match }: { card: TrialCard; sites: Site[]; mat
 }
 
 /** Single dynamic trial page: reads ?id=NCT… and loads the trial from the static shards on the client. */
-/** `getMatch` (v6 step 5) looks up the score + labels for this trial from the current search; optional. */
+/** `getMatch` looks up the score + labels for this trial from the current search; optional. */
 export function TrialDetail({ getMatch }: { getMatch?: (nctId: string) => TrialMatchView | undefined } = {}) {
   const m = useMessages();
   const params = useSearchParams();

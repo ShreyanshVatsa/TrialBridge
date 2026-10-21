@@ -20,7 +20,7 @@ import type { CandidatePool, PoolTrial } from "./engine";
 import { travelMiles } from "./adapter";
 import { groupOf } from "./rules";
 
-export interface PoolEntry {
+interface PoolEntry {
   card: Pick<TrialCard, "id" | "groups" | "minAge" | "maxAge" | "sex" | "facts">;
   sites: Site[];
 }

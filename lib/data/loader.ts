@@ -26,7 +26,7 @@ import { sortSitesByDistance } from "@/lib/match/filters";
 
 export { sortSitesByDistance };
 
-export type DataLoadErrorCode = "network" | "not_found" | "invalid" | "timeout";
+type DataLoadErrorCode = "network" | "not_found" | "invalid" | "timeout";
 
 export class DataLoadError extends Error {
   constructor(
@@ -130,7 +130,11 @@ function abortable<T>(p: Promise<T>, signal?: AbortSignal): Promise<T> {
 }
 
 /** `opts` for the shared load: everything but the caller's signal. */
-const shared = ({ signal: _, ...rest }: FetchOptions): FetchOptions => rest;
+function shared(opts: FetchOptions): FetchOptions {
+  const { signal, ...rest } = opts;
+  void signal;
+  return rest;
+}
 
 /** Memoize promises; failed loads are evicted so they can be retried. */
 const cache = new Map<string, Promise<unknown>>();
@@ -196,7 +200,7 @@ export function refreshManifest(): Promise<Manifest> {
 }
 
 /** A loaded shard: cards, sites, serialized MiniSearch index, int8 embeddings (row-major, cards order). */
-export interface LoadedShard {
+interface LoadedShard {
   info: ShardInfo;
   cards: TrialCard[];
   sites: ShardSites;
@@ -237,7 +241,7 @@ export function loadShard(info: ShardInfo, shardBase: string, opts: FetchOptions
 }
 
 /** The cross-group lite index used for "Other / not sure". */
-export interface LoadedLiteShard {
+interface LoadedLiteShard {
   info: ShardInfo;
   cards: LiteCard[];
   /** NCT ID -> [lat, lon][] */

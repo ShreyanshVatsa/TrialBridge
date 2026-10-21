@@ -1,5 +1,5 @@
 /**
- * Matching policy per fact key (contract C1, QUESTIONNAIRE_SPEC §3.2, §7.3). A v2 fact family may
+ * Matching policy per fact key (contract C1, QUESTIONNAIRE_SPEC §3.2, §7.3). A fact family may
  * penalize (create conflicts) only when its hand-labeled precision is >= 85%; otherwise its facts are
  * support-only. v7: the v1 keys are measured too (held-out labels, eval/facts-labels-v3.json); a v1 key below the
  * gate keeps a half-weight penalty but never a hard failure (`belowGate`); one without labels keeps penalize, weight 1.
@@ -19,7 +19,7 @@ const FAMILY_WEIGHT: Partial<Record<FactFamily, number>> = {
   biomarker_v2: 1.2,
 };
 
-/** Does a v2 family pass the precision gate? */
+/** Does a family pass the precision gate? */
 export function familyPasses(family: string): boolean {
   return FAMILY_PRECISION[family as FactFamily]?.passes === true;
 }
@@ -35,13 +35,13 @@ function v1Policy(key: string): FactPolicy {
   const p = V1_KEY_PRECISION[key];
   if (!p || p.passes) return { penalize: true, weight: 1 };
   // Below the gate on held-out labels, yet removing the penalty lowered TREC 2021 dev nDCG@10 (baseline 0.484 ->
-  // 0.451): kept as a half-weight ranking signal that never makes a hard failure (docs/dev/DECISIONS.md, v7 step 7b).
+  // 0.451): kept as a half-weight ranking signal that never makes a hard failure (docs/dev/DECISIONS.md).
   return { penalize: true, weight: 0.5, belowGate: true };
 }
 
 /**
- * Keys: exact v1/v2 base keys, plus the wildcards "histology:*", "prior_drug:*" and "biomarker:*".
- * v1 biomarkers (HER2, EGFR, ...) are listed explicitly so the v2-marker family gate does not touch them.
+ * Keys: exact base keys, plus the wildcards "histology:*", "prior_drug:*" and "biomarker:*".
+ * The first biomarkers (HER2, EGFR, ...) are listed explicitly so the catalog-marker family gate does not touch them.
  */
 export const FACT_POLICY: Readonly<Record<string, FactPolicy>> = Object.freeze({
   ...Object.fromEntries(V1_KEYS.map((k) => [k, v1Policy(k)])),

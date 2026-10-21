@@ -16,7 +16,7 @@ export interface Counts {
   disability_exclusion: number;
 }
 export type BarrierMetric = "any" | BarrierType;
-export interface AccessFilters {
+interface AccessFilters {
   /** State postal code, e.g. "TX". */
   state?: string | null;
   group?: CancerGroupId | null;
@@ -88,7 +88,7 @@ export function getGroupRows(data: AccessData, state?: string | null): Array<{ g
     .sort((a, b) => b.trials - a.trials || a.group.localeCompare(b.group));
 }
 
-export interface SiteRow extends Counts {
+interface SiteRow extends Counts {
   facility: string;
   city: string;
   state: string;

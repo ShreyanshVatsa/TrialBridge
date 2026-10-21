@@ -232,7 +232,7 @@ describe("resolveCriteria", () => {
   });
 });
 
-describe("MSI status wording (docs/dev/BUGS.md step 9: MSS trial ranked #1 for an MSI-high answer, NCT07284849)", () => {
+describe("MSI status wording (an MSS trial once ranked #1 for an MSI-high answer, NCT07284849)", () => {
   const msiH = () => profile("colorectal", { biomarkers: { "MSI-H": "positive" } });
   const mss = () => profile("colorectal", { biomarkers: { "MSI-H": "negative" } });
   it("excludes an MSI-high patient on a bare 'MSI-H/dMMR' exclusion and keeps an MSS patient", () => {
@@ -253,7 +253,7 @@ describe("MSI status wording (docs/dev/BUGS.md step 9: MSS trial ranked #1 for a
   });
 });
 
-describe("pre-check ignores qualified biomarker wording (docs/dev/BUGS.md step 9, NCT07315113 'What might rule you out')", () => {
+describe("pre-check ignores qualified biomarker wording (NCT07315113 'What might rule you out')", () => {
   const fact = (quote: string, value: "excluded" | "required" = "excluded"): Fact => ({ key: "biomarker:EGFR", value, quote, ref: { section: "exclusion", n: 1 }, source: "rule" });
   const v1 = { spread: "yes" as const, treatments: ["chemotherapy"], biomarkers: { EGFR: "positive" as const }, pregnant: "no" as const, inAnotherTrial: "no" as const };
   const egfrPos = state("lung", { biomarkers: { EGFR: "positive" } });
@@ -289,7 +289,7 @@ describe("single-marker requirement with specimen / extent / method 'or' (QA: AL
   });
 });
 
-describe("v7 health-history answers (exclusion items only)", () => {
+describe("health-history answers (exclusion items only)", () => {
   const healthy = () => profile("lung", { age: 45, sex: "female", hiv: "no", hepatitis: "no", transplant: "none", autoimmune: "no", organ_problems: ["none"], pregnancy: "no", in_other_trial: "no" });
   const sick = () => profile("lung", { age: 45, sex: "female", hiv: "other", hepatitis: "hep_b", transplant: "organ", autoimmune: "yes_active", organ_problems: ["kidney", "heart"], pregnancy: "yes", in_other_trial: "yes" });
   it("settles plain exclusions both ways", () => {
@@ -342,7 +342,7 @@ describe("v7 health-history answers (exclusion items only)", () => {
   });
 });
 
-describe("v7: rules addressed to a subgroup", () => {
+describe("rules addressed to a subgroup", () => {
   it("do not fail the patient on the subgroup's own fact", () => {
     const hrNeg = profile("breast", { biomarkers: { HER2: "positive", HR: "negative" } });
     expect(lab("inclusion", "Documented HER2 and hormonal receptor status per protocol, ER/PR+ patients must be refractory to at least one prior hormonal treatment.", hrNeg)).toBe("unknown");

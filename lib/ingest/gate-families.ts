@@ -1,8 +1,8 @@
 /**
- * One precision gate for every penalizing fact key (v5 plan W1/W2, Phase 6 gate).
+ * One precision gate for every penalizing fact key .
  *
- * v2 families come from FACT_FAMILIES (eligibility-facts.ts). The v1 "legacy" keys (metastatic, prior treatments,
- * treatment status, pregnancy, concurrent trial, v1 biomarkers) used to penalize unconditionally; they are grouped
+ * Catalog families come from FACT_FAMILIES (eligibility-facts.ts). The legacy keys (metastatic, prior treatments,
+ * treatment status, pregnancy, concurrent trial, the first biomarkers) used to penalize unconditionally; they are grouped
  * here into families of their own so the same gate and the same reliability weighting apply to them.
  *
  * A family may penalize only when its measured precision on held-out gold has n >= GATE_MIN_N judged directional
@@ -10,7 +10,7 @@
  */
 import { familyOf, type FactFamily } from "./eligibility-facts";
 
-/** Legacy (v1) keys grouped into gate families. */
+/** Legacy keys grouped into gate families. */
 export const LEGACY_FAMILIES = {
   metastatic: ["metastatic"],
   prior_chemo: ["prior_chemotherapy"],
@@ -26,12 +26,12 @@ export const LEGACY_FAMILIES = {
 export type LegacyFamily = keyof typeof LEGACY_FAMILIES;
 export type GateFamily = FactFamily | LegacyFamily;
 
-/** Gate thresholds (v5 plan, Phase 6). */
+/** Gate thresholds. */
 export const GATE_MIN_N = 60;
 export const GATE_POINT = 0.85;
 export const GATE_LB = 0.8;
 
-/** The gate family of any fact key (v2 family first, then the legacy groups), or null for keys no family covers. */
+/** The gate family of any fact key (catalog family first, then the legacy groups), or null for keys no family covers. */
 export function gateFamilyOf(key: string): GateFamily | null {
   const v2 = familyOf(key);
   if (v2) return v2;

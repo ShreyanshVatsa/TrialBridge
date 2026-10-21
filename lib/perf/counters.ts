@@ -11,7 +11,7 @@ export const perfCounters = {
   trialScore: 0,
   rescore: 0,
 };
-export type PerfCounters = typeof perfCounters;
+type PerfCounters = typeof perfCounters;
 
 export function resetPerfCounters(): void {
   for (const k of Object.keys(perfCounters) as (keyof PerfCounters)[]) perfCounters[k] = 0;

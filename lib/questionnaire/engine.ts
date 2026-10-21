@@ -91,12 +91,12 @@ export type NextStep =
   | { kind: "ask"; question: QuestionDef; utility: number; impact: { total: number; narrowedTo: number | null } }
   | { kind: "done"; reason: DoneReason };
 
-export interface EngineOptions {
+interface EngineOptions {
   /** FACT_POLICY (config/questionnaire/fact-policy.ts): penalize=false families never conflict. */
   policy?: FactPolicyMap;
 }
 
-export type Mode = QuestionnaireState["mode"];
+type Mode = QuestionnaireState["mode"];
 
 // ---------------------------------------------------------------------------------------------
 // State

@@ -1,9 +1,9 @@
 /**
- * English defaults for every catalog message key (plain language, grade 6-8). WP3 copies these into
+ * English defaults for every catalog message key (plain language, grade 6-8). They are copied into
  * components/i18n/en.ts under `questionnaire.*` / `findOut.*`; tests check every catalog key is here.
  * Never use "eligible", "qualify" or "you can join" (banned words, §5.1).
  */
-export const QUESTIONNAIRE_EN: Readonly<Record<string, string>> = {
+const QUESTIONNAIRE_EN: Readonly<Record<string, string>> = {
   // Shared non-response chips
   "questionnaire.common.unknown": "Not sure",
   "questionnaire.common.skip": "Skip",

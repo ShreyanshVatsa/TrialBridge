@@ -95,7 +95,7 @@ function criterionText(trial: ServerTrial, ref: CriterionRef): string | null {
   return list.find((c) => c.n === ref.n)?.text ?? null;
 }
 
-export function mockAnalyzeTrial(profile: MinimizedProfile, trial: ServerTrial): TrialAnalysis {
+function mockAnalyzeTrial(profile: MinimizedProfile, trial: ServerTrial): TrialAnalysis {
   const lang = profile.language;
   const notes = precheck(
     { spread: profile.spread, treatments: profile.treatments, biomarkers: profile.biomarkers, pregnant: profile.pregnant, inAnotherTrial: profile.concurrentTrial },

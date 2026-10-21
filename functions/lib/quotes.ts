@@ -7,7 +7,7 @@ function norm(s: string): string {
   return normalizeWs(s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-")).replace(/^[\s"'.…]+|[\s"'.…]+$/g, "");
 }
 
-export interface QuoteCheck {
+interface QuoteCheck {
   analyses: TrialAnalysis[];
   total: number;
   failed: number;

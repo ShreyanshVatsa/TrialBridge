@@ -2,7 +2,6 @@
  * Access-barrier rules (rule-based, transparent, versioned). Each flag stores the exact
  * triggering sentence. See lib/ingest/barriers.ts for how they are applied.
  */
-export const BARRIER_RULES_VERSION = "2";
 
 /** Upper age limit below this (years) is flagged. */
 export const UPPER_AGE_LIMIT_THRESHOLD = 75;

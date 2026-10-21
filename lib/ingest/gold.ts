@@ -31,7 +31,7 @@ export interface GoldTrial {
   title?: string;
   labels: GoldLabel[];
 }
-export interface ScoredFact {
+interface ScoredFact {
   key: string;
   value: FactValue;
   param?: FactParam;

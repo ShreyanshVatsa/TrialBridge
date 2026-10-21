@@ -82,7 +82,7 @@ export function ResultsView({
   matchDegraded = false,
 }: {
   session: SearchSession;
-  /** v6 step 5: per-trial score + labels keyed by NCT id. Optional; without it the list renders as before. */
+  /** Per-trial criteria score + labels keyed by NCT id. Optional; without it the list renders as before. */
   matches?: Readonly<Record<string, TrialMatchView>>;
   /** True when no real LLM answered (resolver-only labels): shows the degraded-mode banner. */
   matchDegraded?: boolean;
@@ -107,7 +107,7 @@ export function ResultsView({
   const today = formatDate(new Date(session.searchedAt).toISOString(), locale);
   // Find-out list and unknown-answer note (browser-only; built from the questionnaire state).
   const qState = session.answers.questionnaire;
-  // Questions whose answer would settle the most unknown criteria in these trials come first (v6 step 5).
+  // Questions whose answer would settle the most unknown criteria in these trials come first.
   const priority = session.criteria?.findOutPriority;
   const findOut = useMemo(() => {
     const list = qState ? findOutList(qState, getCatalog("cancer", session.answers.cancerType)) : [];

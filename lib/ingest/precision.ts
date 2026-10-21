@@ -7,7 +7,7 @@ import type { FactParam, FactValue } from "@/lib/types/trial";
 /** The precision gate (QUESTIONNAIRE_SPEC §7.3): penalize only at >= 85%. */
 export const PRECISION_GATE = 0.85;
 /** Minimum labeled items for a pass (a family with fewer directional facts in the data must label all of them). */
-export const MIN_LABELED = 30;
+const MIN_LABELED = 30;
 
 export interface LabelItem {
   n?: number;
@@ -34,7 +34,7 @@ export interface LabelFile {
   families: Record<string, { items: LabelItem[]; measureRound?: number; poolSize?: number }>;
 }
 
-export interface FamilySummary {
+interface FamilySummary {
   family: string;
   labeled: number;
   correct: number;

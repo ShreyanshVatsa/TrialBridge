@@ -1,7 +1,7 @@
 import type { EmbedRequest, EmbedResponse } from "./embed.worker";
 
 /** First call downloads the model (~23 MB) + runtime; later calls are fast. */
-export const EMBED_TIMEOUT_MS = 60_000;
+const EMBED_TIMEOUT_MS = 60_000;
 
 let worker: Worker | null = null;
 let nextId = 1;

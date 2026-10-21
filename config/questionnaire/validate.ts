@@ -26,7 +26,7 @@ const EffectSchema = z.strictObject({
 });
 const KeySchema = z.string().regex(/^(questionnaire|findOut)\.[a-z0-9_.-]+$/i);
 
-export const QuestionDefSchema = z
+const QuestionDefSchema = z
   .strictObject({
     id: z.enum(QUESTION_IDS),
     area: z.literal("cancer"),

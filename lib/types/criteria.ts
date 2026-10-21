@@ -28,7 +28,7 @@ export interface TrialCriteriaLabels {
   promptVersion?: string;
 }
 
-/** Per-trial score from per-criterion labels (step 5). */
+/** Per-trial score from per-criterion labels. */
 export interface TrialMatchScore {
   trialId: string;
   /** met / (met + not_met + unknown). */
@@ -44,14 +44,14 @@ export interface TrialMatchScore {
   degraded: boolean;
 }
 
-/** One trial's criterion verdicts and score, as the results UI reads them (step 5). */
+/** One trial's criterion verdicts and score, as the results UI reads them. */
 export interface TrialCriteriaResult {
   score: TrialMatchScore;
   /** Merged labels in the trial's criterion order (resolver first, LLM fills its unknowns). */
   labels: CriterionLabel[];
 }
 
-/** Criteria-based ranking of a search's results (step 5). */
+/** Criteria-based ranking of a search's results. */
 export interface CriteriaRanking {
   /** "pending": resolver-only labels while the LLM judge runs; "ok": judge answered (or nothing needed judging). */
   status: "pending" | "ok" | "degraded";

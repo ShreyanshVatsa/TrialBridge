@@ -1,6 +1,6 @@
 /**
- * v7: precision of the v1 rule-fact keys (prior_*, metastatic, newly_diagnosed, previously_treated, pregnancy,
- * concurrent_trial), which until v7 always penalized (fact-policy V1_KEYS). The v1 hand sample (eval/facts-labels.json,
+ * Precision of the legacy rule-fact keys (prior_*, metastatic, newly_diagnosed, previously_treated, pregnancy,
+ * concurrent_trial), which used to penalize unconditionally (fact-policy V1_KEYS). The first hand sample (eval/facts-labels.json,
  * 50 items) found 66% overall and 0/4 for prior_surgery.
  *
  *   npx tsx scripts/ingest/v1-precision.ts --sample [--n=10] [--seed=7]   (writes eval/facts-labels-v3.json, correct: null)

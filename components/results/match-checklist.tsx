@@ -7,7 +7,7 @@ import type { CriterionLabel, CriterionLabelValue, SplitCriterionRecord as Split
 import { isScreeningItem } from "@/lib/match/screening";
 import { cn } from "@/lib/utils";
 
-/** What the results UI needs per trial from step 5 (score + per-criterion labels). */
+/** What the results UI needs per trial from the criteria ranking (score + per-criterion labels). */
 export interface TrialMatchView {
   score: TrialMatchScore;
   labels: CriterionLabel[];
@@ -226,7 +226,7 @@ export function TierBHeader({ id = "tier-b", className }: { id?: string; classNa
   );
 }
 
-/** Shown when no real LLM answered and labels are resolver-only. v7: a used-up daily budget says so. */
+/** Shown when no real LLM answered and labels are resolver-only. A used-up daily budget says so. */
 export function DegradedMatchBanner({ reason, className }: { reason?: string; className?: string }) {
   const m = useMessages();
   return (

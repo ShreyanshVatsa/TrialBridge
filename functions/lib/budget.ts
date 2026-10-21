@@ -12,7 +12,7 @@ export async function tryConsumeBudget(store: KvStore, provider: string, dailyLi
 }
 
 /**
- * Global daily token budget per provider (v7). Groq's free tier caps tokens per day (200k for gpt-oss-120b), not
+ * Global daily token budget per provider. Groq's free tier caps tokens per day (200k for gpt-oss-120b), not
  * requests, and one judged patient costs thousands of tokens, so the request count alone cannot keep below it.
  * `tokens` is the caller's estimate for one request (prompt + completion cap). An unset or non-positive limit means
  * no token cap (the request budget still applies).

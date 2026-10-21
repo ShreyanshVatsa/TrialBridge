@@ -3,12 +3,12 @@ import type { FactKey } from "@/lib/types/trial";
 import { PREFER_NOT, SKIP, UNKNOWN, type FactRule, type MessageKey, type OptionDef, type OptionEffect, type QuestionDef } from "./types";
 import type { QuestionId } from "./ids";
 
-export const qk = (q: string, part: "label" | "help" | "why"): MessageKey => `questionnaire.${q}.${part}`;
+const qk = (q: string, part: "label" | "help" | "why"): MessageKey => `questionnaire.${q}.${part}`;
 export const optKey = (q: string, id: string): MessageKey => `questionnaire.${q}.options.${id}`;
 export const findOutKey = (q: string): MessageKey => `findOut.${q}.what`;
 
 /** Shared chips for non-response (same matching semantics: no facts, terms or filters). */
-export const NON_RESPONSE_KEYS: Readonly<Record<string, MessageKey>> = {
+const NON_RESPONSE_KEYS: Readonly<Record<string, MessageKey>> = {
   [UNKNOWN]: "questionnaire.common.unknown",
   [SKIP]: "questionnaire.common.skip",
   [PREFER_NOT]: "questionnaire.common.prefer_not",

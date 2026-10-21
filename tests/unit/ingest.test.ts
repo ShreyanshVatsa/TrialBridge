@@ -163,7 +163,7 @@ describe("ingestion safety gates", () => {
   });
 });
 
-describe("rule facts v7 (rules 5): labeled false facts (eval/facts-labels.json) stay non-directional", () => {
+describe("rule facts: labeled false facts (eval/facts-labels.json) stay non-directional", () => {
   const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
   it("tissue sources, planned procedures and organization names are not treatment history", () => {
     expect(v("inclusion", "Tissue from a prior biopsy or resection must be available", "prior_surgery")).toBe("mentioned");
@@ -192,7 +192,7 @@ describe("rule facts v7 (rules 5): labeled false facts (eval/facts-labels.json) 
   });
 });
 
-describe("rule facts v7: joined marker words", () => {
+describe("rule facts: joined marker words", () => {
   const v = (s: "inclusion" | "exclusion", t: string, k: string) => factsForCriterion(s, t).find((f) => f.key === k)?.value;
   it("reads HR-positive / ER-positive as positive and HR-negative as negative (was inverted)", () => {
     expect(v("inclusion", "HR-positive breast cancer", "biomarker:HR")).toBe("required");

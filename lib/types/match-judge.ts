@@ -3,7 +3,7 @@ import { MinimizedProfileSchema, NctIdSchema } from "./analysis";
 import { MATCH_JUDGE } from "@/config/match-judge";
 import type { TrialCriteriaLabels } from "./criteria";
 
-export const CriterionIdSchema = z.string().regex(/^[IE][1-9]\d{0,3}$/);
+const CriterionIdSchema = z.string().regex(/^[IE][1-9]\d{0,3}$/);
 
 /**
  * POST /api/match request body. Per trial: the criterion ids the deterministic resolver left unknown, and the
@@ -34,7 +34,7 @@ const CriterionLabelSchema = z.strictObject({
   answerIds: z.array(z.string()).optional(),
 });
 
-export const TrialCriteriaLabelsSchema = z.strictObject({
+const TrialCriteriaLabelsSchema = z.strictObject({
   trialId: NctIdSchema,
   criteriaVersion: z.number().int().positive(),
   labels: z.array(CriterionLabelSchema),

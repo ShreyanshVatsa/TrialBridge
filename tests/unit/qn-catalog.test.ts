@@ -1,5 +1,5 @@
 /**
- * The engine against the real v2 catalog (config/questionnaire, WP1) and the committed seed trials.
+ * The engine against the real catalog (config/questionnaire) and the committed seed trials.
  */
 import { describe, expect, it } from "vitest";
 import { CANCER_GROUP_IDS, type CancerGroupId } from "@/config/cancer-groups";
