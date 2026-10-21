@@ -1,6 +1,6 @@
 /**
  * `npm run i18n:translate -- <tag> [--provider=groq|local|cerebras|openrouter] [--all-missing] [--force] [--limit=N]`
- * QUESTIONNAIRE_SPEC.md section 6.8. Translates the English keys missing from (or stale in)
+ * docs/dev/QUESTIONNAIRE_SPEC.md section 6.8. Translates the English keys missing from (or stale in)
  * public/i18n/<tag>.json with Groq (default when GROQ_API_KEY is in .dev.vars) or a local llama-server (--provider=local; ~/models/Qwen3-14B-Q4_K_M.gguf, started
  * and stopped here if not already running) or a configured provider whose data terms are verified.
  * UI strings contain no user data. Never overwrites keys listed in i18n/reviewed/<tag>.keys.json.
@@ -175,7 +175,7 @@ function groqConfig(stats: { retries: number }): LlmConfig {
   const key = process.env.GROQ_API_KEY || devVar("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY is not set (.dev.vars)");
   // Only the app's public interface strings are sent (no user data), so the runtime dataTermsVerified gate
-  // (which protects patient input) does not apply to this offline script. See DECISIONS.md.
+  // (which protects patient input) does not apply to this offline script. See docs/dev/DECISIONS.md.
   return { baseUrl: p.baseUrl, model: p.model, concurrency: 4, fetchImpl: groqFetch(key, stats) };
 }
 

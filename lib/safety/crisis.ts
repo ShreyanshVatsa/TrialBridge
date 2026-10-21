@@ -1,5 +1,5 @@
 /**
- * Shared crisis detection (browser pre-check and server): QUESTIONNAIRE_SPEC.md section 6.7.
+ * Shared crisis detection (browser pre-check and server): docs/dev/QUESTIONNAIRE_SPEC.md section 6.7.
  * Conservative by design: it runs EVERY available lexicon on the normalized text, whatever the UI locale,
  * so English words embedded in other-language text, or a language without its own lexicon, still match.
  * A false positive only shows a supportive box with phone numbers; the always-visible 988/911 line is

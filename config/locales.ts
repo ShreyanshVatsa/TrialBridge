@@ -1,7 +1,7 @@
 /**
  * Locale registry (data only). Adding a language = one entry here + `npm run i18n:translate -- <tag>`
  * + (optional) a crisis lexicon + (optional) a font pack. No component code changes.
- * QUESTIONNAIRE_SPEC.md section 6.1.
+ * docs/dev/QUESTIONNAIRE_SPEC.md section 6.1.
  */
 export type FontPackId = "noto-sc" | "noto-tc" | "noto-kr" | "noto-arabic" | "noto-deva" | "noto-beng" | "noto-gujr";
 export type Script = "Latn" | "Hans" | "Hant" | "Arab" | "Hebr" | "Deva" | "Beng" | "Gujr" | "Hang" | "Cyrl" | "Viet";

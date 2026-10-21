@@ -1,6 +1,6 @@
 /**
  * Pure helpers for the i18n platform: flat key paths, placeholder handling, per-key English fallback,
- * and plural selection. No React, no DOM, no dependencies (QUESTIONNAIRE_SPEC.md section 6.2).
+ * and plural selection. No React, no DOM, no dependencies (docs/dev/QUESTIONNAIRE_SPEC.md section 6.2).
  */
 
 /** Dot-separated path to every string leaf of a nested `as const` messages object (arrays use indexes). */

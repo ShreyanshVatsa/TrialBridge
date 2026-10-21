@@ -18,7 +18,7 @@ function withPhoneLinks(text: string) {
 }
 
 /**
- * Always-visible U.S. crisis resource line (QUESTIONNAIRE_SPEC.md section 6.7). Shown on every Q&A panel
+ * Always-visible U.S. crisis resource line (docs/dev/QUESTIONNAIRE_SPEC.md section 6.7). Shown on every Q&A panel
  * and results page in every language. For machine-translated languages the English sentence is shown
  * as well, so the numbers can never be lost in translation. In Q&A (`context="qa"`) locales without a
  * reviewed crisis lexicon also state that the numbers above are the way to get urgent help.

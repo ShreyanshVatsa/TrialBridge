@@ -1,6 +1,6 @@
 /**
  * `npm run fonts:fetch [-- --force]`: self-hosts the Noto font packs used for non-Latin languages
- * (QUESTIONNAIRE_SPEC.md section 6.4). Downloads the OFL-licensed @fontsource-variable packages from the
+ * (docs/dev/QUESTIONNAIRE_SPEC.md section 6.4). Downloads the OFL-licensed @fontsource-variable packages from the
  * npm registry (no dependency added), keeps only the script slices (Latin/Cyrillic/Vietnamese are covered
  * by Inter), rewrites the @font-face URLs to /fonts/noto/<pack>/, and writes /fonts/noto/<pack>.css.
  * The stylesheet is injected by components/i18n only when a language that needs it is chosen, so

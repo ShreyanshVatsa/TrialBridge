@@ -25,7 +25,7 @@
    Final order shuffled. `sample-gold.py` reproduces it.
 3. Labeling: the labeler read only `card.inclusion` and `card.exclusion` (numbered), titles, and age/sex fields. It did **not** read
    `config/criteria.ts`, `lib/ingest/eligibility-facts.ts`, any generated precision file, existing label files' contents, or stored
-   `facts`/`barriers` in the data. Allowed reading for schema only: `QUESTIONNAIRE_SPEC.md` s1, `lib/types/trial.ts`,
+   `facts`/`barriers` in the data. Allowed reading for schema only: `docs/dev/QUESTIONNAIRE_SPEC.md` s1, `lib/types/trial.ts`,
    `scripts/ingest/fact-precision.ts` (header and plumbing), `config/questionnaire/**` file names.
 4. Every `quote` was machine-checked to be a verbatim substring (whitespace-normalised, trailing punctuation ignored) of that trial's
    criteria text. 0 mismatches.

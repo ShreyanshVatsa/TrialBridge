@@ -1,5 +1,5 @@
 /**
- * AI response-language handling (QUESTIONNAIRE_SPEC.md section 6.6). The prompt receives a language NAME
+ * AI response-language handling (docs/dev/QUESTIONNAIRE_SPEC.md section 6.6). The prompt receives a language NAME
  * looked up from the server-side registry by an allowlisted BCP 47 tag, never raw user text.
  */
 import { AI_LANGUAGE_TAGS, aiPromptLanguage, isAiExperimental, type LocaleTag } from "@/config/locales";

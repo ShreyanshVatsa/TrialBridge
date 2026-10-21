@@ -1,4 +1,4 @@
-/** Regression tests for the findings fixed in SECURITY_AUDIT.md. */
+/** Regression tests for the findings fixed in docs/dev/SECURITY_AUDIT.md. */
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import worker, { isLoopbackHost } from "@/functions/index";

@@ -5,7 +5,7 @@
  * parse_criteria drops chunks under 5 characters and the "inclusion/exclusion criteria" header chunks; we do the
  * same, but drop a header chunk only when it is header-sized, not any criterion that mentions the phrase).
  * Those items are flat: every bullet at every depth, and every label line, is its own item. So the gold is
- * compared with our flat `splitSegments` layer; `splitCriteria` groups nested lists by design (see DECISIONS.md)
+ * compared with our flat `splitSegments` layer; `splitCriteria` groups nested lists by design (see docs/dev/DECISIONS.md)
  * and its agreement is reported separately for reference.
  *
  * Boundary F1: an item boundary is identified by the first 8 normalized word tokens of the item (plus an

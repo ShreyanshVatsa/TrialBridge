@@ -74,7 +74,7 @@ Split by whether the profile has a definite ECOG 2 answer (7 profiles do): witho
 - Caveat: the labels use only title and condition text, so they cannot reward answers about ECOG, prior drugs, lines, or brain metastases; v2's benefit there cannot show up in these numbers. The v2-vs-v1 gate therefore mostly checks that the new pre-check does not hurt and that group, subtype and biomarker answers are used.
 
 ## Questionnaire: adaptive vs fixed (simulated patients)
-> **Synthetic, provisional.** 408 simulated patients (34 per group x 12 cancer groups; seed 20261007). Hidden "true" answers are sampled from the catalog's own priors, patients say "don't know" at 40% (biomarkers), 20% (ECOG), 25% (lines), 30% (subtype) and 10% (others), and the oracle ranking is the same engine with every true answer. This measures how fast each question order approaches the engine's own full-information ranking. It is **not** a measure of clinical accuracy, it shares the fact layer (66% precision) with the system under test, and the priors are catalog estimates, not real-patient data. The seed run (399 trials) is CI-reproducible; the national run uses the shards in public/data when present. The engine picks questions by information gain plus the expected change of the top 10 (DECISIONS.md); the engine constants were tuned on a different patient draw (seed 777, six of the twelve groups), so these numbers (seed 20261007, all groups) are held-out.
+> **Synthetic, provisional.** 408 simulated patients (34 per group x 12 cancer groups; seed 20261007). Hidden "true" answers are sampled from the catalog's own priors, patients say "don't know" at 40% (biomarkers), 20% (ECOG), 25% (lines), 30% (subtype) and 10% (others), and the oracle ranking is the same engine with every true answer. This measures how fast each question order approaches the engine's own full-information ranking. It is **not** a measure of clinical accuracy, it shares the fact layer (66% precision) with the system under test, and the priors are catalog estimates, not real-patient data. The seed run (399 trials) is CI-reproducible; the national run uses the shards in public/data when present. The engine picks questions by information gain plus the expected change of the top 10 (docs/dev/DECISIONS.md); the engine constants were tuned on a different patient draw (seed 777, six of the twelve groups), so these numbers (seed 20261007, all groups) are held-out.
 
 ### Seed (399 trials)
 nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow's top 10 that conflicts with the patient's true answers:
@@ -119,7 +119,7 @@ nDCG@10 against the oracle top 10 (mean over patients) and the share of the flow
 - Live providers (`npm run eval:live`) are deferred.
 
 ## Model choice
-See DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
+See docs/dev/DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
 
 ## What this evidence does and does not show
 - **Hard-filter safety** is checked against an independent oracle built from raw CT.gov fields (section 2), on the seed and, when the raw national pages are cached, at national scale. The earlier "0% violations" claim was circular and is withdrawn. The oracle is a second opinion with its own limits (term lists, 25 mile distance slack, registry coordinates), not ground truth; any flagged samples should be read by a person.

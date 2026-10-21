@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * i18n runtime (QUESTIONNAIRE_SPEC.md section 6.2). English is the typed source (./en) and is bundled.
+ * i18n runtime (docs/dev/QUESTIONNAIRE_SPEC.md section 6.2). English is the typed source (./en) and is bundled.
  * Every other language is a flat JSON file fetched on demand from /i18n/<tag>.json (same-origin),
  * with per-key English fallback. `useMessages()` keeps returning the nested messages object (missing
  * keys filled from English); `useT()` is the flat `t(key, vars)` API with plural and Intl helpers.

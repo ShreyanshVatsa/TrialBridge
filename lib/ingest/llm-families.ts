@@ -43,7 +43,7 @@ export { LLM_FAMILY_IDS, FAMILY_PROMPT_VERSION, type LlmFamily };
 
 /**
  * Families whose final facts follow the verified-LLM agreement policy at ingest (chosen on the dev split;
- * see DECISIONS.md). Autoimmune keeps its rule layer (already on at 94% held-out, LLM no better on dev, and
+ * see docs/dev/DECISIONS.md). Autoimmune keeps its rule layer (already on at 94% held-out, LLM no better on dev, and
  * the gold sets have no autoimmune family). Histology keeps its rule layer by the rule fixed before the gold
  * measurement (switch only if the verified layer passes the gold gate; it measured 73% on 26 facts).
  */

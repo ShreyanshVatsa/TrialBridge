@@ -35,7 +35,7 @@ function v1Policy(key: string): FactPolicy {
   const p = V1_KEY_PRECISION[key];
   if (!p || p.passes) return { penalize: true, weight: 1 };
   // Below the gate on held-out labels, yet removing the penalty lowered TREC 2021 dev nDCG@10 (baseline 0.484 ->
-  // 0.451): kept as a half-weight ranking signal that never makes a hard failure (DECISIONS.md, v7 step 7b).
+  // 0.451): kept as a half-weight ranking signal that never makes a hard failure (docs/dev/DECISIONS.md, v7 step 7b).
   return { penalize: true, weight: 0.5, belowGate: true };
 }
 

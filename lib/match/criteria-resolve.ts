@@ -618,7 +618,7 @@ function markerList(text: string): boolean {
 
 /**
  * MSI status words. MSI-H, MSI-high and dMMR name the positive state of our "MSI-H / dMMR" marker on their own; MSS,
- * microsatellite stable, pMMR and MSI-low name the negative state, which the shared extractor does not read (BUGS.md,
+ * microsatellite stable, pMMR and MSI-low name the negative state, which the shared extractor does not read (docs/dev/BUGS.md,
  * step 9: an MSS trial ranked #1 for an MSI-high answer). Negative wording is matched first and removed, so
  * "non-MSI-H" and "not MSI-H" read as negative.
  */

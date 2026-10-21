@@ -44,14 +44,14 @@ This is a small project with no dedicated security team and no guaranteed respon
 - **Safe rendering**: AI and trial text is rendered as plain text or React elements; `dangerouslySetInnerHTML` is not used. AI quotes are verified verbatim against trial text before display.
 - **Secret handling**: secrets live only in `.dev.vars` (local, gitignored) and Cloudflare secrets (production). The build runs a scan of the output for key patterns.
 - **Provider gating**: an AI provider is used only if its key is set and `dataTermsVerified` is true in `config/ai-providers.ts`; all are currently false, so only the mock provider runs.
-- **Dependencies**: lockfile committed and `sharp`/`fast-glob` overridden to avoid known advisories (see DECISIONS.md).
+- **Dependencies**: lockfile committed and `sharp`/`fast-glob` overridden to avoid known advisories (see docs/dev/DECISIONS.md).
 
 ## Known limitations
 
-- See SECURITY_AUDIT.md for the latest review, fixes, and remaining items.
+- See docs/dev/SECURITY_AUDIT.md for the latest review, fixes, and remaining items.
 - No external security review has been done.
-- Not yet deployed at the time of writing; CI workflows and Dependabot are not set up yet (deferred in PROGRESS.md/DECISIONS.md), so dependency updates and `npm audit` are manual.
-- `npm audit --audit-level=high` previously failed on dev tooling only; it was addressed with overrides (DECISIONS.md). Re-run it to confirm the current state.
+- Not yet deployed at the time of writing; CI workflows and Dependabot are not set up yet (deferred in docs/dev/PROGRESS.md/DECISIONS.md), so dependency updates and `npm audit` are manual.
+- `npm audit --audit-level=high` previously failed on dev tooling only; it was addressed with overrides (docs/dev/DECISIONS.md). Re-run it to confirm the current state.
 - The rate-limit salt falls back to a fixed dev salt (dev) or a random per-isolate salt (production) if `RATE_LIMIT_SALT` is not set. Set it in production.
 - Rate limits are per IP hash; shared networks share limits and determined attackers can rotate IPs.
 - `style-src 'unsafe-inline'` and `'wasm-unsafe-eval'` are in the CSP (reasons above).

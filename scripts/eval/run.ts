@@ -208,7 +208,7 @@ async function main(): Promise<void> {
   const v1Cmp = mean(sub(prodRows, false).map((r) => r.sysNdcg)), v2Cmp = mean(sub(v2Rows, false).map((r) => r.sysNdcg));
   const v1E2 = mean(sub(prodRows, true).map((r) => r.sysNdcg)), v2E2 = mean(sub(v2Rows, true).map((r) => r.sysNdcg));
   const nE2 = ecog2.filter(Boolean).length;
-  // Gate (v6 step 10, DECISIONS.md): v2 must not be distinguishably worse than v1 on these profiles (paired bootstrap 95% CI
+  // Gate (v6 step 10, docs/dev/DECISIONS.md): v2 must not be distinguishably worse than v1 on these profiles (paired bootstrap 95% CI
   // of v2 - v1 must not lie entirely below 0). The earlier point-estimate gate (v2 mean >= v1 mean) failed by 0.004 on
   // ~16 candidates per profile, inside the paired CI; the point comparison is still printed.
   const cmpCI = pairedBootstrapCI(sub(v2Rows, false).map((r) => r.sysNdcg), sub(prodRows, false).map((r) => r.sysNdcg));
@@ -428,7 +428,7 @@ ${simulationMarkdown(sim, simNat)}
 - Live providers (\`npm run eval:live\`) are deferred.
 
 ## Model choice
-See DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
+See docs/dev/DECISIONS.md. Production uses the variant in the first row unless another variant is clearly better on hybrid nDCG@10 without a larger download.
 
 ## What this evidence does and does not show
 - **Hard-filter safety** is checked against an independent oracle built from raw CT.gov fields (section 2), on the seed and, when the raw national pages are cached, at national scale. The earlier "0% violations" claim was circular and is withdrawn. The oracle is a second opinion with its own limits (term lists, 25 mile distance slack, registry coordinates), not ground truth; any flagged samples should be read by a person.

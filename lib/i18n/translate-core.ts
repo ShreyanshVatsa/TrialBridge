@@ -1,5 +1,5 @@
 /**
- * Pure core of `npm run i18n:translate` (QUESTIONNAIRE_SPEC.md section 6.8): prompt building, batching,
+ * Pure core of `npm run i18n:translate` (docs/dev/QUESTIONNAIRE_SPEC.md section 6.8): prompt building, batching,
  * the OpenAI-compatible call (fetch injected for tests), and per-key validation. Keys that fail
  * validation twice are left missing, so they fall back to English at runtime.
  */

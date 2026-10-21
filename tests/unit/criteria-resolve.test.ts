@@ -232,7 +232,7 @@ describe("resolveCriteria", () => {
   });
 });
 
-describe("MSI status wording (BUGS.md step 9: MSS trial ranked #1 for an MSI-high answer, NCT07284849)", () => {
+describe("MSI status wording (docs/dev/BUGS.md step 9: MSS trial ranked #1 for an MSI-high answer, NCT07284849)", () => {
   const msiH = () => profile("colorectal", { biomarkers: { "MSI-H": "positive" } });
   const mss = () => profile("colorectal", { biomarkers: { "MSI-H": "negative" } });
   it("excludes an MSI-high patient on a bare 'MSI-H/dMMR' exclusion and keeps an MSS patient", () => {
@@ -253,7 +253,7 @@ describe("MSI status wording (BUGS.md step 9: MSS trial ranked #1 for an MSI-hig
   });
 });
 
-describe("pre-check ignores qualified biomarker wording (BUGS.md step 9, NCT07315113 'What might rule you out')", () => {
+describe("pre-check ignores qualified biomarker wording (docs/dev/BUGS.md step 9, NCT07315113 'What might rule you out')", () => {
   const fact = (quote: string, value: "excluded" | "required" = "excluded"): Fact => ({ key: "biomarker:EGFR", value, quote, ref: { section: "exclusion", n: 1 }, source: "rule" });
   const v1 = { spread: "yes" as const, treatments: ["chemotherapy"], biomarkers: { EGFR: "positive" as const }, pregnant: "no" as const, inAnotherTrial: "no" as const };
   const egfrPos = state("lung", { biomarkers: { EGFR: "positive" } });
