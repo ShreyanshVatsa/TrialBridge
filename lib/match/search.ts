@@ -26,6 +26,11 @@ function matchContext(a: IntakeAnswers, opts: SearchOptions): MatchContext {
   return { catalog: opts.catalog ?? getCatalog("cancer", a.cancerType), policy: opts.policy ?? FACT_POLICY };
 }
 
+/** User Timing marks ("tb:search:<step>") so the search can be profiled in the browser or by a Playwright run. */
+function mark(step: string): void {
+  if (typeof performance !== "undefined" && typeof performance.mark === "function") performance.mark(`tb:search:${step}`);
+}
+
 export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions = {}): Promise<SearchOutcome> {
   const a = IntakeAnswersSchema.parse(answers);
   const report = opts.onProgress ?? (() => undefined);
@@ -33,6 +38,7 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
   const queryText = buildProfileText(a, ctx.catalog);
   const signalOpt = opts.signal ? { signal: opts.signal } : {};
 
+  mark("start");
   report({ stage: "loading_shards", fraction: 0 });
   // Start the embedding immediately; it runs in the worker while shards download.
   let modelFraction = 0;
@@ -46,28 +52,34 @@ export async function searchTrials(answers: IntakeAnswers, opts: SearchOptions =
     loadGroupShards(a.cancerType, { ...signalOpt, onProgress: (fraction) => report({ stage: "loading_shards", fraction }) }),
     lookupZip(a.zip, signalOpt).catch(() => null),
   ]);
+  mark("shards");
   if (shards.length === 0) return { results: [], candidateCount: 0, searchedCount: 0, keywordOnly: false };
 
   report({ stage: "loading_model", fraction: modelFraction });
   const vector = await vectorPromise;
+  mark("vector");
   if (opts.signal?.aborted) throw opts.signal.reason;
 
   report({ stage: "ranking" });
   const entries: RankEntry[] = shards.flatMap((s) => s.entries);
   const indexes = shards.map((s) => getShardIndex({ id: s.info.id, indexJson: s.indexJson }));
+  mark("index");
   const keywordSearch = (ids: ReadonlySet<string>) => keywordRanking(indexes, queryText, ids);
 
   const scoresOf = (ids: ReadonlySet<string>) => keywordScores(indexes, queryText, ids);
   let outcome = rankTrials({ entries, answers: a, origin, keywordSearch, keywordScores: scoresOf, queryVector: vector, ...ctx });
+  mark("ranked");
   if (shards.some((s) => s.info.kind === "lite")) {
     // Lite index: load full cards for just the top results from per-trial buckets.
     const full = await loadTrials(outcome.results.map((r) => r.card.id), signalOpt);
     outcome = hydrateResults(outcome, full, a, origin, ctx);
+    mark("hydrated");
   }
   // Never drop the distance limit silently: tell the UI when it could not be applied.
   if (a.travelMiles !== null && !origin) outcome = { ...outcome, distanceUnavailable: true };
   if (origin && "approximate" in origin && origin.approximate) outcome = { ...outcome, zipApproximate: true };
   report({ stage: "done" });
+  mark("done");
   return outcome;
 }
 

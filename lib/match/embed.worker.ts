@@ -8,7 +8,7 @@ import { EMBEDDING_DTYPE, EMBEDDING_MODEL } from "@/config/embedding";
 
 export type EmbedRequest = { type: "embed"; id: number; text: string };
 export type EmbedResponse =
-  | { type: "result"; id: number; vector: Float32Array }
+  | { type: "result"; id: number; vector: Float32Array; timing: EmbedTiming }
   | { type: "error"; id: number; message: string }
   | { type: "progress"; fraction: number };
 
@@ -41,14 +41,23 @@ function getExtractor(): Promise<FeatureExtractionPipeline> {
   return extractor;
 }
 
+/** Milliseconds spent loading the model (0 once warm) and running the embedding, reported with every result. */
+export interface EmbedTiming {
+  loadMs: number;
+  embedMs: number;
+}
+
 ctx.onmessage = async (event: MessageEvent<EmbedRequest>) => {
   const msg = event.data;
   if (msg.type !== "embed") return;
   try {
+    const t0 = performance.now();
     const fe = await getExtractor();
+    const t1 = performance.now();
     const out = await fe(msg.text, { pooling: "mean", normalize: true });
     const vector = Float32Array.from(out.data as Float32Array);
-    ctx.postMessage({ type: "result", id: msg.id, vector } satisfies EmbedResponse, [vector.buffer]);
+    const timing: EmbedTiming = { loadMs: Math.round(t1 - t0), embedMs: Math.round(performance.now() - t1) };
+    ctx.postMessage({ type: "result", id: msg.id, vector, timing } satisfies EmbedResponse, [vector.buffer]);
   } catch (err) {
     ctx.postMessage({ type: "error", id: msg.id, message: err instanceof Error ? err.message : "embedding failed" } satisfies EmbedResponse);
   }

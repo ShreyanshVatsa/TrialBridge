@@ -1,10 +1,12 @@
-import type { EmbedRequest, EmbedResponse } from "./embed.worker";
+import type { EmbedRequest, EmbedResponse, EmbedTiming } from "./embed.worker";
 
 /** First call downloads the model (~23 MB) + runtime; later calls are fast. */
 const EMBED_TIMEOUT_MS = 60_000;
 
 let worker: Worker | null = null;
 let nextId = 1;
+/** Timing of the last embedding the worker reported (profiling; read by tests and the perf script). */
+export let lastEmbedTiming: EmbedTiming | null = null;
 
 function getWorker(): Worker {
   if (!worker) {
@@ -37,7 +39,13 @@ export function embedProfile(text: string, opts: { signal?: AbortSignal; onProgr
     const onMessage = (e: MessageEvent<EmbedResponse>) => {
       const m = e.data;
       if (m.type === "progress") opts.onProgress?.(m.fraction);
-      else if (m.id === id) finish(m.type === "result" ? m.vector : null);
+      else if (m.id === id) {
+        if (m.type === "result") {
+          lastEmbedTiming = m.timing;
+          if (typeof performance !== "undefined" && typeof performance.mark === "function") performance.mark("tb:embed:result", { detail: m.timing });
+        }
+        finish(m.type === "result" ? m.vector : null);
+      }
     };
     const onAbort = () => finish(null);
     const timer = setTimeout(() => finish(null), opts.timeoutMs ?? EMBED_TIMEOUT_MS);

@@ -22,6 +22,11 @@ type Status =
 const TURNSTILE_TIMEOUT_MS = 30_000;
 const warmedUp = new Set<string>();
 
+/** User Timing marks for profiling ("tb:results", "tb:judge", "tb:analysis"). */
+function mark(name: string): void {
+  if (typeof performance !== "undefined" && typeof performance.mark === "function") performance.mark(`tb:${name}`);
+}
+
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("timeout")), ms);
@@ -89,6 +94,7 @@ export function FindFlow() {
         results.map((r) => r.card.id),
         token,
       );
+      mark("analysis");
       setSession((prev) => {
         if (!prev || !isCurrent(prev)) return prev;
         if (response.status === "ok") {
@@ -132,6 +138,7 @@ export function FindFlow() {
           return requestCriteriaJudgement(a, trials, token, signal ? { signal } : {});
         },
       });
+      mark("judge");
       setSession((prev) => {
         if (!prev || !isCurrent(prev)) return prev;
         // Keep any AI analysis already attached to the results; only the order and criteria change.
@@ -178,6 +185,7 @@ export function FindFlow() {
       const hasResults = outcome.results.length > 0;
       // Resolver-only criteria ranking at once (no I/O); the LLM judge refines it in runAnalysis.
       const criteria = resolveRanking(outcome.results, answers, answers.questionnaire ? matchOptions(answers.cancerType).catalog : undefined);
+      mark("results");
       setSession({
         answers,
         outcome,
