@@ -65,3 +65,19 @@ Resolver arm: 30 of 100 top-10 slots are TREC-excluded and only 2 are Tier B (th
 Safety principles kept throughout: no "eligible" wording, hard filters in code, nothing new leaves the browser (`lib/privacy/minimize.ts` unchanged), quote verification unchanged.
 
 ## 4. Results log (appended per step)
+
+### Step 1: resolver coverage from better criterion parsing (kept)
+
+`lib/match/criteria-resolve.ts`: (a) extent of disease from the `spread` answer (`checkStage`: metastatic / stage IV / distant, non-metastatic / M0, advanced / unresectable, early-stage / stage I-III; site-specific metastases, treatment settings, subgroup rules and "pain due to metastases" are ignored; exclusion items only when the item is about the extent itself); (b) treated status and line counts from the item's own wording (`checkTreated`: "newly diagnosed", "previously untreated", "no prior systemic therapy" vs "relapsed or refractory", "progressed on", "at least N prior lines"; a setting qualifier such as "for metastatic disease" is answered by the line count after progression; class-, drug-, toxicity-, count- and window-specific history items stay unknown), plain line counts now settle (the extractor already demotes class-specific and conditional counts); (c) definitions in brackets or parentheses and definition sub-bullets no longer count as alternatives, more benign "or" pairs (extent pairs in any order, relapsed/refractory, squamous/non-squamous, local/central, IHC/ISH, stage lists), assessment windows ("ECOG within 30 days prior to randomization") are not patient time windows, registration/screening step headers are not cohorts, "one-line" is read as "one line". Unit tests added (tests/unit/criteria-resolve.test.ts, 51).
+
+| measure | before (v7) | after |
+| --- | --- | --- |
+| vignette dev nDCG@10 (pipeline+resolver, pool 15) | 0.325 [0.267, 0.386] | 0.358 [0.295, 0.422]; paired +0.033 [0.016, 0.051] |
+| vignette dev excluded share in top 10 | 0.545 | 0.535; paired -0.010 [-0.022, 0.001] |
+| vignette dev Tier B precision (hard failures in the re-ranked 15, gold excluded / possibly or eligible) | | stage 63 / 2, treated status 32 / 2, lines 14 / 0, ECOG 99 / 1 |
+| TREC dev resolver nDCG@10 (no judge) | 0.521 [0.415, 0.641] | 0.525 [0.416, 0.647]; vs baseline +0.034 [-0.032, 0.108] |
+| TREC dev missed exclusions / P@10 | 0.280 / 0.360 | 0.270 / 0.370 |
+| items settled, every question answered (1,000 trials, seed 7) | 6.1% | 6.8% (not_met 143, excluded 46) |
+| `npm run eval` national pipeline nDCG@10 / oracle | 0.779 / 0 of 600 | 0.779 / 0 of 600 (unchanged: the pre-check does not use the resolver) |
+
+Mechanism: 41% + 34% of the gold-excluded trials in the dev top 10 failed on a stage, treated-status, line-count or alternative-wording criterion the resolver could not read (section 2). Kept: vignette dev CI excludes 0, TREC dev not worse.

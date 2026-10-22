@@ -23,6 +23,10 @@ const split = (args.get("split") ?? "dev") as "dev" | "test";
 if (split !== "dev" && split !== "test") throw new Error("--split must be dev or test");
 const pool = Number(args.get("pool") ?? TOP_N);
 const ref = args.get("ref") ?? "pipeline:v7+resolver";
+/** --audit: per hard-failure key, how the gold labels the Tier B trials of the re-ranked pool (precision of the resolver's demotions). */
+const audit = args.has("audit");
+const auditRows: Record<string, Record<string, number>> = {};
+const auditExamples: string[] = [];
 
 async function main(): Promise<void> {
   const national = loadNational();
@@ -40,7 +44,19 @@ async function main(): Promise<void> {
     const ids = pipelineRanking(ctx, qs[i] as Float32Array, STORED_K);
     const byId = new Map(ctx.candidates.map((c) => [c.card.id, c] as const));
     const head = ids.slice(0, pool).map((id) => byId.get(id)!);
-    const ranked = [...resolveRanking(head, ctx.answers, ctx.catalog).order, ...ids.slice(pool)];
+    const ranking = resolveRanking(head, ctx.answers, ctx.catalog);
+    const ranked = [...ranking.order, ...ids.slice(pool)];
+    if (audit) {
+      for (const [id, t] of Object.entries(ranking.byTrial)) {
+        if (t.score.tier !== "B") continue;
+        const g = labels[id] ?? "unjudged";
+        for (const f of t.score.hardFailures) {
+          const key = (f.reason ?? "").slice(0, 40);
+          (auditRows[key] ??= {})[g] = (auditRows[key]?.[g] ?? 0) + 1;
+          if ((g === "eligible" || g === "possibly") && auditExamples.length < 40) auditExamples.push(`${v.id} ${id} ${g} ${f.id}: ${(byId.get(id)?.card.criteria ?? []).find((c) => c.id === f.id)?.text.slice(0, 200) ?? ""}`);
+        }
+      }
+    }
     per.ndcg.push(ndcgAtK(ranked, labels, 10));
     per.recall.push(recallEligibleAtK(ranked, labels, 50));
     per.excl.push(excludedShareAtK(ranked, labels, 10));
@@ -70,6 +86,12 @@ async function main(): Promise<void> {
   if (args.has("json")) {
     console.log(JSON.stringify(out, null, 1));
     return;
+  }
+  if (audit) {
+    console.log("Tier B hard failures in the re-ranked pool, by reason -> gold label:");
+    for (const [k, v] of Object.entries(auditRows)) console.log(`  ${k.padEnd(42)} ${JSON.stringify(v)}`);
+    console.log("wrong demotions (gold eligible/possibly):");
+    for (const e of auditExamples) console.log("  - " + e);
   }
   console.log(`live pipeline+resolver, ${split} split, ${ctxs.length} vignettes, resolver pool ${pool}`);
   console.log(`nDCG@10 ${ci(out.ndcg10)}  recall@50 elig ${ci(out.recall50)}  excluded in top10 ${ci(out.excludedTop10)}  (retrieval only: nDCG@10 ${ci(out.retrievalOnlyNdcg10)})`);

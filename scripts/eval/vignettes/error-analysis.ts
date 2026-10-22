@@ -36,6 +36,7 @@ const split = (args.get("split") ?? "dev") as "dev" | "test";
 if (split === "test") throw new Error("error analysis runs on dev only");
 const system = args.get("system") ?? "pipeline:v7+resolver";
 const live = args.has("live");
+const maxExamples = Number(args.get("examples") ?? 12);
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -167,13 +168,13 @@ async function main(): Promise<void> {
         } else if (settleable.length) {
           bucket = "resolver_gap";
           for (const f of settleable) resolverGapKeys[f.key] = (resolverGapKeys[f.key] ?? 0) + 1;
-          detail = `${item.id} unknown (${label.reason}) facts ${settleable.map((f) => `${f.key}=${f.value}${f.param !== undefined ? `/${String(f.param)}` : ""}${factPolicy(f.key).penalize && !factPolicy(f.key).belowGate ? "" : " [gated]"}`).join(", ")}: ${item.text.slice(0, 120)}`;
+          detail = `${item.id} unknown (${label.reason}) facts ${settleable.map((f) => `${f.key}=${f.value}${f.param !== undefined ? `/${String(f.param)}` : ""}${factPolicy(f.key).penalize && !factPolicy(f.key).belowGate ? "" : " [gated]"}`).join(", ")}: ${item.text.slice(0, maxExamples > 12 ? 400 : 120)}`;
         } else if (unanswered.length) {
           bucket = "no_answer";
           detail = `${item.id} facts ${unanswered.map((f) => f.key).join(", ")} unanswered`;
         } else if (["performance", "brain_mets", "measurable", "lines_or_treated", "biomarker", "histology", "stage_or_status", "health_history", "age", "sex"].includes(topic)) {
           bucket = "extractor_gap";
-          detail = `${item.id} no fact (${topic}): ${item.text.slice(0, 140)}`;
+          detail = `${item.id} no fact (${topic}): ${item.text.slice(0, maxExamples > 12 ? 400 : 140)}`;
         } else {
           bucket = "free_text_only";
           detail = `${item.id} (${topic}): ${item.text.slice(0, 120)}`;
@@ -184,7 +185,7 @@ async function main(): Promise<void> {
       buckets[bucket]++;
       topicCounts[topic] = (topicCounts[topic] ?? 0) + 1;
       (topics[bucket] ??= {})[topic] = (topics[bucket]?.[topic] ?? 0) + 1;
-      if (examples[bucket].length < 12) examples[bucket].push(`${v.id} ${id} ${detail}`);
+      if (examples[bucket].length < maxExamples) examples[bucket].push(`${v.id} ${id} ${detail}`);
     }
   });
 

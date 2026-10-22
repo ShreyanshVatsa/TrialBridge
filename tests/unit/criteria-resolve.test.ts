@@ -122,10 +122,60 @@ describe("resolver: facts", () => {
     expect(lab("inclusion", "ECOG performance status ≤ 2", profile("lung", { daily_activity: "2" }))).toBe("met");
     expect(lab("inclusion", "ECOG performance status 0-1", profile("lung", { daily_activity: "3-4" }))).toBe("not_met");
   });
-  it("prior lines (family below the precision gate: supports only, never a hard failure)", () => {
-    expect(lab("inclusion", "At least 2 prior lines of systemic therapy", profile("lung", { ...TREATED, lines: "1" }))).toBe("unknown");
+  it("prior lines: a plain count is settled by the lines answer (v8), options and carve-outs are not", () => {
+    expect(lab("inclusion", "At least 2 prior lines of systemic therapy", profile("lung", { ...TREATED, lines: "1" }))).toBe("not_met");
     expect(lab("inclusion", "At least 2 prior lines of systemic therapy", profile("lung", { ...TREATED, lines: "3plus" }))).toBe("met");
     expect(lab("inclusion", "At least 2 prior lines of systemic therapy", profile("lung", { ...TREATED, lines: "unknown" }))).toBe("unknown");
+    expect(lab("exclusion", "Have received more than one-line of therapy for locally advanced or metastatic disease", profile("lung", { ...TREATED, lines: "2" }))).toBe("excluded");
+    expect(lab("exclusion", "Have received more than one-line of therapy for locally advanced or metastatic disease", profile("lung", { ...TREATED, lines: "1" }))).toBe("not_excluded");
+    expect(lab("inclusion", "At least 2 prior lines of systemic therapy, unless intolerant to standard therapy", profile("lung", { ...TREATED, lines: "1" }))).toBe("unknown");
+  });
+  it("extent of disease from the spread answer (v8)", () => {
+    const early = profile("breast", { spread: "not_spread" });
+    const distant = profile("breast", { spread: "distant" });
+    const nearby = profile("breast", { spread: "nearby" });
+    const removed = profile("breast", { spread: "removed" });
+    expect(lab("inclusion", "Metastatic breast cancer", distant)).toBe("met");
+    expect(lab("inclusion", "Metastatic breast cancer", early)).toBe("not_met");
+    expect(lab("inclusion", "Locally advanced or metastatic breast cancer", nearby)).toBe("met");
+    expect(lab("inclusion", "Locally advanced or metastatic breast cancer", removed)).toBe("not_met");
+    expect(lab("inclusion", "Pathologically proven diagnosis of invasive breast cancer, clinical stage I or II", distant)).toBe("not_met");
+    expect(lab("inclusion", "No metastatic disease (M0) per most recent PET/CT", distant)).toBe("not_met");
+    expect(lab("inclusion", "Patients must not have recurrent or metastatic (stage IV) breast cancer", distant)).toBe("not_met");
+    expect(lab("exclusion", "Stage IV, metastatic breast cancer", distant)).toBe("excluded");
+    expect(lab("exclusion", "Stage IV, metastatic breast cancer", early)).toBe("not_excluded");
+    // Site-specific metastases, treatment settings, subgroup rules and pain from metastases are not the patient's stage.
+    expect(lab("exclusion", "Known brain metastases", distant)).toBe("unknown");
+    expect(lab("exclusion", "Hepatic-only metastatic disease", distant)).toBe("unknown");
+    expect(lab("exclusion", "Pain due to metastatic prostate cancer requiring opioid treatment", profile("prostate", { spread: "distant" }))).toBe("unknown");
+    expect(lab("inclusion", "Patients with metastatic disease must have measurable lesions", early)).toBe("unknown");
+    expect(lab("inclusion", "Stage I-IV breast cancer", early)).toBe("unknown");
+    expect(lab("inclusion", "Metastatic breast cancer", profile("breast"))).toBe("unknown");
+  });
+  it("treated status from the item's own wording (v8)", () => {
+    const treated = profile("breast", { ...TREATED, lines: "2" });
+    const untreated = profile("breast", NEW);
+    expect(lab("inclusion", "Previously untreated with any systemic anti-cancer therapy for their locoregionally recurrent or metastatic disease", treated)).toBe("not_met");
+    expect(lab("inclusion", "Previously untreated with any systemic anti-cancer therapy for their locoregionally recurrent or metastatic disease", untreated)).toBe("met");
+    expect(lab("inclusion", "Newly diagnosed, previously untreated disease", treated)).toBe("not_met");
+    expect(lab("inclusion", "Relapsed or refractory disease after at least one prior line of therapy", untreated)).toBe("not_met");
+    expect(lab("exclusion", "Any prior systemic therapy for locally advanced unresectable or metastatic breast cancer", treated)).toBe("excluded");
+    expect(lab("exclusion", "Any prior systemic therapy for locally advanced unresectable or metastatic breast cancer", untreated)).toBe("not_excluded");
+    // Class-, drug-, toxicity- and count-specific history items are not settled by the treated flag.
+    expect(lab("inclusion", "No prior therapy with CDK4/6 inhibition", treated)).toBe("unknown");
+    expect(lab("inclusion", "Participants must not have received prior treatment with anti-VEGF therapies", treated)).toBe("unknown");
+    expect(lab("exclusion", "Prior treatment with an Aurora Kinase A specific-targeted agent, including alisertib", treated)).toBe("unknown");
+    expect(lab("exclusion", "Unresolved toxicities from prior therapies", treated)).toBe("unknown");
+    expect(lab("exclusion", "Treatment with chemotherapy in the recurrent or metastatic setting", treated)).toBe("unknown");
+    expect(lab("exclusion", "Prior systemic therapy within 4 weeks of enrollment", treated)).toBe("unknown");
+    expect(lab("inclusion", "No prior systemic treatment for metastatic disease. Participants who received adjuvant therapy may enroll if there was no recurrence within 12 months", treated)).toBe("unknown");
+  });
+  it("registration headers, assessment windows and definitions do not hide a plain rule (v8)", () => {
+    expect(lab("inclusion", "STEP 1: REGISTRATION (SCREENING): Participants must have Zubrod Performance Status of 0-2", profile("lung", { daily_activity: "3-4" }))).toBe("not_met");
+    expect(lab("inclusion", "Have an ECOG performance status of 0 to 1. Evaluation of ECOG is to be performed within 30 days prior to the date of randomization", profile("lung", { daily_activity: "2" }))).toBe("not_met");
+    expect(hasAlternatives("HR positive, HER2 negative breast cancer (estrogen receptor [ER] and/or progesterone receptor [PR] >1%)")).toBe(false);
+    expect(hasAlternatives("Metastatic or locally advanced unresectable breast cancer")).toBe(false);
+    expect(hasAlternatives("Relapsed or refractory multiple myeloma")).toBe(false);
   });
   it("brain metastases with and without the active-only carve-out", () => {
     const t = "Active, untreated brain metastases";

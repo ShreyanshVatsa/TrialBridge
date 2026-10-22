@@ -39,6 +39,8 @@ export interface ResolverProfile {
   /** Histology ids the patient's cancer is / is not (from the subtype option's catalog effects). */
   histologyIs?: ReadonlySet<string>;
   histologyIsNot?: ReadonlySet<string>;
+  /** Extent of disease (solid tumors): the `spread` answer. */
+  spread?: "not_spread" | "nearby" | "distant" | "removed";
   /** ECOG band, e.g. "0-1" -> [0, 1]. */
   ecog?: Range;
   /** Prior lines of therapy for this cancer; newly diagnosed / no treatment -> [0, 0]. */
@@ -114,6 +116,11 @@ export function profileFromState(state: QuestionnaireState, catalog: readonly Qu
     }
   }
 
+  const spread = a("spread");
+  if (spread === "not_spread" || spread === "nearby" || spread === "distant" || spread === "removed") {
+    p.spread = spread;
+    note("spread", "spread");
+  }
   const ecog = a("daily_activity");
   if (typeof ecog === "string" && ECOG_BANDS[ecog]) {
     p.ecog = ECOG_BANDS[ecog];
@@ -449,14 +456,140 @@ function checkCancerType(text: string, p: ResolverProfile, trialGroups: readonly
 }
 
 // ---------------------------------------------------------------------------------------------
+// Extent of disease (the `spread` answer) and treatment history (disease status, treatments, lines)
+// ---------------------------------------------------------------------------------------------
+
+/** Metastases named by site are a finding, not the extent of disease; a treatment's setting is not the patient's stage. */
+const STAGE_NOISE = [
+  /\b(?:brain|cns|central nervous system|leptomeningeal|spinal|spinal cord|bone|liver|lung|hepatic|pulmonary|nodal|lymph node|peritoneal|skin|cutaneous|osseous|visceral|extracranial|intracranial)(?:[- ]only)?[- ](?:only\s+)?metasta\w*/gi,
+  /\bmetasta\w*\s+(?:to|in|of|involving)\s+(?:the\s+)?(?:brain|cns|central nervous system|bones?|spine|spinal cord|liver|lungs?|leptomeninges|lymph nodes?|skin)\b/gi,
+  /\b(?:in|for)\s+(?:the\s+|their\s+)?(?:\w+[- ])?(?:metastatic|advanced|recurrent|adjuvant|neo-?adjuvant|locally advanced|unresectable|curative|palliative|first[- ]line|1L|2L)\s+(?:disease\s+)?setting\b/gi,
+  /\b(?:therap\w*|treatments?|chemotherapy|regimens?|lines?|agents?|drugs?|surgery|radiation|radiotherapy)\s+(?:for|in|of)\s+(?:the\s+|their\s+)?(?:\w+\s+){0,3}?(?:metastatic|advanced|recurrent|unresectable|locally advanced|early[- ]stage|localized)\b(?:\s+(?:disease|cancer|tumou?rs?|setting|\w+))?/gi,
+  /\bhistory of\s+(?:\w+\s+){0,2}(?:metasta\w*)/gi,
+];
+const STAGE_MET = /\bmetastatic\b|\bstage\s*(?:iv|4)[a-c]?\b|\bdistant\s+(?:metasta\w*|disease|spread)|\bM1[a-c]?\b/i;
+const STAGE_NON_MET = /\bnon-?metastatic\b|\bno (?:evidence of |known |clinical or radiographic evidence of )?(?:distant )?metasta\w*|\bwithout (?:distant )?metasta\w*|\bM0\b|\bnegative for (?:any )?(?:distant )?metasta\w*|\babsence of (?:distant )?metasta\w*|\b(?:must not|cannot|may not|should not|do not|does not|not)\s+(?:have|had|be|present with)\s+(?:\w+\s+){0,4}?(?:metastatic|stage\s*(?:iv|4)\b|distant)/i;
+/** The stage word describes something else: pain from metastases, a subgroup's own rule, a lesion site. */
+const STAGE_OTHER_ROLE = /\b(?:due to|secondary to|from|related to|caused by|pain|symptoms?|complications?|lesions? (?:of|in)|biopsy of|sites? of)\s+(?:\w+\s+){0,2}?(?:metastatic|metasta\w*|stage\s*(?:iv|4))\b/i;
+/** An exclusion item that is about the extent of disease itself, not a long rule that mentions it. */
+const STAGE_EXCLUSION_HEAD = /^\W*(?:(?:known|documented|evidence of|presence of|history of|current|patients? with|participants? with|subjects? with|has|have|having|diagnosis of|confirmed)\s+)?(?:(?:\w+[- ]){0,3}?)(?:metastatic|stage\s*(?:iv|4)[a-c]?|distant metasta\w*|M1[a-c]?)\b[^.;:]{0,60}$/i;
+const STAGE_ADVANCED = /\blocally advanced\b|\badvanced\b|\bunresectable\b|\binoperable\b|\bnot amenable to (?:curative |surgical )?(?:resection|surgery|local therapy)/i;
+const STAGE_EARLY = /\bearly[- ]stage\b|\blocali[sz]ed\b|\bstage\s*(?:0|i{1,3}|[1-3])[a-c]?\b/i;
+/** The stage words belong to a resection or adjuvant context ("completely resected stage II"), where `removed` patients fit. */
+const STAGE_RESECTED = /\bresect|\badjuvant\b|\bafter (?:definitive )?surgery\b|\bpost-?operative\b|\bno evidence of (?:residual )?disease\b|\bNED\b/i;
+
+/**
+ * Extent of disease stated by the item against the `spread` answer. Only the plain cases are settled: metastatic /
+ * stage IV / distant disease, non-metastatic, advanced or unresectable, and early-stage / stage I-III wording that does
+ * not also offer stage IV. Site-specific metastases and treatment settings are ignored (STAGE_NOISE).
+ */
+function checkStage(text: string, p: ResolverProfile, section: SplitCriterion["section"]): Checked | null {
+  if (SUBGROUP_RULE.test(text) || STAGE_OTHER_ROLE.test(text)) return null;
+  let t = text;
+  for (const re of STAGE_NOISE) t = t.replace(re, " ");
+  if (section === "exclusion" && !STAGE_EXCLUSION_HEAD.test(t)) return null;
+  const nonMet = STAGE_NON_MET.test(t);
+  // "No metastatic disease" is a non-metastatic statement, not a metastatic one.
+  const met = STAGE_MET.test(t.replace(new RegExp(`${STAGE_NON_MET.source}(?:\\s*\\([^)]*\\))?`, "gi"), " "));
+  const advanced = STAGE_ADVANCED.test(t);
+  const early = STAGE_EARLY.test(t);
+  if (!met && !nonMet && !advanced && !early) return null;
+  const open = (): Checked => ({ key: "stage", verdict: "open", questions: [] });
+  const sp = p.spread;
+  if (!sp) return open();
+  const q = p.sources.spread ?? [];
+  const out = (verdict: Verdict): Checked => ({ key: "stage", verdict, questions: q });
+  if (section === "exclusion") {
+    // "Metastatic disease", "stage IV": excluded for distant spread; anything else stays open.
+    if (met && !nonMet && !early) return out(sp === "distant" ? "fail" : "ok");
+    return open();
+  }
+  if (met && nonMet) return open(); // "metastatic or non-metastatic"
+  if (nonMet) return out(sp === "distant" ? "fail" : "ok");
+  if (met) {
+    if (early && !advanced) return open(); // "stage I-IV", "any stage"
+    if (sp === "distant") return out("ok");
+    if (sp === "nearby") return out(advanced || /\bstage\s*(?:iii|3)\b/i.test(t) ? "ok" : "fail");
+    if (sp === "removed") return STAGE_RESECTED.test(t) ? open() : out("fail");
+    return out("fail");
+  }
+  if (advanced) {
+    if (sp === "distant" || sp === "nearby") return out("ok");
+    if (sp === "not_spread") return out("fail");
+    return open();
+  }
+  // Early-stage wording only.
+  if (sp === "distant") return out("fail");
+  if (sp === "not_spread") return out("ok");
+  return open();
+}
+
+/** "newly diagnosed", "previously untreated", "no prior systemic therapy": the item wants an untreated patient. */
+const UNTREATED_REQUIRED = /\b(?:newly diagnosed|previously untreated|treatment[- ]na[iï]ve|therapy[- ]na[iï]ve|untreated|no (?:prior|previous) (?:systemic |anti-?cancer )?(?:therapy|treatment)|not (?:have )?(?:previously )?(?:received|had|been treated with) (?:any )?(?:prior |previous )?(?:systemic |anti-?cancer )?(?:therapy|treatment))\b/i;
+/** Wording that makes a treatment-history item about one class, drug, toxicity or count rather than "any treatment". */
+const TREATMENT_SPECIFIC = /\banti-?(?:[A-Z]|\w+-)|\b(?:chemotherap\w*|immunotherap\w*|targeted|endocrine|hormon\w*|radiat\w*|radiotherap\w*|ADCs?|antibod\w*|inhibit\w*|agents?|directed|specific|toxicit\w*|recover\w*|unresolved|adverse|investigational|vaccine|transplant\w*|CAR-?T|cell therap\w*|degrader|conjugate|platinum|taxane|anthracycline|maintenance|consolidation|intervening|study (?:drug|treatment)|\d+\s*(?:lines?|regimens?)|(?:one|two|three|four|five)\s*(?:lines?|regimens?)|lines? of|regimens?)\b/i;
+/** Plain "any prior systemic therapy" exclusion wording. */
+const PRIOR_SYSTEMIC_EXCLUSION = /\b(?:any|prior|previous|received|receipt of)\s+(?:prior\s+|previous\s+)?(?:systemic|anti-?cancer|anti-?neoplastic)\s+(?:anti-?cancer\s+)?(?:therapy|therapies|treatments?)\b|\bprior (?:systemic )?(?:therapy|treatment) (?:for|in)\b/i;
+/** "relapsed or refractory", "progressed on prior therapy", "after at least one prior line": the item wants a treated patient. */
+const TREATED_REQUIRED = /\b(?:relapsed|refractory|previously treated|pre-?treated|progress(?:ed|ion|ing) (?:on|after|following|during|despite)|failed|failure of|intolerant to|after (?:at least )?(?:one|1|two|2|three|3|\d+) (?:or more )?(?:prior |previous )?(?:lines?|regimens?|therap)|at least (?:one|1|two|2|three|3|\d+) (?:prior |previous )?(?:lines?|regimens?|systemic))\b/i;
+/** The treatment history is counted in one setting ("for metastatic disease", "in the recurrent setting"). */
+const SETTING_QUALIFIED = /\b(?:for|in)\s+(?:the\s+|their\s+)?(?:\w+[- ]){0,3}?(?:metastatic|advanced|recurrent|unresectable|inoperable|locally advanced|relapsed)\b/i;
+
+/** Lines of therapy received after progression, when the answers say so (newly diagnosed = 0). */
+function priorLines(p: ResolverProfile): Range | undefined {
+  return p.lines;
+}
+
+/**
+ * Treated-status verdict for one item, from the questionnaire's treated flag and line count. The rule families behind
+ * these keys are below the precision gate on whole-trial facts, so only items whose own wording is unambiguous are
+ * settled here: a plain "untreated required" or "treated required" statement (inclusion) or a plain "prior therapy"
+ * exclusion, with no carve-out, no option wording and nothing addressed to a subgroup. A setting qualifier ("for
+ * metastatic disease") is answered by the line count after progression, not by the treated flag.
+ */
+function checkTreated(text: string, p: ResolverProfile, section: SplitCriterion["section"]): Checked | null {
+  if (CARVE_OUT.test(text) || PERMISSIVE_ITEM.test(text) || UNTREATED_NON_CANCER.test(text) || SUBGROUP_RULE.test(text)) return null;
+  const untreated = UNTREATED_REQUIRED.test(text);
+  const treated = TREATED_REQUIRED.test(text);
+  const lines = priorLines(p);
+  const q = [...(p.sources.treated ?? []), ...(p.sources.lines ?? [])];
+  const out = (verdict: Verdict): Checked => ({ key: "treated", verdict, questions: q });
+  const specific = TREATMENT_SPECIFIC.test(text) || mentionsDrug(text);
+  if (section === "inclusion") {
+    if (untreated === treated) return null; // neither, or both ("relapsed or newly diagnosed")
+    if (untreated) {
+      // "No prior therapy with CDK4/6 inhibition" is about one class: not settled by the treated flag.
+      if (specific && !/\b(?:newly diagnosed|previously untreated|treatment[- ]na[iï]ve)\b/i.test(text)) return null;
+      if (SETTING_QUALIFIED.test(text)) return lines ? out(lines[0] >= 1 ? "fail" : "ok") : out("open");
+      return p.treated === undefined ? out("open") : out(p.treated ? "fail" : "ok");
+    }
+    return p.treated === undefined ? out("open") : out(p.treated ? "ok" : "fail");
+  }
+  // Exclusion: plain "any prior systemic therapy (for metastatic disease)" excludes a treated patient; anything about
+  // a class, a named drug, a count, toxicity or a washout window is not settled here.
+  if (!PRIOR_SYSTEMIC_EXCLUSION.test(text) || specific || /\bwithin\b|\bwash-?out\b/i.test(text)) return null;
+  if (SETTING_QUALIFIED.test(text)) return lines ? out(lines[0] >= 1 ? "fail" : "ok") : out("open");
+  return p.treated === undefined ? out("open") : out(p.treated ? "fail" : "ok");
+}
+
+// ---------------------------------------------------------------------------------------------
 // Item shape: windows, alternatives, residual content
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * "within 28 days prior to randomization", "performed within 7 days before registration": when the test is done, not
+ * when something happened to the patient. Removed before the time-window check.
+ */
+const ASSESSMENT_WINDOW = /\b(?:ECOG|performance status|Zubrod|Karnofsky|evaluation|assessment|assessed|performed|obtained|documented|measured|evaluated|laboratory|labs?|scans?|imaging|tests?|tested|testing)\b[^.;]{0,60}?within\s+(?:the\s+)?\d+\s+(?:days?|weeks?)\s+(?:prior to|before|of|preceding)\s+(?:the\s+)?(?:date of\s+|first\s+|start of\s+|initiation of\s+)?(?:randomi[sz]ation|registration|enrol?lment|allocation|study entry|screening|study treatment|study drug|treatment start|dosing|first dose|cycle 1|C1D1|baseline|protocol therapy|study (?:entry|start))\b/gi;
+/** "STEP 1: REGISTRATION (SCREENING):", "REGISTRATION ELIGIBILITY CRITERIA (STEP 1)": the registration step of every participant, not a cohort. */
+const REGISTRATION_HEADER = /^\W*(?:step\s*\d+\s*[:\-]?\s*)?(?:registration|screening|pre-?registration|eligibility)\s*(?:\((?:screening|step\s*\d+)\))?\s*(?:eligibility\s*)?(?:criteria)?\s*(?:\(step\s*\d+\))?\s*:\s*/i;
 const TIME_WINDOW = /\bwithin\s+(?:the\s+)?(?:(?:last|past|previous|prior)\s+)?(?:\d+|one|two|three|four|five|six|eight|twelve)\b|\b(?:in|during)\s+the\s+(?:last|past|previous|prior)\s+(?:\d+|one|two|three|four|five|six|twelve)?\s*(?:days?|weeks?|months?|years?)\b|\b\d+\s*(?:days?|weeks?|months?|half-lives)\s+(?:prior|before|of|after|since)\b|\bwash-?out\b|\blast dose\b|(?:>=|\u2265|at least)\s*\d+\s*(?:days?|weeks?|months?)\b/i;
 
 /** "or" forms that are not alternatives between criteria: number ranges, comparators, method pairs, sex pairs. */
 const BENIGN_OR = [
   /\b\d+(?:\.\d+)?\s*(?:,\s*\d+\s*,?\s*)?(?:or|and\/or)\s*\d+(?:\.\d+)?\b/gi,
+  // Stage lists ("stage I or II", "stages IIIB/IIIC or IV") name a range of one attribute.
+  /\bstages?\s*(?:0|i{1,3}|iv|[1-4])[a-c]?(?:\s*(?:,|\/|or|and\/or|and|-|–|to)\s*(?:stages?\s*)?(?:0|i{1,3}|iv|[1-4])[a-c]?\b)+/gi,
   /\b(?:equal to|greater than|less than|more than|fewer than|higher than|lower than|older|younger|above|below|at least)\s+(?:or|and\/or)\s+/gi,
   /\b(?:or|and\/or)\s+(?:equal|older|younger|greater|less|more|above|below|higher|lower|over|under)\b/gi,
   /\b(?:histologic(?:al)?ly|cytologic(?:al)?ly|pathologic(?:al)?ly|radiographic(?:al)?ly|clinically)\s*(?:,\s*\w+\s*,?\s*)?(?:or|and\/or)\s*(?:histologic|cytologic|pathologic|radiographic|clinical)\w*/gi,
@@ -467,23 +600,42 @@ const BENIGN_OR = [
   /\b(?:ER|estrogen receptor)\s*(?:and\/or|or|\/)\s*(?:PR|progesterone receptor)\b/gi,
   // Specimen, disease-extent and test-method pairs describe how or where, not a second criterion.
   /\b(?:tissue|blood|plasma|serum|archival|fresh|liquid)\s+(?:biopsy\s+)?(?:or|and\/or)\s+(?:tissue|blood|plasma|serum|archival|fresh|liquid)\b/gi,
-  /\b(?:locally advanced|advanced|metastatic|unresectable)\s+(?:or|and\/or)\s+(?:metastatic|unresectable|recurrent)\b/gi,
+  /\b(?:locally advanced|locally recurrent|advanced|metastatic|unresectable|inoperable|incurable|recurrent|stage\s*(?:iv|4|iii|3)[a-c]?)\b(?:\s*(?:,|\/|or|and\/or|and)\s*(?:locally advanced|locally recurrent|advanced|metastatic|unresectable|inoperable|incurable|recurrent|stage\s*(?:iv|4|iii|3)[a-c]?)\b)+/gi,
+  // Disease-status pairs ("relapsed or refractory"), histology-inclusive pairs ("squamous or non-squamous") and
+  // testing-site pairs ("local or central") describe one state or one method, not two criteria.
+  /\b(?:relapsed|relapsing|recurrent|refractory|progressive|progressed|persistent|resistant)\s*(?:\/|,|or|and\/or|and)\s*(?:relapsed|relapsing|recurrent|refractory|progressive|progressed|persistent|resistant)\b/gi,
+  /\b(?:squamous|non-?squamous|nonsquamous)\s+(?:or|and\/or|and)\s+(?:squamous|non-?squamous|nonsquamous)\b/gi,
+  /\b(?:local|central|locally|centrally)\s+(?:or|and\/or)\s+(?:local|central|locally|centrally)\b/gi,
+  /\b(?:IHC|ISH|FISH|NGS|PCR)\s*(?:\/|or|and\/or)\s*(?:IHC|ISH|FISH|NGS|PCR)\b/gi,
   /\b(?:surgical resection|surgery|resection)\s+(?:or|and\/or)\s+(?:radiation(?: therapy)?|radiotherapy)\b/gi,
   // One excluding condition named two ways, or two infections both settled by one answer.
   /\b(?:pregnant|pregnancy)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:(?:are|is)\s+)?(?:breast-?\s?feeding|lactating|nursing)\b/gi,
   /\b(?:hepatitis\s*B|HBV)\s*(?:,\s*)?(?:or|and\/or|\/)\s*(?:hepatitis\s*)?(?:C|HCV)\b/gi,
   /\b(?:FISH|IHC|NGS|PCR|ctDNA|cfDNA|CISH)\b[^.;]{0,60}?\b(?:or|and\/or)\s*(?:\(\d\)\s*)?(?:a |an |the )?(?:fluorescence|immuno\w*|next|tissue|circulating|cell-free|cfDNA|ctDNA|FISH|IHC|NGS|PCR|CISH|blood|plasma|polymerase|sequencing|in situ)/gi,
 ];
+/**
+ * Definitions and asides that are not criteria of their own: bracketed and parenthetical text ("(ER and/or PR >1%)"),
+ * and sub-bullets that define a term ("HER2 negativity is defined as either of the following").
+ */
+const DEFINITION_LINE = /^\s*[-*\u2022]\s+[^\n]*\b(?:defined as|is defined|are defined|will be defined|definition of|will be included|is considered|are considered)\b[^\n]*$/gim;
+export function stripDefinitions(text: string): string {
+  let t = text.replace(/\[[^\]]*\]/g, " ");
+  for (let i = 0; i < 3; i++) t = t.replace(/\([^()]*\)/g, " ");
+  return t.replace(DEFINITION_LINE, " ");
+}
+
 /** True when the item offers alternatives that a fact-by-fact check would misread. Exported for tests. */
 export function hasAlternatives(text: string): boolean {
   let t = text;
+  for (const re of BENIGN_OR) t = t.replace(re, " ");
+  t = stripDefinitions(t);
   for (const re of BENIGN_OR) t = t.replace(re, " ");
   return /\b(?:or|and\/or|either|one of the following|any of the following|at least one of)\b/i.test(t);
 }
 
 /** Words that carry no criterion content of their own. */
 const FILLER = new Set(
-  "a an the of to in on for with without by at as and is are be been being must should will have has had having patients patient participants participant subjects subject who which that this these those any all no not none known documented confirmed histologically cytologically pathologically diagnosis diagnosed evidence history prior previous previously current currently presence present status disease cancer carcinoma tumor tumors tumour malignancy defined per score level levels test tested testing result results positive negative mutation mutations mutated alteration alterations amplification amplified expression overexpression fusion rearrangement wild type wildtype germline somatic years year old age aged older younger or than equal greater less at least more over under between ecog performance eastern cooperative oncology group karnofsky kps lansky line lines regimen regimens therapy therapies treatment treatments treated untreated systemic received receiving newly brain cns central nervous system metastases metastasis metastatic leptomeningeal active stable symptomatic untreated measurable evaluable recist criteria lesion lesions according version male female men women other another second malignancies malignant cancers neoplasm neoplasms only also i ii iii iv ie eg e.g i.e".split(" "),
+  "a an the of to in on for with without by at as and is are be been being must should will have has had having patients patient participants participant subjects subject who which that this these those any all no not none known documented confirmed histologically cytologically pathologically diagnosis diagnosed evidence history prior previous previously current currently presence present status disease cancer carcinoma tumor tumors tumour malignancy defined per score level levels test tested testing result results positive negative mutation mutations mutated alteration alterations amplification amplified expression overexpression fusion rearrangement wild type wildtype germline somatic years year old age aged older younger or than equal greater less at least more over under between ecog performance eastern cooperative oncology group karnofsky kps lansky line lines regimen regimens therapy therapies treatment treatments treated untreated systemic received receiving newly brain cns central nervous system metastases metastasis metastatic leptomeningeal active stable symptomatic untreated measurable evaluable recist criteria lesion lesions according version male female men women other another second malignancies malignant cancers neoplasm neoplasms only also i ii iii iv ie eg e.g i.e advanced locally unresectable inoperable distant stage staged early localized localised non-metastatic nonmetastatic solid relapsed refractory recurrent progressed progression anti-cancer anticancer".split(" "),
 );
 const TOKEN = /[A-Za-z][A-Za-z0-9-]*/g;
 
@@ -564,6 +716,8 @@ const label = (item: SplitCriterion, value: CriterionLabelValue, reason: string,
 
 const FAIL_REASON: Record<string, string> = {
   age: "Your age is outside the age range for this rule.",
+  stage: "Your answer about how far the cancer has spread does not fit this rule.",
+  treated: "Your answers about past treatment do not fit this rule.",
   sex: "This rule is for a different sex.",
   ecog_max: "Your daily activity level is outside what this rule allows.",
   min_prior_lines: "This rule needs more past treatments than you reported.",
@@ -592,6 +746,7 @@ const OTHER_CANCER_WORDS = /\bmalignan\w*|\b(?:other|another|second|additional|c
 /** "ECOG = 3": an exact value, which the extractor reads as a ceiling. */
 const ECOG_EXACT = /(?:^|[^<>=\u2264\u2265])=\s*[1-4]\b(?!\s*-)/;
 const TREATED_KEYS = new Set(["previously_treated", "newly_diagnosed", "min_prior_lines", "max_prior_lines"]);
+const STAGE_KEYS = new Set(["metastatic", "locally_advanced", "adjuvant_setting"]);
 const UNTREATED_NON_CANCER = /\buntreated\s+(?:\w+\s+){0,2}(?:brain|cns|metasta\w*|lesions?|infections?|spinal|cord compression|leptomeningeal|hypertension|thyroid|disease of)\b/i;
 const CARVE_OUT = /\b(?:unless|except|other than|with the exception of|permitted|allowed|acceptable|may (?:be|have)|eligible if|are eligible)\b/i;
 /**
@@ -639,8 +794,10 @@ function msiDirection(section: "inclusion" | "exclusion", text: string): "requir
 /** Label one criterion item. Pure. */
 export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: ResolveContext): ResolvedLabel {
   const incl = item.section === "inclusion";
-  if (item.scope || cohortSpecific(item.text) || SUB_LABELS(item.text) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
-  const text = normalizeMarkers(item.text);
+  const body = item.text.replace(REGISTRATION_HEADER, "");
+  if (item.scope || cohortSpecific(body) || SUB_LABELS(body) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
+  // "one-line of therapy" -> "one line of therapy" so the line-count parser sees the unit.
+  const text = normalizeMarkers(body).replace(/\b(\d+|one|two|three|four)-(lines?|regimens?)\b/gi, "$1 $2");
   const facts = factsForCriterion(item.section, text, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
   const msi = msiDirection(item.section, text);
   if (msi) {
@@ -650,11 +807,15 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
   }
   const directional = facts.filter((f) => f.value !== "mentioned");
   const checks: Checked[] = [];
-  for (const c of [checkAge(text, p, item.section), checkSex(text, p, item.section), incl ? checkCancerType(text, p, ctx.groups) : null]) if (c) checks.push(c);
+  const treatedCheck = checkTreated(text, p, item.section);
+  const stageCheck = checkStage(text, p, item.section);
+  for (const c of [checkAge(text, p, item.section), checkSex(text, p, item.section), incl ? checkCancerType(text, p, ctx.groups) : null, stageCheck, treatedCheck]) if (c) checks.push(c);
   const untreatedOther = UNTREATED_NON_CANCER.test(text);
   const carveOut = CARVE_OUT.test(text);
   for (const f of directional) {
     if (!allowedKey(f.key)) continue;
+    // The item's own treated-status reading (checkTreated) replaces the whole-trial fact for these keys.
+    if (treatedCheck && (f.key === "previously_treated" || f.key === "newly_diagnosed")) continue;
     // "untreated brain metastases / lesion / infection" is not about treatment history; carve-outs ("unless",
     // "adjuvant therapy is permitted") are not modeled for treated status and line counts.
     const loose = SUBGROUP_RULE.test(text) || (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
@@ -662,16 +823,20 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     // pregnancy items ask for a test or contraception that "not pregnant" alone does not meet).
     checks.push({ key: f.key, verdict: loose || (incl && isHistoryKey(f.key)) ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
   }
-  const outside = directional.filter((f) => !allowedKey(f.key));
+  // Stage facts of the whole-trial extractor are explained by the item's own stage reading.
+  const outside = directional.filter((f) => !allowedKey(f.key) && !(stageCheck && STAGE_KEYS.has(f.key)));
   if (checks.length === 0) return label(item, "unknown", "Our questions do not cover this rule.");
 
   // A time window our answers can't settle ("within 4 weeks"); the other-cancer years window is settled by checkFact.
-  const window = TIME_WINDOW.test(text) && !checks.every((c) => c.key === "other_malignancy");
+  const window = TIME_WINDOW.test(text.replace(ASSESSMENT_WINDOW, " ")) && !checks.every((c) => c.key === "other_malignancy");
   if (window) return label(item, "unknown", "Depends on dates your answers do not include.");
 
   const alternatives = hasAlternatives(text) || markerList(text);
   // Policy gate: families below the precision gate never create a hard failure.
-  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || (factPolicy(c.key).penalize && !factPolicy(c.key).belowGate) || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text))));
+  // Line counts: a plain count (the extractor already demotes class-specific and conditional counts to "mentioned")
+  // with no carve-out or option wording is settled by the lines answer.
+  const linesPrecise = !carveOut && !PERMISSIVE_ITEM.test(text) && !SUBGROUP_RULE.test(text);
+  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || c.key === "stage" || c.key === "treated" || (factPolicy(c.key).penalize && !factPolicy(c.key).belowGate) || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text) && !TREATMENT_SPECIFIC.test(text) && !mentionsDrug(text)) || ((c.key === "min_prior_lines" || c.key === "max_prior_lines") && linesPrecise)));
   // Inclusion alternatives: one failing option does not fail the item. Exclusion alternatives are a list of
   // excluding conditions, so any one of them that applies excludes.
   if (fails.length > 0 && !(incl && (alternatives || PERMISSIVE_ITEM.test(text)))) {
