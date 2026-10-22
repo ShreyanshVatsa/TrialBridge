@@ -133,3 +133,12 @@ Paired vs the v7 prompt (same topics): short instructions -0.024 [-0.053, 0.001]
 | vignette dev excluded share in top 10 | 0.517 | 0.516; vs v7 -0.029 [-0.048, -0.011] |
 | TREC dev resolver nDCG@10 (no judge; baseline is 0.521 after step 3) | | 0.545 [0.432, 0.665]; vs baseline +0.024 [-0.040, 0.096]; missed exclusions 0.280, P@10 0.390 |
 | items settled, every question answered (1,000 trials) | 6.9% | 7.1% |
+
+## 5. Final checks (2026-10-22)
+
+- Vignette test split, run once: pipeline:v8+resolver nDCG@10 0.296 [0.236, 0.354] (v7+resolver 0.295; v4 0.307, paired -0.011 [-0.053, 0.028]); excluded share in the top 10 0.455 (v7 0.487); retrieval order alone (pipeline:v8) 0.320 [0.257, 0.384], the best system on test. The resolver's dev gain does not show up as nDCG on test, as in v7; it does lower the excluded share there.
+- TREC dev, final code, judge arm (all 16 completions cached from the step-4 run, so the sent items were unchanged by step 5): baseline 0.521, resolver 0.545, resolver+LLM 0.562 [0.449, 0.681]; missed exclusions 0.340 / 0.280 / 0.240; 6,527 tokens per patient, coverage 98.9%. TREC test: not run.
+- `npm run eval`: national pipeline nDCG@10 0.780 [0.691, 0.858], oracle top 15 0 of 600, v2 - v1 -0.003 [-0.021, 0.015].
+- Unit 1,287/1,287 with coverage thresholds, lint and typecheck clean, `npm run build`, `npm run budgets` (the /find/ JS budget raised 370 -> 380 KB for the resolver chunk, measured 374), `npm run data:verify`, e2e 84/84 on the final build, `npm run local:check` 7/7 against the built site.
+- Final timings (same script, final build): cold 1.5 s / warm 0.39 s to results on localhost; cold transfer app 661 KB, data 3,610 KB, model 15,685 KB, ORT wasm 3,636 KB; one 97-112 ms long task.
+- Groq: about 135k tokens spent over the two days on four paced dev runs (no translation jobs started); nothing is pending on quota.
