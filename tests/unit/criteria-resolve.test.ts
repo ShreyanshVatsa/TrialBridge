@@ -170,6 +170,29 @@ describe("resolver: facts", () => {
     expect(lab("exclusion", "Prior systemic therapy within 4 weeks of enrollment", treated)).toBe("unknown");
     expect(lab("inclusion", "No prior systemic treatment for metastatic disease. Participants who received adjuvant therapy may enroll if there was no recurrence within 12 months", treated)).toBe("unknown");
   });
+  it("negated marker lists, option-by-option alternatives, subtype items and plain hepatitis exclusions (v8)", () => {
+    const egfr = profile("lung", { biomarkers: { EGFR: "positive", ALK: "negative", ROS1: "negative" } });
+    expect(lab("inclusion", "Metastatic Stage IV NSCLC without EGFR, ALK, or ROS1 genomic alterations", { ...egfr, spread: "distant" })).toBe("not_met");
+    expect(lab("inclusion", "Adenocarcinoma of the lung that does not have an EGFR sensitizing mutation or ALK or ROS1 translocation", egfr)).toBe("not_met");
+    expect(lab("inclusion", "Has no known tumour genomic alterations in NTRK, BRAF V600, RET, MET exon 14 skipping, KRAS G12C, or HER2", profile("lung", { biomarkers: { KRAS: "positive" } }))).toBe("unknown");
+    const hrPos = profile("breast", { biomarkers: { HER2: "negative", HR: "positive" } });
+    expect(lab("inclusion", "Have HER2-positive or triple-negative breast cancer", hrPos)).toBe("not_met");
+    expect(lab("inclusion", "Metastatic breast cancer that is triple negative or ER-positive", { ...hrPos, spread: "distant" })).toBe("unknown");
+    expect(lab("inclusion", "EGFR mutation or ALK rearrangement", profile("lung", { biomarkers: { EGFR: "negative", ALK: "negative" } }))).toBe("not_met");
+    expect(lab("inclusion", "EGFR mutation or ALK rearrangement", profile("lung", { biomarkers: { EGFR: "negative" } }))).toBe("unknown");
+    const sclc = profile("lung", { subtype: "sclc" });
+    expect(lab("inclusion", "Histologically or cytologically confirmed non-squamous NSCLC", sclc)).toBe("not_met");
+    expect(lab("inclusion", "Patients with NSCLC must have measurable disease", sclc)).toBe("unknown");
+    const hepC = profile("lymphoma", { hepatitis: "hep_c" });
+    expect(lab("exclusion", "Known hepatitis B or C virus infection", hepC)).toBe("excluded");
+    expect(lab("exclusion", "Known hepatitis B or C virus infection", profile("lymphoma", { hepatitis: "no" }))).toBe("not_excluded");
+    expect(lab("exclusion", "Positive test for hepatitis C ribonucleic acid (HCV RNA)", hepC)).toBe("unknown");
+    expect(lab("exclusion", "Active hepatitis B infection (HBsAg positive) without receiving antiviral treatment", profile("lymphoma", { hepatitis: "hep_b" }))).toBe("unknown");
+    expect(lab("inclusion", "Known BRAF mutational status", profile("melanoma", { biomarkers: { BRAF: "negative" } }))).toBe("unknown");
+    expect(lab("exclusion", "Patients in Phase 2b with IDH-wildtype glioblastoma who have had more than one recurrence", profile("brain", { biomarkers: { IDH: "negative" } }))).toBe("unknown");
+    expect(lab("inclusion", "For IDH-mutated glioma, prior treatment with both radiation and alkylating chemotherapy", profile("brain", { biomarkers: { IDH: "negative" } }))).toBe("unknown");
+    expect(lab("inclusion", "Age:\n- Synovial Sarcoma: 2 to 17 years\n- Osteosarcoma: 2 to 21 years", profile("sarcoma"))).toBe("unknown");
+  });
   it("registration headers, assessment windows and definitions do not hide a plain rule (v8)", () => {
     expect(lab("inclusion", "STEP 1: REGISTRATION (SCREENING): Participants must have Zubrod Performance Status of 0-2", profile("lung", { daily_activity: "3-4" }))).toBe("not_met");
     expect(lab("inclusion", "Have an ECOG performance status of 0 to 1. Evaluation of ECOG is to be performed within 30 days prior to the date of randomization", profile("lung", { daily_activity: "2" }))).toBe("not_met");
@@ -234,7 +257,9 @@ describe("resolver: items left to the judge", () => {
     expect(hasAlternatives("EGFR mutation or ALK rearrangement")).toBe(true);
     expect(hasAlternatives("ECOG performance status of 0 or 1")).toBe(false);
     expect(hasAlternatives("Histologically or cytologically confirmed NSCLC")).toBe(false);
-    expect(lab("inclusion", "EGFR mutation or ALK rearrangement", p)).toBe("unknown");
+    // v8: every option is checked; both markers negative => not met, one unknown => unknown.
+    expect(lab("inclusion", "EGFR mutation or ALK rearrangement", p)).toBe("not_met");
+    expect(lab("inclusion", "EGFR mutation or ALK rearrangement", profile("lung", { biomarkers: { EGFR: "negative" } }))).toBe("unknown");
   });
   it("time windows the answers can't settle", () => {
     expect(lab("exclusion", "Brain metastases treated within 4 weeks of enrollment", p)).toBe("unknown");

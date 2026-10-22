@@ -20,7 +20,7 @@ import { factsForCriterion, preciseTreatedExclusion } from "@/lib/ingest/facts";
 import type { SplitCriterion } from "@/lib/ingest/criteria-split";
 import { cancerSynonyms, canonicalDrug, canonicalGene } from "@/lib/ingest/synonyms";
 import type { CriterionLabel, CriterionLabelValue, TrialCriteriaLabels } from "@/lib/types/criteria";
-import { isScopedParam, type FactParam, type FactValue, type TrialCard } from "@/lib/types/trial";
+import { isScopedParam, type FactKey, type FactParam, type FactValue, type TrialCard } from "@/lib/types/trial";
 import type { QuestionDef, QuestionnaireState } from "@/lib/types/questionnaire";
 import { activeQuestions, isNonResponse, isNonResponseId } from "@/lib/questionnaire/rules";
 
@@ -388,7 +388,9 @@ export function parseAgeBounds(text: string): { min?: number; minStrict?: boolea
   if (!AGE_CONTEXT.test(text) || AGE_NOT_PATIENT.test(text)) return null;
   const t = text.replace(/≥/g, ">=").replace(/≤/g, "<=");
   const out: { min?: number; minStrict?: boolean; max?: number; maxStrict?: boolean } = {};
-  const range = /\b(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})\s*(?:years?|yrs?)\b/i.exec(t);
+  const ranges = [...t.matchAll(/\b(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})\s*(?:years?|yrs?)\b/gi)];
+  if (ranges.length > 1) return null; // several ranges ("2 to 17 years for X, 2 to 21 years for Y"): per-group rules
+  const range = ranges[0];
   if (range && /\bbetween\b|\baged?\b|\bages\b|-|–|\bto\b/i.test(t)) return { min: Number(range[1]), max: Number(range[2]) };
   const min =
     /(?:>=|=>|\bat least|\bminimum(?: age)?(?: of)?|\baged?\s*>=)\s*(\d{1,3})\s*(?:years?|yrs?)?/i.exec(t) ??
@@ -464,7 +466,7 @@ const STAGE_NOISE = [
   /\b(?:brain|cns|central nervous system|leptomeningeal|spinal|spinal cord|bone|liver|lung|hepatic|pulmonary|nodal|lymph node|peritoneal|skin|cutaneous|osseous|visceral|extracranial|intracranial)(?:[- ]only)?[- ](?:only\s+)?metasta\w*/gi,
   /\bmetasta\w*\s+(?:to|in|of|involving)\s+(?:the\s+)?(?:brain|cns|central nervous system|bones?|spine|spinal cord|liver|lungs?|leptomeninges|lymph nodes?|skin)\b/gi,
   /\b(?:in|for)\s+(?:the\s+|their\s+)?(?:\w+[- ])?(?:metastatic|advanced|recurrent|adjuvant|neo-?adjuvant|locally advanced|unresectable|curative|palliative|first[- ]line|1L|2L)\s+(?:disease\s+)?setting\b/gi,
-  /\b(?:therap\w*|treatments?|chemotherapy|regimens?|lines?|agents?|drugs?|surgery|radiation|radiotherapy)\s+(?:for|in|of)\s+(?:the\s+|their\s+)?(?:\w+\s+){0,3}?(?:metastatic|advanced|recurrent|unresectable|locally advanced|early[- ]stage|localized)\b(?:\s+(?:disease|cancer|tumou?rs?|setting|\w+))?/gi,
+  /\b(?:therap\w*|treatments?|treated|chemotherapy|immunotherapy|endocrine|hormonal|regimens?|lines?|cycles?|doses?|courses?|agents?|drugs?|surgery|radiation|radiotherapy|SoC|standard of care|received|receipt of|given|administered)\s+(?:for|in|of|as)\s+(?:the\s+|their\s+)?(?:\w+\s+){0,3}?(?:metastatic|advanced|recurrent|unresectable|locally advanced|early[- ]stage|localized)\b(?:\s+(?:disease|cancer|tumou?rs?|setting|\w+))?/gi,
   /\bhistory of\s+(?:\w+\s+){0,2}(?:metasta\w*)/gi,
 ];
 const STAGE_MET = /\bmetastatic\b|\bstage\s*(?:iv|4)[a-c]?\b|\bdistant\s+(?:metasta\w*|disease|spread)|\bM1[a-c]?\b/i;
@@ -592,7 +594,9 @@ const BENIGN_OR = [
   /\bstages?\s*(?:0|i{1,3}|iv|[1-4])[a-c]?(?:\s*(?:,|\/|or|and\/or|and|-|–|to)\s*(?:stages?\s*)?(?:0|i{1,3}|iv|[1-4])[a-c]?\b)+/gi,
   /\b(?:equal to|greater than|less than|more than|fewer than|higher than|lower than|older|younger|above|below|at least)\s+(?:or|and\/or)\s+/gi,
   /\b(?:or|and\/or)\s+(?:equal|older|younger|greater|less|more|above|below|higher|lower|over|under)\b/gi,
-  /\b(?:histologic(?:al)?ly|cytologic(?:al)?ly|pathologic(?:al)?ly|radiographic(?:al)?ly|clinically)\s*(?:,\s*\w+\s*,?\s*)?(?:or|and\/or)\s*(?:histologic|cytologic|pathologic|radiographic|clinical)\w*/gi,
+  /\b(?:histologic(?:al)?ly|histopathologic(?:al)?ly|cytologic(?:al)?ly|pathologic(?:al)?ly|radiographic(?:al)?ly|radiologic(?:al)?ly|clinically)\s*(?:,\s*\w+\s*,?\s*)?(?:,?\s*(?:or|and\/or|and)\s*(?:histologic|histopathologic|cytologic|pathologic|radiographic|radiologic|clinical)\w*)+/gi,
+  /\b(?:on|during|prior to|before|at)\s+or\s+(?:after|following|during|within|after)\b/gi,
+  /\b(?:receiving|be receiving|is receiving|are receiving)\s+or\s+(?:plans?|planning|intend\w*|scheduled|about)\s+to\b/gi,
   /\b(?:male|men|female|women)\s+(?:or|and\/or)\s+(?:male|men|female|women)\b/gi,
   /\b(?:ECOG|Eastern Cooperative Oncology Group)\b[^.;]{0,40}?\b(?:or|and\/or)\b/gi,
   /\b(?:BRCA ?1|BRCA)\s*(?:or|and\/or|\/)\s*BRCA ?2\b/gi,
@@ -688,6 +692,83 @@ export function normalizeMarkers(text: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Marker lists under a negation, and inclusion alternatives checked option by option
+// ---------------------------------------------------------------------------------------------
+
+/** "without EGFR, ALK, or ROS1 alterations", "negative for EGFR mutation/ALK translocation", "no known alterations in NTRK, BRAF ...". */
+const NEGATED_LIST = /\b(?:without|negative for|no known|no documented|no evidence of|does not have|do not have|must not have|not harbou?r\w*|absence of|lack(?:ing|s)? of|wild[- ]?type for|free of)\s+(?:a\s+|an\s+|any\s+|known\s+|documented\s+|actionable\s+|targetable\s+|tumou?r\s+|genomic\s+)*((?:[^.;:]){3,160})/gi;
+/** Qualifiers that keep a marker open even in a negated list (a specific variant, resistance, exon 20 insertion). */
+const NEGATED_LIST_QUALIFIER = /\b(?:other than|besides|aside from|except|resistan\w*|exon\s*20|insertions?|co-?mutations?|acquired|variants? of unknown)\b|\b[A-Z]\d{2,4}[A-Z*]\b/i;
+/**
+ * Markers named in a negated list of an inclusion item: each one is required to be absent (the "or" is a conjunction).
+ * Returns biomarker keys; the caller adds `excluded` facts for them.
+ */
+export function negatedMarkers(section: SplitCriterion["section"], text: string): { keys: string[]; altText: string } {
+  if (section !== "inclusion") return { keys: [], altText: text };
+  const out = new Set<string>();
+  let altText = text;
+  for (const m of text.matchAll(NEGATED_LIST)) {
+    const span = m[1] ?? "";
+    if (NEGATED_LIST_QUALIFIER.test(span)) continue;
+    const head = span.slice(0, 120);
+    let found = false;
+    for (const b of BIOMARKERS) {
+      if (!b.pattern.test(head)) continue;
+      out.add(b.id);
+      found = true;
+    }
+    // Inside a negated marker list the "or" is a conjunction: that span is left out of the alternatives check.
+    if (found) altText = altText.replace(m[0], " ");
+  }
+  return { keys: [...out].map((id) => `biomarker:${id}`), altText };
+}
+
+/** Top-level alternatives of an inclusion item (definitions and benign pairs removed), or null when it has none. */
+function splitAlternatives(text: string): string[] | null {
+  let t = text;
+  for (const re of BENIGN_OR) t = t.replace(re, " ");
+  t = stripDefinitions(t);
+  for (const re of BENIGN_OR) t = t.replace(re, " ");
+  if (/\b(?:either|one of the following|any of the following|at least one of)\b/i.test(t)) return null;
+  const parts = t.split(/\s*(?:,\s*)?\b(?:or|and\/or)\b\s*/i).map((x) => x.trim()).filter((x) => x.length >= 4);
+  return parts.length >= 2 && parts.length <= 4 ? parts : null;
+}
+
+/** The directional, resolver-settled facts of one clause as verdicts (biomarkers, histology, MSI wording, stage, treated status). */
+function clauseVerdicts(clause: string, p: ResolverProfile, ctx: ResolveContext): Verdict[] {
+  const out: Verdict[] = [];
+  const facts = factsForCriterion("inclusion", clause, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
+  const msi = msiDirection("inclusion", clause);
+  if (msi && !facts.some((f) => f.key === "biomarker:MSI-H" && f.value !== "mentioned")) facts.push({ key: "biomarker:MSI-H", value: msi });
+  for (const f of facts) {
+    if (f.value === "mentioned" || !(f.key.startsWith("biomarker:") || f.key.startsWith("histology:"))) continue;
+    if (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(clause)) continue;
+    out.push(checkFact(f, p));
+  }
+  const stage = checkStage(clause, p, "inclusion");
+  if (stage) out.push(stage.verdict);
+  const treated = checkTreated(clause, p, "inclusion");
+  if (treated) out.push(treated.verdict);
+  return out;
+}
+
+/**
+ * An inclusion item with alternatives is not met when EVERY option fails on a checked fact ("HER2-positive or
+ * triple-negative breast cancer" for an HR-positive, HER2-negative patient). An option with nothing checkable, or with
+ * an open verdict, keeps the item unknown.
+ */
+function allAlternativesFail(text: string, p: ResolverProfile, ctx: ResolveContext): boolean {
+  const parts = splitAlternatives(text);
+  if (!parts) return false;
+  // A negation before the first option scopes over all of them ("no known X or Y"): the split would misread it.
+  if (/\b(?:no|not|without|absence|neither|lack|free of|negative for)\b/i.test(parts[0] as string)) return false;
+  return parts.every((clause) => {
+    const v = clauseVerdicts(clause, p, ctx);
+    return v.length > 0 && v.some((x) => x === "fail") && !v.some((x) => x === "open");
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
 // Resolver
 // ---------------------------------------------------------------------------------------------
 
@@ -745,6 +826,12 @@ const failReason = (key: string) => FAIL_REASON[key] ?? (key.startsWith("biomark
 const OTHER_CANCER_WORDS = /\bmalignan\w*|\b(?:other|another|second|additional|concurrent|synchronous|separate|prior|previous)\s+(?:\w+\s+){0,2}(?:cancers?|tumou?rs?|neoplasms?|carcinomas?)\b(?!\s+(?:vaccine|therapy|treatment|drug))/i;
 /** "ECOG = 3": an exact value, which the extractor reads as a ceiling. */
 const ECOG_EXACT = /(?:^|[^<>=\u2264\u2265])=\s*[1-4]\b(?!\s*-)/;
+/** "Known BRAF mutational status", "documented PD-L1 status": the result must be known, not positive. */
+const MARKER_STATUS_ONLY = /\b(?:known|documented|available|determined|confirmed|tested|testing|evaluable|results? of)\s+(?:\w+\s+){0,3}?status\b(?![^.;]{0,40}\b(?:positive|negative|mutant|mutated|mutations?|amplif\w*|express\w*|wild[- ]?type|deficien\w*|rearrang\w*|fusion|high|low|\+|-)\b)/i;
+/** Activity, control or test wording on a health-history item that a yes/no answer does not settle. */
+const HISTORY_QUALIFIER = /\b(?:active|uncontrolled|untreated|unresolved|requiring|detectable|undetectable|viral load|RNA|DNA|HBsAg|antibod\w*|antigen|on (?:antiviral |antiretroviral )?treatment|receiving|positive test|positive for|seropositiv\w*|within|in the (?:last|past))\b/i;
+/** A plain subtype statement ("histologically confirmed non-squamous NSCLC"), where the patient's subtype answer applies. */
+const HISTOLOGY_ITEM = /\b(?:histolog\w*|cytolog\w*|patholog\w*|confirmed|diagnos\w*|documented|proven|biopsy)\b/i;
 const TREATED_KEYS = new Set(["previously_treated", "newly_diagnosed", "min_prior_lines", "max_prior_lines"]);
 const STAGE_KEYS = new Set(["metastatic", "locally_advanced", "adjuvant_setting"]);
 const UNTREATED_NON_CANCER = /\buntreated\s+(?:\w+\s+){0,2}(?:brain|cns|metasta\w*|lesions?|infections?|spinal|cord compression|leptomeningeal|hypertension|thyroid|disease of)\b/i;
@@ -754,7 +841,9 @@ const CARVE_OUT = /\b(?:unless|except|other than|with the exception of|permitted
  * must be stable..."): it sets a condition for that subgroup, so the subgroup's own fact never fails the patient
  * (TREC 2021-61, NCT01677455: an HR-negative patient was excluded by an ER/PR+ condition).
  */
-const SUBGROUP_RULE = /\b[A-Za-z0-9/-]*[A-Za-z0-9][+-]\s+(?:patients?|participants?|subjects?|women|men|tumou?rs?|disease)\s+(?:must|should|need|are required|will need|have to)\b|\b(?:patients?|participants?|subjects?)\s+(?:with|who (?:are|have))\s+[^.;,]{1,50}?\s+(?:must|should|need to|will need to|are required to)\b/i;
+const SUBGROUP_RULE = /\b[A-Za-z0-9/-]*[A-Za-z0-9][+-]\s+(?:patients?|participants?|subjects?|women|men|tumou?rs?|disease)\s+(?:must|should|need|are required|will need|have to)\b|\b(?:patients?|participants?|subjects?)\s+(?:with|who (?:are|have))\s+[^.;,]{1,80}?\s+(?:must|should|need to|will need to|are required to)\b|^\W*(?:for|in)\s+(?:(?:patients?|participants?|subjects?|those)\s+)?(?:with\s+)?[^,;:]{1,60},\s/i;
+/** "Patients in Phase 2b with ...": a cohort named mid-sentence. */
+const PHASE_COHORT = /\b(?:in|for|of|during)\s+(?:the\s+)?phase\s*(?:1|2|3|i{1,3})[ab]?\b(?!\s*(?:trial|study|clinical))/i;
 /** Inclusion wording that says who MAY join, not who must. */
 const PERMISSIVE_ITEM = /\b(?:allowed|permitted|acceptable|may (?:be|have|enroll|participate)|eligible if|are (?:also )?eligible|will (?:also )?be (?:equally )?considered|can be enrolled)\b/i;
 /** Sub-bullets labeled by a population ("- NSCLC: ...", "- Cohort B: ..."). */
@@ -795,7 +884,7 @@ function msiDirection(section: "inclusion" | "exclusion", text: string): "requir
 export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: ResolveContext): ResolvedLabel {
   const incl = item.section === "inclusion";
   const body = item.text.replace(REGISTRATION_HEADER, "");
-  if (item.scope || cohortSpecific(body) || SUB_LABELS(body) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
+  if (item.scope || cohortSpecific(body) || PHASE_COHORT.test(body) || SUB_LABELS(body) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
   // "one-line of therapy" -> "one line of therapy" so the line-count parser sees the unit.
   const text = normalizeMarkers(body).replace(/\b(\d+|one|two|three|four)-(lines?|regimens?)\b/gi, "$1 $2");
   const facts = factsForCriterion(item.section, text, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
@@ -804,6 +893,13 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     const i = facts.findIndex((f) => f.key === "biomarker:MSI-H");
     if (i < 0) facts.push({ key: "biomarker:MSI-H", value: msi });
     else if (facts[i]?.value === "mentioned") facts[i] = { ...facts[i], key: "biomarker:MSI-H", value: msi };
+  }
+  // "without EGFR, ALK, or ROS1 alterations": every listed marker must be absent.
+  const { keys: negated, altText } = negatedMarkers(item.section, text);
+  for (const key of negated as FactKey[]) {
+    const i = facts.findIndex((f) => f.key === key);
+    if (i < 0) facts.push({ key, value: "excluded" });
+    else facts[i] = { ...facts[i], key, value: "excluded" };
   }
   const directional = facts.filter((f) => f.value !== "mentioned");
   const checks: Checked[] = [];
@@ -818,25 +914,45 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     if (treatedCheck && (f.key === "previously_treated" || f.key === "newly_diagnosed")) continue;
     // "untreated brain metastases / lesion / infection" is not about treatment history; carve-outs ("unless",
     // "adjuvant therapy is permitted") are not modeled for treated status and line counts.
-    const loose = SUBGROUP_RULE.test(text) || (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) || (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) || (f.key === "ecog_max" && ECOG_EXACT.test(text)) || (f.key.startsWith("biomarker:") && MARKER_QUALIFIER.test(text));
+    const loose =
+      SUBGROUP_RULE.test(text) ||
+      (TREATED_KEYS.has(f.key) && (untreatedOther || carveOut)) ||
+      (f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)) ||
+      (f.key === "ecog_max" && ECOG_EXACT.test(text)) ||
+      (f.key.startsWith("biomarker:") && !negated.includes(f.key) && MARKER_QUALIFIER.test(text)) ||
+      // "Known BRAF mutational status": a test result must exist, either way.
+      (f.key.startsWith("biomarker:") && MARKER_STATUS_ONLY.test(text));
+    let verdict: Verdict = loose || (incl && isHistoryKey(f.key)) ? "open" : checkFact(f, p);
+    // "Active hepatitis B without antiviral treatment", "HCV RNA positive": activity or test detail a yes/no answer
+    // does not give, so a reported infection never fails the item (a reported "no" still clears it).
+    if (verdict === "fail" && (f.key === "hepatitis_b" || f.key === "hepatitis_c" || f.key === "hiv") && f.param === undefined && HISTORY_QUALIFIER.test(text)) verdict = "open";
     // Health-history facts settle exclusion items only (inclusion wording about them is conditional, and inclusion
     // pregnancy items ask for a test or contraception that "not pregnant" alone does not meet).
-    checks.push({ key: f.key, verdict: loose || (incl && isHistoryKey(f.key)) ? "open" : checkFact(f, p), questions: sourcesOf(f.key, p) });
+    checks.push({ key: f.key, verdict, questions: sourcesOf(f.key, p) });
   }
   // Stage facts of the whole-trial extractor are explained by the item's own stage reading.
   const outside = directional.filter((f) => !allowedKey(f.key) && !(stageCheck && STAGE_KEYS.has(f.key)));
+  const alternatives = hasAlternatives(altText) || markerList(altText);
+  // "EGFR mutation or ALK rearrangement": the whole-item extractor demotes markers next to "or", so options are
+  // checked one by one here; the item is not met only when every option fails on a checked fact.
+  const everyOptionFails = incl && alternatives && !PERMISSIVE_ITEM.test(text) && !TIME_WINDOW.test(text.replace(ASSESSMENT_WINDOW, " ")) && allAlternativesFail(altText, p, ctx);
+  if (everyOptionFails) return label(item, "not_met", "None of the options in this rule fit your answers.", checks.flatMap((c) => c.questions), ctx);
   if (checks.length === 0) return label(item, "unknown", "Our questions do not cover this rule.");
 
   // A time window our answers can't settle ("within 4 weeks"); the other-cancer years window is settled by checkFact.
   const window = TIME_WINDOW.test(text.replace(ASSESSMENT_WINDOW, " ")) && !checks.every((c) => c.key === "other_malignancy");
   if (window) return label(item, "unknown", "Depends on dates your answers do not include.");
 
-  const alternatives = hasAlternatives(text) || markerList(text);
   // Policy gate: families below the precision gate never create a hard failure.
   // Line counts: a plain count (the extractor already demotes class-specific and conditional counts to "mentioned")
   // with no carve-out or option wording is settled by the lines answer.
   const linesPrecise = !carveOut && !PERMISSIVE_ITEM.test(text) && !SUBGROUP_RULE.test(text);
-  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || c.key === "stage" || c.key === "treated" || (factPolicy(c.key).penalize && !factPolicy(c.key).belowGate) || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text) && !TREATMENT_SPECIFIC.test(text) && !mentionsDrug(text)) || ((c.key === "min_prior_lines" || c.key === "max_prior_lines") && linesPrecise)));
+  // Histology (a family below the whole-trial precision gate): the patient's own subtype answer settles a plain
+  // "histologically confirmed <subtype>" item. Health-history families below the gate settle a plain exclusion
+  // (no carve-out, no time or activity qualifier) when the patient reports the condition.
+  const histologyPrecise = HISTOLOGY_ITEM.test(text) && !carveOut;
+  const historyPrecise = !incl && !carveOut;
+  const fails = checks.filter((c) => c.verdict === "fail" && (c.key === "age" || c.key === "sex" || c.key === "cancer_type" || c.key === "stage" || c.key === "treated" || (factPolicy(c.key).penalize && !factPolicy(c.key).belowGate) || (c.key === "previously_treated" && preciseTreatedExclusion(item.section, text) && !TREATMENT_SPECIFIC.test(text) && !mentionsDrug(text)) || ((c.key === "min_prior_lines" || c.key === "max_prior_lines") && linesPrecise) || (c.key.startsWith("histology:") && histologyPrecise) || (isHistoryKey(c.key) && historyPrecise)));
   // Inclusion alternatives: one failing option does not fail the item. Exclusion alternatives are a list of
   // excluding conditions, so any one of them that applies excludes.
   if (fails.length > 0 && !(incl && (alternatives || PERMISSIVE_ITEM.test(text)))) {

@@ -81,3 +81,17 @@ Safety principles kept throughout: no "eligible" wording, hard filters in code, 
 | `npm run eval` national pipeline nDCG@10 / oracle | 0.779 / 0 of 600 | 0.779 / 0 of 600 (unchanged: the pre-check does not use the resolver) |
 
 Mechanism: 41% + 34% of the gold-excluded trials in the dev top 10 failed on a stage, treated-status, line-count or alternative-wording criterion the resolver could not read (section 2). Kept: vignette dev CI excludes 0, TREC dev not worse.
+
+### Step 2: option-by-option alternatives, negated marker lists, subtype and hepatitis items (kept)
+
+`lib/match/criteria-resolve.ts`: an inclusion item with alternatives is not met only when every option fails on a checked fact ("HER2-positive or triple-negative" for an HR+/HER2- patient; "EGFR mutation or ALK rearrangement" for a double-negative patient), with definitions stripped and benign pairs removed before the split and no split under a leading negation; markers in a negated list ("without EGFR, ALK, or ROS1 alterations", "no known alterations in NTRK, BRAF ...") are each required absent, and the list is left out of the alternatives check; a plain "histologically confirmed <subtype>" item is settled by the patient's subtype answer (the histology family stays below the whole-trial gate for scoring); a plain hepatitis B / C exclusion is settled by the hepatitis answer, while items with activity or test wording (active, HBsAg, RNA, antibody, on treatment) never fail on a "yes"; "known BRAF mutational status" is a test requirement, not a positive result; "Patients in Phase 2b ..." and "For IDH-mutated glioma, ..." are subgroup rules; an age item with several ranges stays unknown; stage words in a treatment context ("≤ 1 cycle of SoC for metastatic disease") are not the patient's stage. Unit tests: 52.
+
+| measure | after step 1 | after step 2 |
+| --- | --- | --- |
+| vignette dev nDCG@10 (pipeline+resolver) | 0.358 | 0.362 [0.303, 0.426]; paired vs v7 +0.037 [0.021, 0.054] |
+| vignette dev excluded share in top 10 | 0.535 | 0.535; paired vs v7 -0.010 [-0.023, 0.002] |
+| vignette dev Tier B precision of the new reasons (gold excluded / possibly or eligible / not relevant) | | options 3 / 0 / 2, subtype 6 / 0 / 9, hepatitis 1 / 0 / 1 |
+| TREC dev resolver nDCG@10 / missed exclusions | 0.525 / 0.270 | 0.526 [0.416, 0.648] / 0.270 |
+| items settled, every question answered (1,000 trials) | 6.8% | 6.9% (not_met 167) |
+
+Note: splitting "No known EGFR mutation or ALK rearrangement" into options scored 0.005 higher on dev because it wrongly failed three gold-excluded trials on an unrelated item; the negation guard keeps the correct reading ("met" for a double-negative patient) at the small cost.
