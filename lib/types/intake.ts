@@ -5,7 +5,7 @@ import { QuestionnaireStateSchema } from "./questionnaire";
 
 /**
  * Intake answers. These live ONLY in browser memory and are never sent to the backend as-is.
- * Use `minimizeProfile()` (lib/types/minimize.ts) to derive what may be sent to AI.
+ * Use `minimizeProfile()` (lib/privacy/minimize.ts) to derive what may be sent to AI.
  */
 
 /** The four languages the intake chat's own language question lists (kept for the old chat UI). */
