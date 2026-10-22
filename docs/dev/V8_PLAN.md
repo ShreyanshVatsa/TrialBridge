@@ -95,3 +95,18 @@ Mechanism: 41% + 34% of the gold-excluded trials in the dev top 10 failed on a s
 | items settled, every question answered (1,000 trials) | 6.8% | 6.9% (not_met 167) |
 
 Note: splitting "No known EGFR mutation or ALK rearrangement" into options scored 0.005 higher on dev because it wrongly failed three gold-excluded trials on an unrelated item; the negation guard keeps the correct reading ("met" for a double-negative patient) at the small cost.
+
+### Step 3: BM25 / embedding query names positive markers only (kept)
+
+`lib/questionnaire/rules.ts`, `lib/match/query.ts`: a negative biomarker answer used to add "<marker> negative." to the profile text that both BM25 and the embedding read; neither understands negation, so an EGFR-negative patient's query pulled in EGFR-required trials.
+
+| measure | before | after |
+| --- | --- | --- |
+| TREC dev retrieval order nDCG@10 (`scripts/eval/trec/pipeline.ts`, 10 topics) | 0.491 | 0.521; paired +0.030 [0.000, 0.075] |
+| vignette dev nDCG@10 (pipeline+resolver) | 0.362 | 0.367 [0.305, 0.431]; paired +0.005 [-0.009, 0.021]; vs v7 +0.042 [0.021, 0.063] |
+| vignette dev excluded share in top 10 | 0.535 | 0.517; paired -0.018 [-0.033, -0.004] |
+| vignette dev recall@50 of eligible | 0.804 | 0.772; paired -0.033 [-0.098, 0.012] (top-10 judged share 0.917 -> 0.903: part of the change surfaces unpooled trials) |
+
+Tried and not adopted: also dropping treatment-history terms ("prior chemotherapy", "one prior line of therapy", "treatment naive"): TREC dev +0.072 [-0.004, 0.147], vignette dev -0.002 [-0.022, 0.016] with recall@50 -0.040; adding the group's synonym list ("NSCLC, SCLC, mesothelioma"): vignette dev +0.008 but TREC dev 0.521 -> 0.443. Fusion weights refit by 10-fold cross-validation on vignette dev (`scripts/eval/vignettes/fit-weights.ts`): CV retrieval-order nDCG@10 0.406 vs shipped 0.394, paired +0.011 [-0.013, 0.037], fold weights unstable (penalty -2 or -3, bonus 2 or 3): not adopted.
+
+Process note: the first run of `scripts/eval/trec/pipeline.ts` for these variants aggregated all 17 topics (its CLI had no split filter), so a mean over dev + test topics was printed once; per-topic test numbers were not read and nothing was decided on it. The script now runs the dev split by default and the test split only with an explicit flag; the numbers above are dev-only reruns.

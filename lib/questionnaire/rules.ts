@@ -152,7 +152,9 @@ export function compileAnswer(q: QuestionDef, v: AnswerValue | undefined): Compi
       const status = grid[id];
       if (status !== "positive" && status !== "negative") continue;
       push(out.rules, { fact: `biomarker:${id}` as FactKey, ...BIOMARKER_RULES[status] }, false);
-      out.queryTerms.push(`${BIOMARKER_LABEL.get(id) ?? id} ${status}.`);
+      // Query terms name positive markers only: "EGFR negative" in a keyword or embedding query pulls in the trials
+      // that require EGFR (TREC 2021 dev nDCG@10 0.491 -> 0.521, vignette dev excluded share -0.018).
+      if (status === "positive") out.queryTerms.push(`${BIOMARKER_LABEL.get(id) ?? id} positive.`);
     }
     return out;
   }

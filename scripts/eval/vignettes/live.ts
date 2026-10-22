@@ -7,7 +7,7 @@
  * change that surfaces new trials is under-credited (eval/gold/README.md). The test split needs --split=test and is for
  * the final report only.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolveRanking } from "../../../lib/match/criteria-rank";
 import { TOP_N } from "../../../lib/match/rank";
 import { loadNational } from "../national";
@@ -87,6 +87,8 @@ async function main(): Promise<void> {
     console.log(JSON.stringify(out, null, 1));
     return;
   }
+  const dump = args.get("dump");
+  if (dump) writeFileSync(dump, JSON.stringify({ ids: ctxs.map((c) => c.vignette.id), ndcg: per.ndcg, recall: per.recall, excl: per.excl }));
   if (audit) {
     console.log("Tier B hard failures in the re-ranked pool, by reason -> gold label:");
     for (const [k, v] of Object.entries(auditRows)) console.log(`  ${k.padEnd(42)} ${JSON.stringify(v)}`);

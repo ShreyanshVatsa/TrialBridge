@@ -27,11 +27,8 @@ export function buildProfileText(a: Pick<IntakeAnswers, "cancerType" | "spread" 
   if (treated.length) parts.push(`Previously treated with ${treated.map((t) => TREATMENT_WORDS[t]).join(", ")}.`);
   else if (a.treatments.includes("none")) parts.push("Newly diagnosed, previously untreated.");
 
-  for (const b of BIOMARKERS) {
-    const s = a.biomarkers[b.id];
-    if (s === "positive") parts.push(`${b.label} positive.`);
-    else if (s === "negative") parts.push(`${b.label} negative.`);
-  }
+  // Only positive results name a marker: a negative result in the query would match trials that require that marker.
+  for (const b of BIOMARKERS) if (a.biomarkers[b.id] === "positive") parts.push(`${b.label} positive.`);
   return parts.join(" ");
 }
 

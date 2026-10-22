@@ -50,8 +50,9 @@ interface TopicMeta {
 }
 
 /** One ranking problem per topic: the pipeline's feature rows over the hard-filtered candidates, plus the qrels. */
-export async function trecQueries(): Promise<{ queries: FitQuery[]; meta: Map<string, TopicMeta> }> {
+export async function trecQueries(years?: readonly number[]): Promise<{ queries: FitQuery[]; meta: Map<string, TopicMeta> }> {
   const bench = loadTrec();
+  if (years) bench.topics = bench.topics.filter((t) => years.includes(t.year));
   const cards = new Map(bench.topics.flatMap((t) => t.trials.map((x) => [x.card.id, x.card] as const)));
   const list = [...cards.values()];
   const vecs = await embedAll("minilm", "q8", list.map(embeddingText));
@@ -84,8 +85,8 @@ export async function trecQueries(): Promise<{ queries: FitQuery[]; meta: Map<st
   return { queries, meta };
 }
 
-export async function trecPipeline(weightsOverride: Partial<FusionWeights> = {}): Promise<{ topics: TopicResult[]; meanBm25: number; meanBm25Filtered: number; meanPipeline: number }> {
-  const { queries, meta } = await trecQueries();
+export async function trecPipeline(weightsOverride: Partial<FusionWeights> = {}, years?: readonly number[]): Promise<{ topics: TopicResult[]; meanBm25: number; meanBm25Filtered: number; meanPipeline: number }> {
+  const { queries, meta } = await trecQueries(years);
   const w = { ...FUSION_WEIGHTS, ...weightsOverride } as FusionWeights;
   const topics: TopicResult[] = queries.map((q) => {
     const m = meta.get(q.id) as TopicMeta;
@@ -105,7 +106,10 @@ export async function trecPipeline(weightsOverride: Partial<FusionWeights> = {})
 }
 
 if (process.argv[1]?.endsWith("trec/pipeline.ts")) {
-  trecPipeline(process.env.W ? (JSON.parse(process.env.W) as Partial<FusionWeights>) : {})
+  // Dev split (TREC 2021) by default: the test split (2022 + 2023) is frozen and runs only through
+  // `npm run eval:matching -- --split=test`, which logs every run.
+  const years = process.argv.includes("--split=test") ? [2022, 2023] : [2021];
+  trecPipeline(process.env.W ? (JSON.parse(process.env.W) as Partial<FusionWeights>) : {}, years)
     .then((r) => {
       console.log("topic      BM25(topic text)  BM25(profile, filtered)  pipeline  excl@10  hard-filtered (eligible)");
       for (const x of r.topics) console.log(`${x.key.padEnd(10)} ${x.bm25.toFixed(3).padStart(10)} ${x.bm25Filtered.toFixed(3).padStart(18)} ${x.pipeline.toFixed(3).padStart(14)} ${x.excludedAt10.toFixed(2).padStart(8)} ${String(x.hardFiltered).padStart(8)} (${x.hardFilteredEligible})`);

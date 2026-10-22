@@ -92,7 +92,8 @@ describe("buildProfileText", () => {
     expect(t).toContain("Metastatic");
     expect(t).toContain("chemotherapy");
     expect(t).toContain("HER2 positive");
-    expect(t).toContain("BRCA1/2 negative");
+    // v8: a negative result adds nothing to the query (it would match trials that require the marker).
+    expect(t).not.toContain("BRCA1/2");
     expect(t).not.toContain("02115");
   });
   it("handles not sure, none, and localized", () => {
