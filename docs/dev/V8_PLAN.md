@@ -1,0 +1,67 @@
+# v8 plan: matching accuracy and efficiency
+
+Branch `v8` (from `cac-2026`), 2026-10-21. Decisions are made on dev data only: TREC 2021 dev (`npm run eval:matching -- --split=dev`), vignette dev (`npm run eval:vignettes -- --split=dev`, live code via `npx tsx scripts/eval/vignettes/live.ts`) and the regression eval (`npm run eval`). The TREC test split is frozen and is never run; the vignette test split runs once at the end. Every number below was measured by a script in this repo.
+
+## 1. Efficiency profile (measured)
+
+Tooling added in the first commit: User Timing marks on the search path (`tb:search:*`, `tb:results`, `tb:judge`, `tb:analysis`), the worker reports model-load and embed time, and `npx tsx scripts/perf/search-timings.ts [--mbps=N]` drives `/find/?demo=1` through Playwright Chromium against a local `wrangler dev` of the national build (cold = fresh browser context, warm = second navigation in the same context). Local machine, localhost server; the demo path starts the search at once, so nothing is hidden by the questionnaire prefetch.
+
+| measure | cold, unthrottled | cold, 20 Mbps | warm |
+| --- | --- | --- | --- |
+| navigation to results | 1,200 ms | 4,761 ms | 369 ms |
+| search start to results | 1,075 ms | 4,257 ms | 324 ms |
+| shards (download + parse) | 229 ms | 1,702 ms | 100 ms |
+| embedding worker (model load + embed) | 676 + 32 ms | 2,434 ms step | 163 + 31 ms |
+| MiniSearch index parse | 33 ms | 33 ms | 30 ms |
+| hard filters + BM25 + cosine + RRF + score | 15 ms | 16 ms | 14 ms |
+| main-thread long tasks between search start and results | 1 (112 ms) | 1 | 1 (75 ms) |
+| judge / explanation round trips (mock provider, incl. Turnstile) | 3.3 s / 1.7 s | | 3.2 s / 1.6 s |
+
+Bytes transferred (compressed as served): app JS 657 KB, breast shards 3,610 KB (breast-1 + breast-2 + solid-basket: cards.json is 845 + 688 + 765 KB gz, index 236 + 210 + 212 KB, sites 179 + 104 + 49 KB, embeddings 92 + 92 + 101 KB), model 15,685 KB (int8 ONNX, brotli; 22.97 MB raw), ONNX Runtime wasm 3,636 KB (gz; 14.26 MB raw). Cold total about 23.5 MB; the model is two thirds of it. The warm run re-downloads shards and the wasm only because the local server's responses are not reused by Playwright's context; production serves them `immutable`.
+
+Judge (TREC dev, `eval/matching/dev.json`): 7,388 tokens per patient (prompt 4,968, completion 2,420), 1.8 requests per patient, 6.2 s model latency per patient, coverage 92%. The system prompt alone is about 700 tokens and is re-sent with every request; the completion is dominated by a 25-word reason per item, including the "unknown" items (most of them). Free tier: 8,000 tokens per minute, so about one full judgment per minute.
+
+Shard composition (breast-1 cards.json, raw bytes): split criteria 32%, rule facts with verbatim quotes 28%, the pre-v6 inclusion/exclusion split 28% (duplicated text), summary 4%. Dropping the duplicated split saves only 12% after gzip (849 -> 750 KB); a lite-first shard (no criteria, contacts, summary or fact quotes; full cards fetched for the top 15) would be 547 KB (-35%), i.e. about -0.9 MB on a 3.6 MB group download.
+
+Embedding model: `Xenova/all-MiniLM-L6-v2` int8 (22.97 MB) is the smallest published variant; the q4 files are larger (model_q4 54.6 MB, model_q4f16 30.0 MB: the 30,522 x 384 token table stays fp32/fp16). A different model with the same BERT vocabulary saves at most 6 MB (3-layer MiniLM) at a quality cost. Not pursued.
+
+## 2. Error analysis
+
+### Vignette dev (94 vignettes, `npx tsx scripts/eval/vignettes/error-analysis.ts`)
+
+816 top-10 slots of `pipeline:v7+resolver`; 443 (54.3%) are gold "excluded". For each, the primary judge's `not_met` evidence was mapped to the split criterion it quotes and the resolver was run on that item with the vignette's answers:
+
+| bucket | n | share | meaning |
+| --- | --- | --- | --- |
+| extractor_gap | 182 | 41% | the criterion is about a questionnaire topic but no usable fact is extracted from it |
+| resolver_gap | 151 | 34% | a directional fact the answers could settle exists, but the resolver left the item unknown (alternatives "X or Y", a precision-gated family, a cohort/step header, a time window) |
+| free_text_only | 54 | 12% | the judge's reason rests on detail the questionnaire does not ask (named drugs, imaging findings, risk groups) |
+| tier_b_shown | 44 | 10% | the resolver already failed the trial (Tier B) and it still shows because fewer than 10 of the re-ranked 15 are Tier A |
+| no_answer | 12 | 3% | the question exists but the vignette answered unknown |
+
+Topic of the judge's evidence: lines / treated status 94, stage or disease status 91, biomarker 87, performance status 46, histology 26, prior drug 19, measurable disease 16, brain metastases 16, health history 6, labs 2. Resolver-gap fact keys: previously_treated 52, ecog_max 18, biomarker:HER2 14, min/max_prior_lines 10 each, hiv 10, pregnancy 9, hepatitis 16, biomarker:HR 8. Stage facts (`metastatic`, `locally_advanced`, `adjuvant_setting`, `resectable`) are not settled by the resolver at all although `spread` is answered.
+
+Gold-eligible trials: 152; 59 in the top 10, 77 in the top 15, 129 in the top 50, 23 not in the stored top 50 (retrieval miss, 15%).
+
+Pool bias: a ranking that surfaces trials outside the judged pool is under-credited (unjudged = non-relevant). The top-10 judged share is 0.915 for the v7 ranking, 0.80 when the resolver re-ranks 30 and 0.64 at 50, so pool-size decisions cannot be read off this benchmark.
+
+### TREC dev (10 topics, `eval/matching/dev.json`)
+
+Resolver arm: 30 of 100 top-10 slots are TREC-excluded and only 2 are Tier B (the structured answers are coarse; the detail that excludes is in the topic text). The judge's Tier B demotions are precise (dev 2 correct / 1 disputed / 1 not relevant; held-out 7/7) but it sees only the top 5. Baseline nDCG@10 0.491, resolver 0.521, judge 0.550.
+
+### Experiments already run (dev) and not adopted
+
+- Resolver pool 30 / 50 instead of 15: TREC dev resolver nDCG@10 0.529 / 0.511 vs 0.521 (n.s.) with worse missed exclusions (0.34 / 0.38 vs 0.28); vignette dev confounded by pool bias. Kept 15.
+- Tier A ordered by retrieval rank instead of incScore: TREC dev 0.503 vs 0.521, vignette dev 0.321 vs 0.325. Kept incScore.
+
+## 3. Ranked plan (expected gain / effort)
+
+1. Resolver coverage from better criterion parsing (highest): inclusion alternatives evaluated clause by clause (all options fail -> not_met: "HER2-positive or triple-negative" for an HR+/HER2- patient), stage items from the `spread` answer with a narrow parser (metastatic / stage IV / early-stage / non-metastatic / resected), treated-status and line-count items with narrow high-precision patterns ("no prior systemic therapy", "previously untreated", "more than N lines", "first-line") instead of the gated whole-trial facts, registration/screening step headers not read as cohorts. Measured on vignette dev + TREC dev + `npm run eval`.
+2. Judge tokens: shorter system prompt, reasons only for definite labels, no empty `answerIds`, items the resolver now settles not sent. Target under 4.5k tokens per patient (two patients per minute). One paced dev LLM run (about 60k tokens) to confirm nDCG@10 and coverage do not get worse.
+3. Fusion weights re-fit with leave-one-out cross-validation on vignette dev (tooling in `scripts/eval/fusion-fit.ts`); adopt only if the CV estimate and TREC dev do not get worse.
+4. BM25 query construction (group label, subtype terms, stop words) on both dev sets.
+5. Deferred: lite-first group shards (-0.9 MB per group, medium effort, below the model's 15.7 MB), prior_* extractor precision (the held-out label set is 10 items per key; re-tuning on it would make it dev data), a smaller embedding model (quality cost for at most 6 MB).
+
+Safety principles kept throughout: no "eligible" wording, hard filters in code, nothing new leaves the browser (`lib/privacy/minimize.ts` unchanged), quote verification unchanged.
+
+## 4. Results log (appended per step)
