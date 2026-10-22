@@ -80,6 +80,11 @@ describe("prompt analyze-v3 (TrialGPT port)", () => {
     expect(texts.filter((t) => t.startsWith("Biomarker ")).length).toBe(2);
   });
 
+  it("asks for a reason and answer ids only on definite labels (v8 compact output)", () => {
+    expect(MATCH_SYSTEM_PROMPT).toMatch(/For "unknown" give only the id and the label/);
+    expect(MATCH_PROMPT_VERSION).toBe("analyze-v3.2");
+  });
+
   it("removes TrialGPT's assume-absent and minimize-unknown instructions", () => {
     expect(MATCH_SYSTEM_PROMPT).not.toMatch(/as less/i);
     expect(MATCH_SYSTEM_PROMPT).not.toMatch(/assume that the (criterion|fact) is not true/i);
@@ -135,6 +140,17 @@ describe("validateMatchOutput", () => {
     ]);
     expect(v.labels.map((l) => [l.label, l.source])).toEqual([["unknown", "default"], ["unknown", "llm"], ["not_applicable", "llm"], ["unknown", "default"]]);
     expect(v.judged).toBe(2);
+  });
+
+  it("accepts the compact shape: an unknown item is just its id and label, and counts as judged", () => {
+    const v = run([
+      { id: "I1", label: "met", answerIds: ["A1"], reason: "Age fits." },
+      { id: "I2", label: "unknown" },
+      { id: "E1", label: "unknown" },
+    ]);
+    expect(v.judged).toBe(3);
+    expect(v.labels[1]).toMatchObject({ id: "I2", label: "unknown", source: "llm", answerIds: [] });
+    expect(v.labels[1]?.reason).toBeUndefined();
   });
 
   it("caps reasons at the word limit and neutralises eligibility claims", () => {

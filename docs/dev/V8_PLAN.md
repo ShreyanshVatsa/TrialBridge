@@ -110,3 +110,15 @@ Note: splitting "No known EGFR mutation or ALK rearrangement" into options score
 Tried and not adopted: also dropping treatment-history terms ("prior chemotherapy", "one prior line of therapy", "treatment naive"): TREC dev +0.072 [-0.004, 0.147], vignette dev -0.002 [-0.022, 0.016] with recall@50 -0.040; adding the group's synonym list ("NSCLC, SCLC, mesothelioma"): vignette dev +0.008 but TREC dev 0.521 -> 0.443. Fusion weights refit by 10-fold cross-validation on vignette dev (`scripts/eval/vignettes/fit-weights.ts`): CV retrieval-order nDCG@10 0.406 vs shipped 0.394, paired +0.011 [-0.013, 0.037], fold weights unstable (penalty -2 or -3, bonus 2 or 3): not adopted.
 
 Process note: the first run of `scripts/eval/trec/pipeline.ts` for these variants aggregated all 17 topics (its CLI had no split filter), so a mean over dev + test topics was printed once; per-topic test numbers were not read and nothing was decided on it. The script now runs the dev split by default and the test split only with an explicit flag; the numbers above are dev-only reruns.
+
+### Step 4: judge output shrink (kept): prompt analyze-v3.2
+
+`prompts/analyze-v3.ts`, `config/match-judge.ts`: the model gives a reason and answer ids only for definite labels (an "unknown" item is `{"id":"I3","label":"unknown"}`), the request header is shorter and the trial summary is capped at 300 characters. The TrialGPT reasoning steps are kept: a first version with the instructions cut to half the length labelled more items unknown and scored lower on TREC dev (table). Three paced LLM dev runs (TREC 2021, 10 topics, same resolver and query as the final code):
+
+| judge prompt | nDCG@10 (resolver+LLM) | vs baseline | missed exclusions | P@10 | unknown share | coverage | tokens / patient | calls / patient | model latency |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v3.1 (v7 text) on the v8 resolver | 0.558 [0.453, 0.669] | +0.067 [0.007, 0.131] | 0.270 | 0.370 | 0.860 | 92.4% | 7,356 [5,815, 9,013] | 1.8 | 6.1 s |
+| short instructions + compact output (not adopted) | 0.534 [0.410, 0.660] | +0.043 [0.001, 0.084] | 0.280 | 0.350 | 0.904 | 96.1% | 6,019 [4,863, 7,207] | 1.5 | 4.6 s |
+| **v3.2: TrialGPT steps + compact output (kept)** | 0.565 [0.450, 0.685] | +0.044 [-0.007, 0.101] | 0.240 | 0.390 | 0.876 | 98.9% | 6,527 [5,389, 7,761] | 1.6 | 6.0 s |
+
+Paired vs the v7 prompt (same topics): short instructions -0.024 [-0.053, 0.001]; v3.2 +0.007 [-0.018, 0.046]. Kept v3.2: not worse, -11% tokens per patient (completion 23.9k -> 21.5k over 10 patients, prompt 49.6k -> 43.8k), coverage 92% -> 99%. Judge Tier B demotions in the dev top 10: 5 TREC-excluded, 1 not relevant, 1 TREC-eligible (NCT02066532, 2021-61: "no prior HER2-directed therapy" read against an untreated patient). Groq free tier today: about 115k tokens spent on these three runs.
