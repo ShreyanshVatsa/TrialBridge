@@ -474,7 +474,7 @@ const STAGE_NON_MET = /\bnon-?metastatic\b|\bno (?:evidence of |known |clinical 
 /** The stage word describes something else: pain from metastases, a subgroup's own rule, a lesion site. */
 const STAGE_OTHER_ROLE = /\b(?:due to|secondary to|from|related to|caused by|pain|symptoms?|complications?|lesions? (?:of|in)|biopsy of|sites? of)\s+(?:\w+\s+){0,2}?(?:metastatic|metasta\w*|stage\s*(?:iv|4))\b/i;
 /** An exclusion item that is about the extent of disease itself, not a long rule that mentions it. */
-const STAGE_EXCLUSION_HEAD = /^\W*(?:(?:known|documented|evidence of|presence of|history of|current|patients? with|participants? with|subjects? with|has|have|having|diagnosis of|confirmed)\s+)?(?:(?:\w+[- ]){0,3}?)(?:metastatic|stage\s*(?:iv|4)[a-c]?|distant metasta\w*|M1[a-c]?)\b[^.;:]{0,60}$/i;
+const STAGE_EXCLUSION_HEAD = /^\W*(?:[A-Za-z0-9 /-]{2,40}:\s*)?(?:(?:known|documented|definitive|clinical or radiologic(?:al)? evidence of|evidence of|presence of|history of|current|patients? with|participants? with|subjects? with|has|have|having|diagnosis of|confirmed)\s+)*(?:(?:\w+[- ]){0,3}?)(?:metastatic|stage\s*(?:iv|4)[a-c]?|distant metasta\w*|M1[a-c]?)\b[^.;:]{0,60}[.;]?\s*$/i;
 const STAGE_ADVANCED = /\blocally advanced\b|\badvanced\b|\bunresectable\b|\binoperable\b|\bnot amenable to (?:curative |surgical )?(?:resection|surgery|local therapy)/i;
 const STAGE_EARLY = /\bearly[- ]stage\b|\blocali[sz]ed\b|\bstage\s*(?:0|i{1,3}|[1-3])[a-c]?\b/i;
 /** The stage words belong to a resection or adjuvant context ("completely resected stage II"), where `removed` patients fit. */
@@ -583,6 +583,17 @@ function checkTreated(text: string, p: ResolverProfile, section: SplitCriterion[
  * when something happened to the patient. Removed before the time-window check.
  */
 const ASSESSMENT_WINDOW = /\b(?:ECOG|performance status|Zubrod|Karnofsky|evaluation|assessment|assessed|performed|obtained|documented|measured|evaluated|laboratory|labs?|scans?|imaging|tests?|tested|testing)\b[^.;]{0,60}?within\s+(?:the\s+)?\d+\s+(?:days?|weeks?)\s+(?:prior to|before|of|preceding)\s+(?:the\s+)?(?:date of\s+|first\s+|start of\s+|initiation of\s+)?(?:randomi[sz]ation|registration|enrol?lment|allocation|study entry|screening|study treatment|study drug|treatment start|dosing|first dose|cycle 1|C1D1|baseline|protocol therapy|study (?:entry|start))\b/gi;
+/** "Stage IV Breast Cancer:" names the disease the item is about, not a study stage (cohort). */
+const STAGE_LABEL = /^\W*stage\s*(?:iv|4|i{1,3}|[1-3])[a-c]?\s+(?:\w+\s+){0,3}?(?:cancer|carcinoma|disease|tumou?rs?|nsclc|sclc|melanoma|lymphoma|myeloma|sarcoma)\s*:\s*/i;
+/**
+ * Pairs the whole-item extractor would read as options although they name one attribute ("advanced or metastatic",
+ * "histologically or cytologically confirmed"): collapsed to one word in the text the extractor sees.
+ */
+const EXTRACT_COLLAPSE: [RegExp, string][] = [
+  [/\b(?:locally advanced|locally recurrent|advanced|unresectable|inoperable|incurable|recurrent)\b(?:\s*(?:,|\/|or|and\/or|and)\s*(?:locally advanced|locally recurrent|advanced|unresectable|inoperable|incurable|recurrent)\b)*\s*(?:,|\/|or|and\/or|and)\s*metastatic\b/gi, "metastatic"],
+  [/\bmetastatic\b\s*(?:,|\/|or|and\/or|and)\s*(?:locally advanced|locally recurrent|advanced|unresectable|inoperable|incurable|recurrent)\b(?:\s*(?:,|\/|or|and\/or|and)\s*(?:locally advanced|locally recurrent|advanced|unresectable|inoperable|incurable|recurrent)\b)*/gi, "metastatic"],
+  [/\b(histologic(?:al)?ly|histopathologic(?:al)?ly|cytologic(?:al)?ly|pathologic(?:al)?ly)\s*(?:,\s*\w+\s*,?\s*)?(?:,?\s*(?:or|and\/or|and)\s*(?:histologic|histopathologic|cytologic|pathologic|radiographic|radiologic|clinical)\w*)+/gi, "$1"],
+];
 /** "STEP 1: REGISTRATION (SCREENING):", "REGISTRATION ELIGIBILITY CRITERIA (STEP 1)": the registration step of every participant, not a cohort. */
 const REGISTRATION_HEADER = /^\W*(?:step\s*\d+\s*[:\-]?\s*)?(?:registration|screening|pre-?registration|eligibility)\s*(?:\((?:screening|step\s*\d+)\))?\s*(?:eligibility\s*)?(?:criteria)?\s*(?:\(step\s*\d+\))?\s*:\s*/i;
 const TIME_WINDOW = /\bwithin\s+(?:the\s+)?(?:(?:last|past|previous|prior)\s+)?(?:\d+|one|two|three|four|five|six|eight|twelve)\b|\b(?:in|during)\s+the\s+(?:last|past|previous|prior)\s+(?:\d+|one|two|three|four|five|six|twelve)?\s*(?:days?|weeks?|months?|years?)\b|\b\d+\s*(?:days?|weeks?|months?|half-lives)\s+(?:prior|before|of|after|since)\b|\bwash-?out\b|\blast dose\b|(?:>=|\u2265|at least)\s*\d+\s*(?:days?|weeks?|months?)\b/i;
@@ -883,11 +894,13 @@ function msiDirection(section: "inclusion" | "exclusion", text: string): "requir
 /** Label one criterion item. Pure. */
 export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: ResolveContext): ResolvedLabel {
   const incl = item.section === "inclusion";
-  const body = item.text.replace(REGISTRATION_HEADER, "");
+  const body = item.text.replace(REGISTRATION_HEADER, "").replace(STAGE_LABEL, "");
   if (item.scope || cohortSpecific(body) || PHASE_COHORT.test(body) || SUB_LABELS(body) >= 2) return label(item, "unknown", "Applies only to one group in the study.");
   // "one-line of therapy" -> "one line of therapy" so the line-count parser sees the unit.
   const text = normalizeMarkers(body).replace(/\b(\d+|one|two|three|four)-(lines?|regimens?)\b/gi, "$1 $2");
-  const facts = factsForCriterion(item.section, text, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
+  let factText = text;
+  for (const [re, to] of EXTRACT_COLLAPSE) factText = factText.replace(re, to);
+  const facts = factsForCriterion(item.section, factText, { v2: true, groups: ctx.groups, ...(ctx.conditions ? { conditions: ctx.conditions } : {}) });
   const msi = msiDirection(item.section, text);
   if (msi) {
     const i = facts.findIndex((f) => f.key === "biomarker:MSI-H");
@@ -931,7 +944,9 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
     checks.push({ key: f.key, verdict, questions: sourcesOf(f.key, p) });
   }
   // Stage facts of the whole-trial extractor are explained by the item's own stage reading.
-  const outside = directional.filter((f) => !allowedKey(f.key) && !(stageCheck && STAGE_KEYS.has(f.key)));
+  // Stage facts of the whole-trial extractor are explained by the item's own stage reading, or name the setting of a
+  // treatment-history rule ("prior therapy for metastatic disease").
+  const outside = directional.filter((f) => !allowedKey(f.key) && !(STAGE_KEYS.has(f.key) && (stageCheck || treatedCheck || STAGE_MET.test(text) || STAGE_ADVANCED.test(text) || STAGE_EARLY.test(text))));
   const alternatives = hasAlternatives(altText) || markerList(altText);
   // "EGFR mutation or ALK rearrangement": the whole-item extractor demotes markers next to "or", so options are
   // checked one by one here; the item is not met only when every option fails on a checked fact.
@@ -963,7 +978,7 @@ export function resolveItem(item: SplitCriterion, p: ResolverProfile, ctx: Resol
 
   // Positive labels: every directional fact is one we checked and fits, nothing else is asked, no drug is named.
   const allOk = checks.every((c) => c.verdict === "ok");
-  const mentionedAllowed = facts.some((f) => f.value === "mentioned" && allowedKey(f.key));
+  const mentionedAllowed = facts.some((f) => f.value === "mentioned" && allowedKey(f.key) && !(f.key === "other_malignancy" && !OTHER_CANCER_WORDS.test(text)));
   // Health-history items allow one unexplained word ("significant", "uncontrolled"); an item ending in ":"
   // introduces a list we do not see, so it never gets a positive label.
   const maxResidual = checks.some((c) => c.key === "cancer_type") ? 0 : checks.some((c) => isHistoryKey(c.key)) ? 1 : MAX_RESIDUAL;

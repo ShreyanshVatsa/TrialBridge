@@ -122,3 +122,14 @@ Process note: the first run of `scripts/eval/trec/pipeline.ts` for these variant
 | **v3.2: TrialGPT steps + compact output (kept)** | 0.565 [0.450, 0.685] | +0.044 [-0.007, 0.101] | 0.240 | 0.390 | 0.876 | 98.9% | 6,527 [5,389, 7,761] | 1.6 | 6.0 s |
 
 Paired vs the v7 prompt (same topics): short instructions -0.024 [-0.053, 0.001]; v3.2 +0.007 [-0.018, 0.046]. Kept v3.2: not worse, -11% tokens per patient (completion 23.9k -> 21.5k over 10 patients, prompt 49.6k -> 43.8k), coverage 92% -> 99%. Judge Tier B demotions in the dev top 10: 5 TREC-excluded, 1 not relevant, 1 TREC-eligible (NCT02066532, 2021-61: "no prior HER2-directed therapy" read against an untreated patient). Groq free tier today: about 115k tokens spent on these three runs.
+
+### Step 5: benign pairs collapsed before fact extraction (kept)
+
+`lib/match/criteria-resolve.ts`: the whole-item extractor demotes a marker next to an "or" to "mentioned", so "advanced or metastatic ER+/HER2- breast cancer" gave no usable HR/HER2 fact; the resolver now collapses extent pairs ("locally advanced or metastatic" -> "metastatic") and method pairs ("histologically or cytologically" -> "histologically") in the text it hands to the extractor. "Stage IV Breast Cancer:" is read as a disease label, not a study-stage cohort; an exclusion head may end with punctuation; stage words that only name the setting of a treatment-history rule no longer block a positive label.
+
+| measure | after step 3 | after step 5 |
+| --- | --- | --- |
+| vignette dev nDCG@10 (pipeline+resolver) | 0.367 | 0.368 [0.306, 0.431]; vs v7 +0.043 [0.021, 0.064] |
+| vignette dev excluded share in top 10 | 0.517 | 0.516; vs v7 -0.029 [-0.048, -0.011] |
+| TREC dev resolver nDCG@10 (no judge; baseline is 0.521 after step 3) | | 0.545 [0.432, 0.665]; vs baseline +0.024 [-0.040, 0.096]; missed exclusions 0.280, P@10 0.390 |
+| items settled, every question answered (1,000 trials) | 6.9% | 7.1% |
