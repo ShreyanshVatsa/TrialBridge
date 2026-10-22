@@ -1,6 +1,6 @@
-# Evaluation results: v7
+# Evaluation results: v8
 
-Hand-written summary (2026-10-19, branch v7). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or AI-reader labels, and no real patient was evaluated.
+Hand-written summary (2026-10-22, branch v8; the v7 sections below are kept for comparison). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or AI-reader labels, and no real patient was evaluated.
 
 Detailed, generated reports:
 - `eval/matching/RESULTS.md` (+ `dev.json`, `test.json`, `test-runs-v7.json`): TREC criterion-matching eval, `npm run eval:matching`.
@@ -9,6 +9,28 @@ Detailed, generated reports:
 - v6 summary: `git show v6.2:eval/RESULTS.md`.
 
 Intervals are bootstrap 95% CIs over topics (TREC) or profiles (regression). "Distinguishable" means the paired-difference CI excludes 0.
+
+
+## 0. v8 (2026-10-22): resolver coverage, query construction, judge output shrink
+
+Changes (docs/dev/V8_PLAN.md has the per-step before/after with CIs): the deterministic resolver reads the extent of disease from the `spread` answer, treated status and line counts from the item's own wording, alternatives option by option, negated marker lists, plain subtype and hepatitis items, and ignores definitions, assessment windows and registration headers; the BM25/embedding query names positive biomarkers only; the judge prompt (analyze-v3.2) returns a reason and answer ids only for definite labels. Every decision was made on TREC 2021 dev and vignette dev; the vignette test split ran once at the end; the TREC test split was not run (frozen since v7).
+
+| what | v7 | v8 |
+| --- | --- | --- |
+| TREC dev nDCG@10: baseline / resolver / resolver+LLM | 0.491 / 0.521 / 0.550 | 0.521 [0.376, 0.652] / 0.545 [0.432, 0.665] / 0.562 [0.449, 0.681] |
+| TREC dev missed exclusions: baseline / resolver / resolver+LLM | 0.330 / 0.280 / 0.270 | 0.340 / 0.280 / 0.240 [0.150, 0.330] |
+| TREC dev paired resolver+LLM - baseline nDCG@10 | +0.060 [0.002, 0.120] | +0.041 [-0.007, 0.098] (the baseline itself moved up 0.030 with the query change) |
+| TREC dev judge: tokens per patient / coverage / model latency | 7,388 / 92.0% / 6.2 s | 6,527 [5,389, 7,761] / 98.9% / 6.0 s |
+| Vignette dev nDCG@10, pipeline+resolver (vs pipeline:v4) | 0.325 [0.267, 0.386] (+0.038 [0.003, 0.072]) | 0.368 [0.306, 0.431] (+0.080 [0.043, 0.118]); vs v7+resolver +0.043 [0.021, 0.064] |
+| Vignette dev excluded share in top 10 | 0.545 | 0.516 [0.461, 0.575] |
+| Vignette test nDCG@10, pipeline+resolver (vs pipeline:v4), run once | 0.295 [0.237, 0.352] (-0.012 [-0.051, 0.027]) | 0.296 [0.236, 0.354] (-0.011 [-0.053, 0.028]); retrieval only 0.320 [0.257, 0.384] (+0.014 [-0.019, 0.046]) |
+| Vignette test excluded share in top 10 | 0.487 | 0.455 [0.391, 0.519] |
+| Items the resolver settles, every question answered (1,000 trials) | 6.1% | 7.1% |
+| Regression eval: national pipeline nDCG@10 / oracle top 15 | 0.779 / 0 of 600 | 0.780 [0.691, 0.858] / 0 of 600 |
+
+Honest reading: the dev gains are distinguishable (vignette dev +0.043 over v7, with Tier B demotion precision of 63/2 for stage, 32/2 for treated status, 99/1 for ECOG against the gold), the TREC dev judge arm is at its best value so far at 11% fewer tokens, but on the vignette test split the resolver re-ranking still does not add nDCG over the retrieval order (0.296 vs 0.320), exactly as in v7; it lowers the excluded share (0.455, the lowest of any system) and the retrieval order itself is the best on test. The test gold is LLM-judged and pooled before v8 (94.5% of the v8 top 10 judged), so a ranking that surfaces unpooled trials is under-credited.
+
+Efficiency (local Chromium, `npx tsx scripts/perf/search-timings.ts`): first results 1.2 s cold / 0.37 s warm on localhost, 4.8 s cold at 20 Mbps; cold download about 23.5 MB compressed (model 15.7 MB, ORT wasm 3.6 MB, breast shards 3.6 MB, app 0.7 MB); main-thread long task 75-112 ms. The embedding model is already the smallest published variant; shard restructuring (-0.9 MB per group) and pool-size changes were measured and not adopted (docs/dev/V8_PLAN.md).
 
 ## 1. Matching on TREC Clinical Trials (cancer topics, human qrels)
 

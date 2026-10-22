@@ -4,8 +4,8 @@
     2021
   ],
   "pool": 15,
-  "ranAt": "2026-10-19T23:20:23.833Z",
-  "head": "31b51e298955b36bfbf58242d74e343d26587bcd",
+  "ranAt": "2026-10-22T06:43:10.283Z",
+  "head": "1a498d89c3ec5d624cdc1ab31f6f8ae3a95f6758",
   "judgeTopN": 5,
   "llm": {
     "provider": "groq openai/gpt-oss-120b",
@@ -22,28 +22,28 @@
       "not_run": 0
     },
     "jsonValidity": {
-      "valid": 18,
-      "calls": 18,
+      "valid": 16,
+      "calls": 16,
       "share": 1
     },
     "coverage": {
-      "judged": 642,
-      "sent": 698,
-      "share": 0.9197707736389685
+      "judged": 634,
+      "sent": 641,
+      "share": 0.9890795631825273
     },
     "tokensPerPatient": {
-      "mean": 7387.9,
-      "lo": 5828.545,
-      "hi": 9080.125,
+      "mean": 6527.3,
+      "lo": 5388.6849999999995,
+      "hi": 7761.125,
       "n": 10
     },
     "latencyMsPerPatient": {
-      "mean": 6151.6,
-      "lo": 4924.3925,
-      "hi": 7445.620000000001,
+      "mean": 6015.3,
+      "lo": 5361.76,
+      "hi": 6750.9574999999995,
       "n": 10
     },
-    "tokensTotal": 73879,
+    "tokensTotal": 65273,
     "tokensUncachedThisRun": "see per-topic cachedCalls"
   },
   "summary": {
@@ -63,20 +63,20 @@
       "arms": {
         "baseline": {
           "ndcg10": {
-            "mean": 0.4909112611375478,
-            "lo": 0.3482092858572211,
-            "hi": 0.6301879520482211,
+            "mean": 0.521157038606581,
+            "lo": 0.37614542027755987,
+            "hi": 0.6520473938695553,
             "n": 10
           },
           "p10": {
-            "mean": 0.32999999999999996,
-            "lo": 0.21000000000000002,
-            "hi": 0.45999999999999996,
+            "mean": 0.35999999999999993,
+            "lo": 0.22999999999999998,
+            "hi": 0.48999999999999994,
             "n": 10
           },
           "missedExclusions": {
-            "mean": 0.32999999999999996,
-            "lo": 0.19,
+            "mean": 0.33999999999999997,
+            "lo": 0.2,
             "hi": 0.48999999999999994,
             "n": 10
           },
@@ -84,27 +84,27 @@
         },
         "resolver": {
           "ndcg10": {
-            "mean": 0.520896909881037,
-            "lo": 0.41498918897993997,
-            "hi": 0.6406204059752426,
+            "mean": 0.5451216091638764,
+            "lo": 0.43233676159267437,
+            "hi": 0.6649208378897682,
             "n": 10
           },
           "p10": {
-            "mean": 0.36000000000000004,
-            "lo": 0.24975000000000003,
-            "hi": 0.49000000000000005,
+            "mean": 0.39,
+            "lo": 0.26000000000000006,
+            "hi": 0.52,
             "n": 10
           },
           "missedExclusions": {
             "mean": 0.28,
-            "lo": 0.17,
-            "hi": 0.39999999999999997,
+            "lo": 0.18000000000000002,
+            "hi": 0.39,
             "n": 10
           },
           "unknownShare": {
-            "mean": 0.9628194215845916,
-            "lo": 0.9513902751719951,
-            "hi": 0.9738167164954289,
+            "mean": 0.9574385156765416,
+            "lo": 0.9433236203817578,
+            "hi": 0.9711893946011998,
             "n": 10
           }
         },
@@ -116,27 +116,27 @@
         },
         "resolverFull": {
           "ndcg10": {
-            "mean": 0.5951526118766886,
-            "lo": 0.44902447702604975,
-            "hi": 0.7335592771075083,
+            "mean": 0.5856585209664262,
+            "lo": 0.4252329961277308,
+            "hi": 0.7461356368287786,
             "n": 10
           },
           "p10": {
             "mean": 0.45,
-            "lo": 0.31,
-            "hi": 0.6,
+            "lo": 0.29,
+            "hi": 0.63,
             "n": 10
           },
           "missedExclusions": {
-            "mean": 0.23000000000000004,
-            "lo": 0.12,
-            "hi": 0.37,
+            "mean": 0.19,
+            "lo": 0.11000000000000001,
+            "hi": 0.27999999999999997,
             "n": 10
           },
           "unknownShare": {
-            "mean": 0.8438377450479718,
-            "lo": 0.802549693120134,
-            "hi": 0.8841646348093444,
+            "mean": 0.8407392793787244,
+            "lo": 0.7891909845903661,
+            "hi": 0.8874386453153325,
             "n": 10
           }
         }
@@ -144,21 +144,21 @@
       "deltas": {
         "resolver-baseline": {
           "ndcg10": {
-            "mean": 0.029985648743489156,
-            "lo": -0.04005557797018261,
-            "hi": 0.10756106948338844,
+            "mean": 0.023964570557295412,
+            "lo": -0.040350987704744996,
+            "hi": 0.09636171914263739,
             "n": 10
           },
           "p10": {
             "mean": 0.030000000000000016,
-            "lo": -0.019999999999999997,
-            "hi": 0.09000000000000001,
+            "lo": -0.009999999999999998,
+            "hi": 0.08000000000000003,
             "n": 10
           },
           "missedExclusions": {
-            "mean": -0.04999999999999999,
-            "lo": -0.13999999999999999,
-            "hi": 0.02000000000000001,
+            "mean": -0.06,
+            "lo": -0.15,
+            "hi": 0.009999999999999995,
             "n": 10
           }
         },
@@ -169,21 +169,21 @@
         },
         "resolverFull-baseline": {
           "ndcg10": {
-            "mean": 0.10424135073914083,
-            "lo": -0.04203447608636188,
-            "hi": 0.23313215009021632,
+            "mean": 0.06450148235984528,
+            "lo": -0.06244346101685904,
+            "hi": 0.1773011462981592,
             "n": 10
           },
           "p10": {
-            "mean": 0.12000000000000002,
-            "lo": -0.03999999999999999,
-            "hi": 0.27,
+            "mean": 0.09000000000000001,
+            "lo": -0.029999999999999978,
+            "hi": 0.21999999999999997,
             "n": 10
           },
           "missedExclusions": {
-            "mean": -0.1,
-            "lo": -0.24000000000000005,
-            "hi": 0.05,
+            "mean": -0.15,
+            "lo": -0.27,
+            "hi": -0.02999999999999999,
             "n": 10
           }
         }
@@ -205,20 +205,20 @@
       "arms": {
         "baseline": {
           "ndcg10": {
-            "mean": 0.4909112611375478,
-            "lo": 0.3482092858572211,
-            "hi": 0.6301879520482211,
+            "mean": 0.521157038606581,
+            "lo": 0.37614542027755987,
+            "hi": 0.6520473938695553,
             "n": 10
           },
           "p10": {
-            "mean": 0.32999999999999996,
-            "lo": 0.21000000000000002,
-            "hi": 0.45999999999999996,
+            "mean": 0.35999999999999993,
+            "lo": 0.22999999999999998,
+            "hi": 0.48999999999999994,
             "n": 10
           },
           "missedExclusions": {
-            "mean": 0.32999999999999996,
-            "lo": 0.19,
+            "mean": 0.33999999999999997,
+            "lo": 0.2,
             "hi": 0.48999999999999994,
             "n": 10
           },
@@ -226,79 +226,79 @@
         },
         "resolver": {
           "ndcg10": {
-            "mean": 0.520896909881037,
-            "lo": 0.41498918897993997,
-            "hi": 0.6406204059752426,
+            "mean": 0.5451216091638764,
+            "lo": 0.43233676159267437,
+            "hi": 0.6649208378897682,
             "n": 10
           },
           "p10": {
-            "mean": 0.36000000000000004,
-            "lo": 0.24975000000000003,
-            "hi": 0.49000000000000005,
+            "mean": 0.39,
+            "lo": 0.26000000000000006,
+            "hi": 0.52,
             "n": 10
           },
           "missedExclusions": {
             "mean": 0.28,
-            "lo": 0.17,
-            "hi": 0.39999999999999997,
+            "lo": 0.18000000000000002,
+            "hi": 0.39,
             "n": 10
           },
           "unknownShare": {
-            "mean": 0.9628194215845916,
-            "lo": 0.9513902751719951,
-            "hi": 0.9738167164954289,
+            "mean": 0.9574385156765416,
+            "lo": 0.9433236203817578,
+            "hi": 0.9711893946011998,
             "n": 10
           }
         },
         "llm": {
           "ndcg10": {
-            "mean": 0.5504514244298403,
-            "lo": 0.44441503361166096,
-            "hi": 0.6651297110483001,
+            "mean": 0.5622152475740533,
+            "lo": 0.4493296189749808,
+            "hi": 0.6810410917792096,
             "n": 10
           },
           "p10": {
-            "mean": 0.36,
-            "lo": 0.24000000000000005,
-            "hi": 0.49000000000000005,
+            "mean": 0.39,
+            "lo": 0.27,
+            "hi": 0.52,
             "n": 10
           },
           "missedExclusions": {
-            "mean": 0.2700000000000001,
-            "lo": 0.17,
-            "hi": 0.37,
+            "mean": 0.24000000000000005,
+            "lo": 0.15,
+            "hi": 0.33,
             "n": 10
           },
           "unknownShare": {
-            "mean": 0.8665831942378304,
-            "lo": 0.8031694876713672,
-            "hi": 0.9177683159505342,
+            "mean": 0.8745045760396174,
+            "lo": 0.821003347766113,
+            "hi": 0.923967980367561,
             "n": 10
           }
         },
         "resolverFull": {
           "ndcg10": {
-            "mean": 0.5951526118766886,
-            "lo": 0.44902447702604975,
-            "hi": 0.7335592771075083,
+            "mean": 0.5856585209664262,
+            "lo": 0.4252329961277308,
+            "hi": 0.7461356368287786,
             "n": 10
           },
           "p10": {
             "mean": 0.45,
-            "lo": 0.31,
-            "hi": 0.6,
+            "lo": 0.29,
+            "hi": 0.63,
             "n": 10
           },
           "missedExclusions": {
-            "mean": 0.23000000000000004,
-            "lo": 0.12,
-            "hi": 0.37,
+            "mean": 0.19,
+            "lo": 0.11000000000000001,
+            "hi": 0.27999999999999997,
             "n": 10
           },
           "unknownShare": {
-            "mean": 0.8438377450479718,
-            "lo": 0.802549693120134,
-            "hi": 0.8841646348093444,
+            "mean": 0.8407392793787244,
+            "lo": 0.7891909845903661,
+            "hi": 0.8874386453153325,
             "n": 10
           }
         }
@@ -306,61 +306,61 @@
       "deltas": {
         "resolver-baseline": {
           "ndcg10": {
-            "mean": 0.029985648743489156,
-            "lo": -0.04005557797018261,
-            "hi": 0.10756106948338844,
+            "mean": 0.023964570557295412,
+            "lo": -0.040350987704744996,
+            "hi": 0.09636171914263739,
             "n": 10
           },
           "p10": {
             "mean": 0.030000000000000016,
-            "lo": -0.019999999999999997,
-            "hi": 0.09000000000000001,
+            "lo": -0.009999999999999998,
+            "hi": 0.08000000000000003,
             "n": 10
           },
           "missedExclusions": {
-            "mean": -0.04999999999999999,
-            "lo": -0.13999999999999999,
-            "hi": 0.02000000000000001,
+            "mean": -0.06,
+            "lo": -0.15,
+            "hi": 0.009999999999999995,
             "n": 10
           }
         },
         "llm-baseline": {
           "ndcg10": {
-            "mean": 0.05954016329229252,
-            "lo": 0.00198853362676251,
-            "hi": 0.11982933574664238,
+            "mean": 0.041058208967472226,
+            "lo": -0.006637327584588441,
+            "hi": 0.09757805658720291,
             "n": 10
           },
           "p10": {
-            "mean": 0.030000000000000016,
+            "mean": 0.03000000000000002,
             "lo": -0.03,
-            "hi": 0.09000000000000002,
+            "hi": 0.09000000000000004,
             "n": 10
           },
           "missedExclusions": {
-            "mean": -0.059999999999999984,
-            "lo": -0.15,
-            "hi": 0.010000000000000014,
+            "mean": -0.1,
+            "lo": -0.23000000000000004,
+            "hi": -0.009999999999999992,
             "n": 10
           }
         },
         "resolverFull-baseline": {
           "ndcg10": {
-            "mean": 0.10424135073914083,
-            "lo": -0.04203447608636188,
-            "hi": 0.23313215009021632,
+            "mean": 0.06450148235984528,
+            "lo": -0.06244346101685904,
+            "hi": 0.1773011462981592,
             "n": 10
           },
           "p10": {
-            "mean": 0.12000000000000002,
-            "lo": -0.03999999999999999,
-            "hi": 0.27,
+            "mean": 0.09000000000000001,
+            "lo": -0.029999999999999978,
+            "hi": 0.21999999999999997,
             "n": 10
           },
           "missedExclusions": {
-            "mean": -0.1,
-            "lo": -0.24000000000000005,
-            "hi": 0.05,
+            "mean": -0.15,
+            "lo": -0.27,
+            "hi": -0.02999999999999999,
             "n": 10
           }
         }
@@ -434,7 +434,7 @@
           "ndcg10": 0.4734639717797222,
           "p10": 0.2,
           "missedExclusions": 0.4,
-          "unknownShare": 0.984,
+          "unknownShare": 0.976,
           "top10": [
             {
               "id": "NCT00003372",
@@ -515,10 +515,10 @@
           ]
         },
         "resolverFull": {
-          "ndcg10": 0.7311276223288645,
-          "p10": 0.4,
-          "missedExclusions": 0.5,
-          "unknownShare": 0.9197530864197531,
+          "ndcg10": 0.609716975895182,
+          "p10": 0.3,
+          "missedExclusions": 0.4,
+          "unknownShare": 0.9337748344370861,
           "top10": [
             {
               "id": "NCT02119338",
@@ -527,11 +527,6 @@
             },
             {
               "id": "NCT03561207",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT01386710",
               "grade": 2,
               "tier": "A"
             },
@@ -556,11 +551,6 @@
               "tier": "A"
             },
             {
-              "id": "NCT02761070",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
               "id": "NCT00003372",
               "grade": 1,
               "tier": "A"
@@ -568,27 +558,27 @@
             {
               "id": "NCT03668522",
               "grade": 1,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00002806",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT03727841",
+              "grade": 0,
               "tier": "A"
             }
           ],
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.49493735763615226,
+          "ndcg10": 0.4556892795605753,
           "p10": 0.2,
-          "missedExclusions": 0.4,
-          "unknownShare": 0.904,
+          "missedExclusions": 0.2,
+          "unknownShare": 0.736,
           "top10": [
-            {
-              "id": "NCT00003372",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
-              "id": "NCT03668522",
-              "grade": 1,
-              "tier": "A"
-            },
             {
               "id": "NCT03727841",
               "grade": 0,
@@ -615,12 +605,7 @@
               "tier": "A"
             },
             {
-              "id": "NCT00003375",
-              "grade": 1,
-              "tier": "B"
-            },
-            {
-              "id": "NCT00002569",
+              "id": "NCT00003372",
               "grade": 1,
               "tier": "B"
             },
@@ -628,54 +613,39 @@
               "id": "NCT00002806",
               "grade": 0,
               "tier": "B"
-            }
-          ],
-          "hardFailures": [
+            },
             {
               "id": "NCT00003375",
               "grade": 1,
-              "items": [
-                {
-                  "id": "I10",
-                  "label": "not_met",
-                  "source": "rule",
-                  "reason": "Your daily activity level is outside what this rule allows."
-                },
-                {
-                  "id": "I24",
-                  "label": "not_met",
-                  "source": "llm",
-                  "reason": "Patient has prior chemotherapy"
-                },
-                {
-                  "id": "I26",
-                  "label": "not_met",
-                  "source": "llm",
-                  "reason": "Patient has prior radiotherapy"
-                }
-              ]
+              "tier": "B"
             },
             {
               "id": "NCT00002569",
               "grade": 1,
+              "tier": "B"
+            },
+            {
+              "id": "NCT03668522",
+              "grade": 1,
+              "tier": "B"
+            }
+          ],
+          "hardFailures": [
+            {
+              "id": "NCT00003372",
+              "grade": 1,
               "items": [
                 {
-                  "id": "I8",
-                  "label": "not_met",
-                  "source": "rule",
-                  "reason": "Your daily activity level is outside what this rule allows."
-                },
-                {
-                  "id": "I24",
+                  "id": "I1",
                   "label": "not_met",
                   "source": "llm",
-                  "reason": "Patient has received prior chemotherapy"
+                  "reason": "Not recurrent anaplastic oligodendroglioma"
                 },
                 {
-                  "id": "I27",
+                  "id": "I3",
                   "label": "not_met",
                   "source": "llm",
-                  "reason": "Patient has prior radiotherapy"
+                  "reason": "More than one prior chemotherapy regimen"
                 }
               ]
             },
@@ -687,7 +657,91 @@
                   "id": "I3",
                   "label": "not_met",
                   "source": "llm",
-                  "reason": "Patient has prior chemotherapy and radiotherapy"
+                  "reason": "Has received chemotherapy"
+                }
+              ]
+            },
+            {
+              "id": "NCT00003375",
+              "grade": 1,
+              "items": [
+                {
+                  "id": "I5",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Spinal cord tumor present"
+                },
+                {
+                  "id": "I10",
+                  "label": "not_met",
+                  "source": "rule",
+                  "reason": "Your daily activity level is outside what this rule allows."
+                },
+                {
+                  "id": "I17",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "ECOG 3-4 exceeds limit 3"
+                },
+                {
+                  "id": "I24",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Has received chemotherapy"
+                },
+                {
+                  "id": "I26",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Has received radiotherapy"
+                }
+              ]
+            },
+            {
+              "id": "NCT00002569",
+              "grade": 1,
+              "items": [
+                {
+                  "id": "I5",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Spinal cord tumor present"
+                },
+                {
+                  "id": "I8",
+                  "label": "not_met",
+                  "source": "rule",
+                  "reason": "Your daily activity level is outside what this rule allows."
+                },
+                {
+                  "id": "I24",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Has received chemotherapy"
+                },
+                {
+                  "id": "I27",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Has received radiotherapy"
+                }
+              ]
+            },
+            {
+              "id": "NCT03668522",
+              "grade": 1,
+              "items": [
+                {
+                  "id": "I1",
+                  "label": "not_met",
+                  "source": "llm",
+                  "reason": "Tumor already treated"
+                },
+                {
+                  "id": "E1",
+                  "label": "excluded",
+                  "source": "llm",
+                  "reason": "Tumor has been treated before operation"
                 }
               ]
             }
@@ -698,14 +752,14 @@
         "status": "ok",
         "trialsSent": 5,
         "itemsSent": 51,
-        "itemsJudged": 41,
+        "itemsJudged": 49,
         "calls": 1,
         "validCalls": 1,
         "cachedCalls": 1,
-        "tokens": 4415,
-        "promptTokens": 3172,
-        "completionTokens": 1243,
-        "latencyMs": 3112,
+        "tokens": 5493,
+        "promptTokens": 3105,
+        "completionTokens": 2388,
+        "latencyMs": 5595,
         "slowCalls": 0
       }
     },
@@ -890,10 +944,10 @@
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.5465173612685255,
+          "ndcg10": 0.5859565147577459,
           "p10": 0.3,
-          "missedExclusions": 0.3,
-          "unknownShare": 0.8785714285714286,
+          "missedExclusions": 0.4,
+          "unknownShare": 0.9325396825396826,
           "top10": [
             {
               "id": "NCT01854372",
@@ -906,13 +960,13 @@
               "tier": "A"
             },
             {
-              "id": "NCT03485118",
-              "grade": 0,
+              "id": "NCT04361279",
+              "grade": 1,
               "tier": "A"
             },
             {
-              "id": "NCT04361279",
-              "grade": 1,
+              "id": "NCT03485118",
+              "grade": 0,
               "tier": "A"
             },
             {
@@ -941,8 +995,8 @@
               "tier": "A"
             },
             {
-              "id": "NCT02436707",
-              "grade": 0,
+              "id": "NCT00006669",
+              "grade": 1,
               "tier": "A"
             }
           ],
@@ -953,14 +1007,14 @@
         "status": "ok",
         "trialsSent": 5,
         "itemsSent": 73,
-        "itemsJudged": 73,
+        "itemsJudged": 70,
         "calls": 2,
         "validCalls": 2,
         "cachedCalls": 2,
-        "tokens": 8232,
-        "promptTokens": 5870,
-        "completionTokens": 2362,
-        "latencyMs": 6182,
+        "tokens": 7784,
+        "promptTokens": 5742,
+        "completionTokens": 2042,
+        "latencyMs": 6773,
         "slowCalls": 0
       }
     },
@@ -1086,10 +1140,10 @@
           "hardFailures": []
         },
         "resolverFull": {
-          "ndcg10": 0.8975828762407047,
-          "p10": 0.8,
+          "ndcg10": 0.8313286527863156,
+          "p10": 0.7,
           "missedExclusions": 0.2,
-          "unknownShare": 0.8155339805825242,
+          "unknownShare": 0.84,
           "top10": [
             {
               "id": "NCT01346020",
@@ -1132,12 +1186,12 @@
               "tier": "A"
             },
             {
-              "id": "NCT01313689",
-              "grade": 2,
+              "id": "NCT00220311",
+              "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT00289549",
+              "id": "NCT01313689",
               "grade": 2,
               "tier": "A"
             }
@@ -1148,15 +1202,15 @@
           "ndcg10": 0.6169760664989727,
           "p10": 0.4,
           "missedExclusions": 0.5,
-          "unknownShare": 0.7440758293838863,
+          "unknownShare": 0.9004739336492891,
           "top10": [
             {
-              "id": "NCT02980731",
+              "id": "NCT04204057",
               "grade": 1,
               "tier": "A"
             },
             {
-              "id": "NCT04204057",
+              "id": "NCT02980731",
               "grade": 1,
               "tier": "A"
             },
@@ -1208,14 +1262,14 @@
         "status": "ok",
         "trialsSent": 5,
         "itemsSent": 81,
-        "itemsJudged": 73,
+        "itemsJudged": 81,
         "calls": 1,
         "validCalls": 1,
         "cachedCalls": 1,
-        "tokens": 5807,
-        "promptTokens": 3510,
-        "completionTokens": 2297,
-        "latencyMs": 5413,
+        "tokens": 5543,
+        "promptTokens": 3452,
+        "completionTokens": 2091,
+        "latencyMs": 5158,
         "slowCalls": 0
       }
     },
@@ -1282,19 +1336,14 @@
           ]
         },
         "resolver": {
-          "ndcg10": 0.5797553996426175,
-          "p10": 0.5,
-          "missedExclusions": 0.4,
-          "unknownShare": 0.9621848739495799,
+          "ndcg10": 0.6347783412171375,
+          "p10": 0.6,
+          "missedExclusions": 0.3,
+          "unknownShare": 0.9702602230483272,
           "top10": [
             {
               "id": "NCT02244463",
               "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT03808779",
-              "grade": 1,
               "tier": "A"
             },
             {
@@ -1304,6 +1353,11 @@
             },
             {
               "id": "NCT03002623",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00729157",
               "grade": 2,
               "tier": "A"
             },
@@ -1341,13 +1395,18 @@
           "hardFailures": []
         },
         "resolverFull": {
-          "ndcg10": 0.6129511000179528,
-          "p10": 0.2,
-          "missedExclusions": 0.7,
-          "unknownShare": 0.8095238095238095,
+          "ndcg10": 0.673017038894419,
+          "p10": 0.4,
+          "missedExclusions": 0.4,
+          "unknownShare": 0.8395061728395061,
           "top10": [
             {
               "id": "NCT02869620",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04031638",
               "grade": 2,
               "tier": "A"
             },
@@ -1367,27 +1426,7 @@
               "tier": "A"
             },
             {
-              "id": "NCT01974284",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
-              "id": "NCT01354639",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
               "id": "NCT02178345",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
-              "id": "NCT04031638",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT01384669",
               "grade": 1,
               "tier": "A"
             },
@@ -1395,15 +1434,30 @@
               "id": "NCT00410761",
               "grade": 0,
               "tier": "A"
+            },
+            {
+              "id": "NCT03483337",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT02393690",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04522570",
+              "grade": 2,
+              "tier": "A"
             }
           ],
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.6958415429402082,
+          "ndcg10": 0.6796149369260318,
           "p10": 0.5,
-          "missedExclusions": 0.4,
-          "unknownShare": 0.9498069498069498,
+          "missedExclusions": 0.3,
+          "unknownShare": 0.9518072289156626,
           "top10": [
             {
               "id": "NCT01964144",
@@ -1421,8 +1475,8 @@
               "tier": "A"
             },
             {
-              "id": "NCT03808779",
-              "grade": 1,
+              "id": "NCT00729157",
+              "grade": 2,
               "tier": "A"
             },
             {
@@ -1451,8 +1505,8 @@
               "tier": "A"
             },
             {
-              "id": "NCT00729157",
-              "grade": 2,
+              "id": "NCT03841617",
+              "grade": 0,
               "tier": "A"
             }
           ],
@@ -1463,14 +1517,14 @@
         "status": "ok",
         "trialsSent": 5,
         "itemsSent": 81,
-        "itemsJudged": 51,
+        "itemsJudged": 81,
         "calls": 2,
         "validCalls": 2,
         "cachedCalls": 2,
-        "tokens": 8174,
-        "promptTokens": 5689,
-        "completionTokens": 2485,
-        "latencyMs": 7060,
+        "tokens": 7389,
+        "promptTokens": 5589,
+        "completionTokens": 1800,
+        "latencyMs": 4915,
         "slowCalls": 0
       }
     },
@@ -1596,10 +1650,10 @@
           "hardFailures": []
         },
         "resolverFull": {
-          "ndcg10": 0.29926559542503733,
-          "p10": 0.2,
+          "ndcg10": 0.2221495157984552,
+          "p10": 0.1,
           "missedExclusions": 0.2,
-          "unknownShare": 0.9383259911894273,
+          "unknownShare": 0.9372197309417041,
           "top10": [
             {
               "id": "NCT03042247",
@@ -1637,17 +1691,17 @@
               "tier": "A"
             },
             {
-              "id": "NCT01665768",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
               "id": "NCT04212013",
               "grade": 0,
               "tier": "A"
             },
             {
               "id": "NCT04223765",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04268277",
               "grade": 0,
               "tier": "A"
             }
@@ -1658,7 +1712,7 @@
           "ndcg10": 0.3215682684481009,
           "p10": 0.1,
           "missedExclusions": 0.1,
-          "unknownShare": 0.9463087248322147,
+          "unknownShare": 0.959731543624161,
           "top10": [
             {
               "id": "NCT04333524",
@@ -1676,6 +1730,11 @@
               "tier": "A"
             },
             {
+              "id": "NCT03474744",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
               "id": "NCT04223765",
               "grade": 0,
               "tier": "A"
@@ -1687,11 +1746,6 @@
             },
             {
               "id": "NCT04268277",
-              "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT03474744",
               "grade": 0,
               "tier": "A"
             },
@@ -1722,10 +1776,10 @@
         "calls": 3,
         "validCalls": 3,
         "cachedCalls": 3,
-        "tokens": 12275,
-        "promptTokens": 8192,
-        "completionTokens": 4083,
-        "latencyMs": 9874,
+        "tokens": 10879,
+        "promptTokens": 8119,
+        "completionTokens": 2760,
+        "latencyMs": 8467,
         "slowCalls": 0
       }
     },
@@ -1977,10 +2031,10 @@
         "calls": 1,
         "validCalls": 1,
         "cachedCalls": 1,
-        "tokens": 4098,
-        "promptTokens": 2011,
-        "completionTokens": 2087,
-        "latencyMs": 4662,
+        "tokens": 3640,
+        "promptTokens": 1949,
+        "completionTokens": 1691,
+        "latencyMs": 4948,
         "slowCalls": 0
       }
     },
@@ -2165,10 +2219,10 @@
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.5950129184221068,
+          "ndcg10": 0.5647464304130267,
           "p10": 0.4,
-          "missedExclusions": 0.5,
-          "unknownShare": 0.9306930693069307,
+          "missedExclusions": 0.4,
+          "unknownShare": 0.958974358974359,
           "top10": [
             {
               "id": "NCT01058434",
@@ -2177,11 +2231,6 @@
             },
             {
               "id": "NCT01102426",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
-              "id": "NCT00615589",
               "grade": 1,
               "tier": "A"
             },
@@ -2219,6 +2268,11 @@
               "id": "NCT02506959",
               "grade": 2,
               "tier": "A"
+            },
+            {
+              "id": "NCT01820546",
+              "grade": 0,
+              "tier": "A"
             }
           ],
           "hardFailures": []
@@ -2232,10 +2286,10 @@
         "calls": 2,
         "validCalls": 2,
         "cachedCalls": 2,
-        "tokens": 7279,
-        "promptTokens": 5126,
-        "completionTokens": 2153,
-        "latencyMs": 5464,
+        "tokens": 7529,
+        "promptTokens": 5039,
+        "completionTokens": 2490,
+        "latencyMs": 6745,
         "slowCalls": 0
       }
     },
@@ -2244,14 +2298,14 @@
       "candidates": 363,
       "arms": {
         "baseline": {
-          "ndcg10": 0.25251084951271896,
-          "p10": 0.2,
+          "ndcg10": 0.39767223286316733,
+          "p10": 0.3,
           "missedExclusions": 0.1,
           "unknownShare": null,
           "top10": [
             {
-              "id": "NCT04569747",
-              "grade": 0,
+              "id": "NCT04249440",
+              "grade": 1,
               "tier": null
             },
             {
@@ -2260,32 +2314,37 @@
               "tier": null
             },
             {
-              "id": "NCT02549677",
+              "id": "NCT04094896",
               "grade": 0,
               "tier": null
             },
             {
-              "id": "NCT04249440",
-              "grade": 1,
-              "tier": null
-            },
-            {
-              "id": "NCT02221999",
+              "id": "NCT00542451",
               "grade": 0,
               "tier": null
             },
             {
-              "id": "NCT02954874",
+              "id": "NCT03892655",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT04569747",
               "grade": 0,
               "tier": null
             },
             {
-              "id": "NCT01757327",
+              "id": "NCT04547907",
               "grade": 0,
               "tier": null
             },
             {
-              "id": "NCT04185311",
+              "id": "NCT04276337",
+              "grade": 0,
+              "tier": null
+            },
+            {
+              "id": "NCT01872975",
               "grade": 0,
               "tier": null
             },
@@ -2293,19 +2352,14 @@
               "id": "NCT04158505",
               "grade": 2,
               "tier": null
-            },
-            {
-              "id": "NCT03381092",
-              "grade": 0,
-              "tier": null
             }
           ]
         },
         "resolver": {
-          "ndcg10": 0.31833954895937183,
-          "p10": 0.2,
+          "ndcg10": 0.3746661058764784,
+          "p10": 0.3,
           "missedExclusions": 0.1,
-          "unknownShare": 0.9508928571428571,
+          "unknownShare": 0.94375,
           "top10": [
             {
               "id": "NCT04249440",
@@ -2313,17 +2367,27 @@
               "tier": "A"
             },
             {
+              "id": "NCT04276337",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
               "id": "NCT04158505",
               "grade": 2,
               "tier": "A"
             },
             {
-              "id": "NCT02221999",
+              "id": "NCT04094896",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT03161353",
+              "id": "NCT03892655",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04547907",
               "grade": 0,
               "tier": "A"
             },
@@ -2333,8 +2397,8 @@
               "tier": "A"
             },
             {
-              "id": "NCT02954874",
-              "grade": 0,
+              "id": "NCT03085368",
+              "grade": 2,
               "tier": "A"
             },
             {
@@ -2343,17 +2407,7 @@
               "tier": "A"
             },
             {
-              "id": "NCT03085368",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT02549677",
-              "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT01757327",
+              "id": "NCT01872975",
               "grade": 0,
               "tier": "A"
             }
@@ -2361,10 +2415,10 @@
           "hardFailures": []
         },
         "resolverFull": {
-          "ndcg10": 0.5356888783176503,
-          "p10": 0.4,
+          "ndcg10": 0.4704795908775045,
+          "p10": 0.3,
           "missedExclusions": 0.1,
-          "unknownShare": 0.7323943661971831,
+          "unknownShare": 0.7088607594936709,
           "top10": [
             {
               "id": "NCT01320488",
@@ -2397,6 +2451,11 @@
               "tier": "A"
             },
             {
+              "id": "NCT01796444",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
               "id": "NCT03716245",
               "grade": 0,
               "tier": "A"
@@ -2407,23 +2466,18 @@
               "tier": "A"
             },
             {
-              "id": "NCT01484483",
+              "id": "NCT04487561",
               "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT02559362",
-              "grade": 2,
               "tier": "A"
             }
           ],
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.3995688713838975,
-          "p10": 0.2,
-          "missedExclusions": 0.1,
-          "unknownShare": 0.9274809160305344,
+          "ndcg10": 0.4351098955930419,
+          "p10": 0.4,
+          "missedExclusions": 0,
+          "unknownShare": 0.9041095890410958,
           "top10": [
             {
               "id": "NCT03085368",
@@ -2431,17 +2485,7 @@
               "tier": "A"
             },
             {
-              "id": "NCT04249440",
-              "grade": 1,
-              "tier": "A"
-            },
-            {
-              "id": "NCT04158505",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT03161353",
+              "id": "NCT04094896",
               "grade": 0,
               "tier": "A"
             },
@@ -2451,28 +2495,38 @@
               "tier": "A"
             },
             {
-              "id": "NCT02954874",
+              "id": "NCT04276337",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT01757327",
+              "id": "NCT04158505",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04547907",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT04185311",
+              "id": "NCT04569747",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT03381092",
+              "id": "NCT01872975",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT04481113",
-              "grade": 0,
+              "id": "NCT01077154",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00058526",
+              "grade": 2,
               "tier": "A"
             }
           ],
@@ -2482,15 +2536,15 @@
       "llm": {
         "status": "ok",
         "trialsSent": 5,
-        "itemsSent": 71,
-        "itemsJudged": 71,
-        "calls": 2,
-        "validCalls": 2,
-        "cachedCalls": 2,
-        "tokens": 7937,
-        "promptTokens": 5081,
-        "completionTokens": 2856,
-        "latencyMs": 7111,
+        "itemsSent": 48,
+        "itemsJudged": 48,
+        "calls": 1,
+        "validCalls": 1,
+        "cachedCalls": 1,
+        "tokens": 5272,
+        "promptTokens": 3044,
+        "completionTokens": 2228,
+        "latencyMs": 4931,
         "slowCalls": 0
       }
     },
@@ -2616,10 +2670,10 @@
           "hardFailures": []
         },
         "resolverFull": {
-          "ndcg10": 0.2839923363583368,
+          "ndcg10": 0.2826756187306181,
           "p10": 0.2,
           "missedExclusions": 0.2,
-          "unknownShare": 0.7792207792207793,
+          "unknownShare": 0.75,
           "top10": [
             {
               "id": "NCT00513123",
@@ -2662,34 +2716,24 @@
               "tier": "A"
             },
             {
-              "id": "NCT02651883",
-              "grade": 1,
+              "id": "NCT03020238",
+              "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT04591977",
-              "grade": 0,
+              "id": "NCT02671071",
+              "grade": 1,
               "tier": "A"
             }
           ],
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.30007773246783676,
+          "ndcg10": 0.29494383637690086,
           "p10": 0.2,
           "missedExclusions": 0.2,
-          "unknownShare": 0.64,
+          "unknownShare": 0.73,
           "top10": [
-            {
-              "id": "NCT00339989",
-              "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT03749707",
-              "grade": 2,
-              "tier": "A"
-            },
             {
               "id": "NCT02554565",
               "grade": 1,
@@ -2726,6 +2770,16 @@
               "tier": "A"
             },
             {
+              "id": "NCT00339989",
+              "grade": 0,
+              "tier": "A"
+            },
+            {
+              "id": "NCT03749707",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
               "id": "NCT00154583",
               "grade": 2,
               "tier": "A"
@@ -2738,14 +2792,14 @@
         "status": "ok",
         "trialsSent": 5,
         "itemsSent": 46,
-        "itemsJudged": 43,
+        "itemsJudged": 46,
         "calls": 1,
         "validCalls": 1,
         "cachedCalls": 1,
-        "tokens": 4473,
-        "promptTokens": 3115,
-        "completionTokens": 1358,
-        "latencyMs": 3573,
+        "tokens": 4779,
+        "promptTokens": 3044,
+        "completionTokens": 1735,
+        "latencyMs": 5625,
         "slowCalls": 0
       }
     },
@@ -2754,9 +2808,9 @@
       "candidates": 416,
       "arms": {
         "baseline": {
-          "ndcg10": 0.5173633627401372,
-          "p10": 0.4,
-          "missedExclusions": 0,
+          "ndcg10": 0.6746597540800213,
+          "p10": 0.6,
+          "missedExclusions": 0.1,
           "unknownShare": null,
           "top10": [
             {
@@ -2765,13 +2819,18 @@
               "tier": null
             },
             {
-              "id": "NCT04296942",
+              "id": "NCT01420146",
+              "grade": 0,
+              "tier": null
+            },
+            {
+              "id": "NCT02066532",
               "grade": 2,
               "tier": null
             },
             {
-              "id": "NCT02003209",
-              "grade": 0,
+              "id": "NCT01276041",
+              "grade": 2,
               "tier": null
             },
             {
@@ -2780,17 +2839,7 @@
               "tier": null
             },
             {
-              "id": "NCT00246571",
-              "grade": 0,
-              "tier": null
-            },
-            {
-              "id": "NCT02457910",
-              "grade": 0,
-              "tier": null
-            },
-            {
-              "id": "NCT04247035",
+              "id": "NCT00130507",
               "grade": 0,
               "tier": null
             },
@@ -2800,22 +2849,27 @@
               "tier": null
             },
             {
-              "id": "NCT01420146",
-              "grade": 0,
+              "id": "NCT02973737",
+              "grade": 1,
               "tier": null
             },
             {
-              "id": "NCT01901146",
+              "id": "NCT00372424",
+              "grade": 2,
+              "tier": null
+            },
+            {
+              "id": "NCT03947736",
               "grade": 2,
               "tier": null
             }
           ]
         },
         "resolver": {
-          "ndcg10": 0.5834330535576521,
-          "p10": 0.5,
-          "missedExclusions": 0,
-          "unknownShare": 0.9649805447470817,
+          "ndcg10": 0.7143305478944205,
+          "p10": 0.6,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.9182389937106918,
           "top10": [
             {
               "id": "NCT00864175",
@@ -2823,28 +2877,23 @@
               "tier": "A"
             },
             {
+              "id": "NCT00372424",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
               "id": "NCT01420146",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT01677455",
+              "id": "NCT01276041",
               "grade": 2,
               "tier": "A"
             },
             {
-              "id": "NCT01901146",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT04296942",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT00573755",
-              "grade": 0,
+              "id": "NCT00057993",
+              "grade": 1,
               "tier": "A"
             },
             {
@@ -2853,28 +2902,46 @@
               "tier": "A"
             },
             {
-              "id": "NCT02003209",
-              "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT02457910",
-              "grade": 0,
+              "id": "NCT02066532",
+              "grade": 2,
               "tier": "A"
             },
             {
               "id": "NCT04396626",
               "grade": 0,
               "tier": "A"
+            },
+            {
+              "id": "NCT03947736",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT04566458",
+              "grade": 0,
+              "tier": "B"
             }
           ],
-          "hardFailures": []
+          "hardFailures": [
+            {
+              "id": "NCT04566458",
+              "grade": 0,
+              "items": [
+                {
+                  "id": "I4",
+                  "label": "not_met",
+                  "source": "rule",
+                  "reason": "Your answers about past treatment do not fit this rule."
+                }
+              ]
+            }
+          ]
         },
         "resolverFull": {
-          "ndcg10": 0.8236998933965709,
-          "p10": 0.8,
+          "ndcg10": 1,
+          "p10": 1,
           "missedExclusions": 0,
-          "unknownShare": 0.7710843373493976,
+          "unknownShare": 0.7254901960784313,
           "top10": [
             {
               "id": "NCT01619514",
@@ -2887,8 +2954,8 @@
               "tier": "A"
             },
             {
-              "id": "NCT02078531",
-              "grade": 0,
+              "id": "NCT04756921",
+              "grade": 2,
               "tier": "A"
             },
             {
@@ -2912,17 +2979,17 @@
               "tier": "A"
             },
             {
-              "id": "NCT04242277",
+              "id": "NCT00372424",
               "grade": 2,
               "tier": "A"
             },
             {
-              "id": "NCT03716245",
-              "grade": 0,
+              "id": "NCT01811264",
+              "grade": 2,
               "tier": "A"
             },
             {
-              "id": "NCT04756921",
+              "id": "NCT00888589",
               "grade": 2,
               "tier": "A"
             }
@@ -2930,10 +2997,10 @@
           "hardFailures": []
         },
         "llm": {
-          "ndcg10": 0.6025064803817581,
-          "p10": 0.5,
-          "missedExclusions": 0,
-          "unknownShare": 0.8596491228070176,
+          "ndcg10": 0.7360396023152922,
+          "p10": 0.6,
+          "missedExclusions": 0.1,
+          "unknownShare": 0.7861635220125787,
           "top10": [
             {
               "id": "NCT01782651",
@@ -2946,28 +3013,23 @@
               "tier": "A"
             },
             {
+              "id": "NCT01276041",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
+              "id": "NCT00372424",
+              "grade": 2,
+              "tier": "A"
+            },
+            {
               "id": "NCT01420146",
               "grade": 0,
               "tier": "A"
             },
             {
-              "id": "NCT01677455",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT01901146",
-              "grade": 2,
-              "tier": "A"
-            },
-            {
-              "id": "NCT00573755",
-              "grade": 0,
-              "tier": "A"
-            },
-            {
-              "id": "NCT02457910",
-              "grade": 0,
+              "id": "NCT00057993",
+              "grade": 1,
               "tier": "A"
             },
             {
@@ -2976,32 +3038,43 @@
               "tier": "A"
             },
             {
-              "id": "NCT02398773",
-              "grade": 0,
+              "id": "NCT03947736",
+              "grade": 2,
               "tier": "A"
             },
             {
-              "id": "NCT04296942",
+              "id": "NCT04566458",
+              "grade": 0,
+              "tier": "B"
+            },
+            {
+              "id": "NCT02066532",
               "grade": 2,
               "tier": "B"
             }
           ],
           "hardFailures": [
             {
-              "id": "NCT04296942",
+              "id": "NCT04566458",
+              "grade": 0,
+              "items": [
+                {
+                  "id": "I4",
+                  "label": "not_met",
+                  "source": "rule",
+                  "reason": "Your answers about past treatment do not fit this rule."
+                }
+              ]
+            },
+            {
+              "id": "NCT02066532",
               "grade": 2,
               "items": [
                 {
-                  "id": "I5",
+                  "id": "I3",
                   "label": "not_met",
                   "source": "llm",
-                  "reason": "Patient has received no prior metastatic therapy"
-                },
-                {
-                  "id": "I21",
-                  "label": "not_met",
-                  "source": "llm",
-                  "reason": "No prior metastatic therapy received"
+                  "reason": "Patient has no prior HER2‑directed therapy lines."
                 }
               ]
             }
@@ -3011,15 +3084,15 @@
       "llm": {
         "status": "ok",
         "trialsSent": 5,
-        "itemsSent": 89,
-        "itemsJudged": 86,
-        "calls": 3,
-        "validCalls": 3,
+        "itemsSent": 55,
+        "itemsJudged": 55,
+        "calls": 2,
+        "validCalls": 2,
         "cachedCalls": 2,
-        "tokens": 11189,
-        "promptTokens": 7916,
-        "completionTokens": 3273,
-        "latencyMs": 9065,
+        "tokens": 6965,
+        "promptTokens": 4678,
+        "completionTokens": 2287,
+        "latencyMs": 6996,
         "slowCalls": 0
       }
     }

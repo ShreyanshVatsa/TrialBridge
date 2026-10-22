@@ -108,7 +108,7 @@ Full summary with confidence intervals and caveats: [`eval/RESULTS.md`](eval/RES
 | Vignette benchmark, 164 synthetic patients, 5,389 labelled pairs (LLM-judged, second-judge kappa 0.841) | Beats BM25, embeddings and the ClinicalTrials.gov search on both splits | `eval/RESULTS.md` section 3 |
 | Hard filters vs an independent oracle on raw registry fields, national data | 0 violations in 600 top-15 results | `eval/REGRESSION.md` section 2 |
 | Criteria splitter vs a public gold standard | 95.6% of trials split into exactly the right number of items; boundary F1 0.986 | `docs/dev/PROGRESS.md` |
-| Automated tests | 1,281 unit tests, 84 end-to-end and accessibility tests | `npm test`, `npm run test:e2e` |
+| Automated tests | 1,287 unit tests, 84 end-to-end and accessibility tests | `npm test`, `npm run test:e2e` |
 
 Caveats: the held-out set is 7 topics, so intervals are wide; vignette labels are not clinician-reviewed; live AI quality depends on a free-tier provider; no real patient has been evaluated.
 
