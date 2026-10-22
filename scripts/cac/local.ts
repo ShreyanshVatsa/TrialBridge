@@ -1,11 +1,11 @@
 /**
  * Local numbers for the Congressional App Challenge deck: `npm run cac:local -- --state=MA [--zip=01852 --group=breast]`.
- * Reads the generated data in public/data (national if it was ingested, else the seed) and writes docs/cac/local-data.json:
+ * Reads the generated data in public/data (national if it was ingested, else the seed) and writes ../TrialBridge-CAC/local-data.json (or the path given with --out=):
  * the state's trial and barrier counts, the busiest cities, the trials with a site in the district's cities, and, for the
  * sample patient, how many trials of their cancer group sit within 25 / 50 / 100 / 250 miles of their ZIP. If the slide deck
- * exists, its embedded copy of the JSON is refreshed too. Every figure is counted from the data files; nothing is estimated.
+ * (slides/index.html next to the output file) exists, its embedded copy of the JSON is refreshed too. Every figure is counted from the data files; nothing is estimated.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { canonicalSite } from "../../lib/access/aggregate";
 import { haversineMiles, type LatLon } from "../../lib/geo/distance";
@@ -23,8 +23,8 @@ const GROUP = opt("group", "breast");
 const DISTRICT = opt("district", "Massachusetts' 3rd District");
 /** Cities of the district, for the "trials with a site in the district" count. Edit for another district. */
 const DISTRICT_CITIES = opt("cities", "Lowell,Lawrence,Haverhill,Fitchburg,Leominster,Marlborough,Concord,Andover").split(",").map((c) => c.trim().toLowerCase());
-const OUT = "docs/cac/local-data.json";
-const SLIDES = "docs/cac/slides/index.html";
+const OUT = opt("out", "../TrialBridge-CAC/local-data.json");
+const SLIDES = path.join(path.dirname(OUT), "slides", "index.html");
 
 const read = <T>(p: string): T => JSON.parse(readFileSync(p, "utf8")) as T;
 const stateName = Object.entries(STATE_CODES).find(([, code]) => code === STATE)?.[0] ?? STATE;
@@ -117,6 +117,7 @@ function main() {
       nearestCitiesWithin50: [...nearestCities.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([city, n]) => ({ city, trials: n })),
     },
   };
+  mkdirSync(path.dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(out, null, 2) + "\n");
   console.log(`${OUT}: ${stateName} (${STATE}), ${out.data.source} data ${out.data.version}: ${out.stateTotals.trials} trials with a site in the state, ${facilities.size} facilities; ${out.district.trials} trials with a site in a district city; ${GROUP} within 15/25/50/100/250 mi of ${ZIP}: ${within(15)}/${within(25)}/${within(50)}/${within(100)}/${within(250)}`);
 

@@ -5,13 +5,13 @@ TrialBridge helps people with cancer find recruiting clinical trials they might 
 It is for patients and the family members who search for them, especially people who live far from a major cancer center or who do not read English comfortably. It is free, has no accounts, and gives no medical advice: every result is a "possible match to discuss with your care team," quoted from the trial's own text. Data comes from ClinicalTrials.gov; TrialBridge is not affiliated with it or with any sponsor.
 
 <p align="center">
-  <img src="docs/cac/screenshots/results-desktop.png" alt="Results page: possible matches with plain-language reasons and the trial's quoted criteria" width="860">
+  <img src="docs/screenshots/results-desktop.png" alt="Results page: possible matches with plain-language reasons and the trial's quoted criteria" width="860">
 </p>
 <p align="center">
-  <img src="docs/cac/screenshots/find-question-mobile.png" alt="Guided questionnaire on a phone" width="200">
-  <img src="docs/cac/screenshots/results-mobile.png" alt="Results on a phone" width="200">
-  <img src="docs/cac/screenshots/trial-qa-mobile.png" alt="Trial Q&A on a phone" width="200">
-  <img src="docs/cac/screenshots/access-mobile.png" alt="Access Intelligence on a phone" width="200">
+  <img src="docs/screenshots/find-question-mobile.png" alt="Guided questionnaire on a phone" width="200">
+  <img src="docs/screenshots/results-mobile.png" alt="Results on a phone" width="200">
+  <img src="docs/screenshots/trial-qa-mobile.png" alt="Trial Q&A on a phone" width="200">
+  <img src="docs/screenshots/access-mobile.png" alt="Access Intelligence on a phone" width="200">
 </p>
 
 ## Quick start
@@ -142,7 +142,7 @@ Caveats: the held-out set is 7 topics, so intervals are wide; vignette labels ar
 | Evaluation | `npm run eval`, `npm run eval:matching`, `npm run eval:vignettes` |
 | Regenerate the translation manifest after English changes | `npm run i18n:manifest` |
 
-Project layout: `app/` routes, `components/` UI, `lib/` matching, privacy, data loading and ingestion logic, `config/` cancer groups, biomarkers, criteria rules and the questionnaire catalog, `functions/` the Worker API, `prompts/` versioned prompts, `scripts/` ingestion, evaluation and local tooling, `eval/` reports and gold labels, `tests/` unit and end-to-end suites. Design rationale and build history are in [`docs/dev/`](docs/dev/README.md); the competition packet is in [`docs/cac/`](docs/cac/).
+Project layout: `app/` routes, `components/` UI, `lib/` matching, privacy, data loading and ingestion logic, `config/` cancer groups, biomarkers, criteria rules and the questionnaire catalog, `functions/` the Worker API, `prompts/` versioned prompts, `scripts/` ingestion, evaluation and local tooling, `eval/` reports and gold labels, `tests/` unit and end-to-end suites. Design rationale and build history are in [`docs/dev/`](docs/dev/README.md). README screenshots are in `docs/screenshots/`.
 
 ## License
 
