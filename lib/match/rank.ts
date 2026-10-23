@@ -17,11 +17,13 @@ import { extentConflict } from "./extent";
 import { getCancerGroup, type CancerGroupId } from "@/config/cancer-groups";
 
 /**
- * How many results are kept and re-ranked by the deterministic resolver (the UI shows 10, then "show more"). Related
+ * How many results are kept and re-ranked by the deterministic resolver (the UI shows 10, then "show more"). 15 until
+ * v9; 20 measured better on both dev sets (TREC dev resolver nDCG@10 0.545 -> 0.561; vignette dev excluded share in the
+ * top 10 -0.06, condensed nDCG +0.03; 30 was no better). Related
  * limits: the LLM judge reads only the top `MATCH_JUDGE.topN` of these (config/match-judge.ts), and the vignette eval
  * stores the top `STORED_K` = 50 per system (scripts/eval/vignettes/pool.ts).
  */
-export const TOP_N = 15;
+export const TOP_N = 20;
 
 export interface RankEntry {
   card: TrialCard;

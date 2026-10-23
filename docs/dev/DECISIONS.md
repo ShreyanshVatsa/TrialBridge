@@ -4,7 +4,7 @@
 
 - Static Next export on Cloudflare Workers free tier; matching runs in the browser, the Worker only serves the AI judge, Q&A and caches (D1).
 - Hard filters (cancer group, age, sex, distance) are code, never an LLM, and never use a below-gate fact.
-- Ranking: BM25 + MiniLM embeddings fused (RRF/fusion weights), rule pre-check, then the deterministic per-criterion resolver (`lib/match/resolve/`) on the top 15; Tier B = something we found may rule the patient out.
+- Ranking: BM25 + MiniLM embeddings fused (RRF/fusion weights), rule pre-check, then the deterministic per-criterion resolver (`lib/match/resolve/`) on the top 20 (15 before v9); Tier B = something we found may rule the patient out.
 - The LLM judge (free Groq tier) reads only the resolver's unknown items of the top 5, may lower a trial only with a verbatim quote, and the app is complete without it (degraded mode never lowers a trial).
 - A fact may lower a trial only at >= 85% measured precision (`docs/dev/FACTS.md`).
 - Privacy: only broad answers leave the browser (`lib/privacy/minimize.ts`); no accounts, no names, no exact age or ZIP sent.

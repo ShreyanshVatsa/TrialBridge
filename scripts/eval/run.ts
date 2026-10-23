@@ -14,7 +14,7 @@ import { embeddingText } from "../../lib/ingest/record";
 import { buildProfileText } from "../../lib/match/query";
 import { cosineSimilarity } from "../../lib/match/cosine";
 import { reciprocalRankFusion } from "../../lib/match/rrf";
-import { rankTrials, type RankEntry } from "../../lib/match/rank";
+import { TOP_N, rankTrials, type RankEntry } from "../../lib/match/rank";
 import { nearestSite, passesAge, passesDistance, passesGroup } from "../../lib/match/filters";
 import { MINISEARCH_OPTIONS, MINISEARCH_SEARCH, toSearchDoc, type SearchDoc } from "../../lib/match/minisearch-config";
 import { minimizeProfile } from "../../lib/privacy/minimize";
@@ -239,7 +239,7 @@ async function main(): Promise<void> {
   // Hand-checkable rule assertions (second, independent evidence source).
   const assertions = runAssertions(loadAssertionCases());
 
-  // Mock AI analysis over the production system's top 15.
+  // Mock AI analysis over the production system's top TOP_N.
   let jsonValid = 0, calls = 0, quotesTotal = 0, quotesFailed = 0, agree = 0, labeled = 0;
   for (const p of profiles) {
     const ids = productionSystem.get(p.id) ?? [];
@@ -352,7 +352,7 @@ Plan gate "random baseline <= 0.45 on the headline set": **${natStats.random.mea
     : "National shards are not present in `public/data` (seed-only build), so no national headline was computed. Run `npm run local:national` (or restore `public/data`) and re-run `npm run eval`.";
 
   const natOracle = headline && rawNational
-    ? `- **National** (${rawNational.size} raw CT.gov records from \`data/cache/national\`; ${headline.trials} in the build): top 15 returned for each profile: **${oracleLine(headline.oracle.returned)}**. Over **all** candidates the app's filters let through: ${oracleLine(headline.oracle.candidates)}.
+    ? `- **National** (${rawNational.size} raw CT.gov records from \`data/cache/national\`; ${headline.trials} in the build): top ${TOP_N} returned for each profile: **${oracleLine(headline.oracle.returned)}**. Over **all** candidates the app's filters let through: ${oracleLine(headline.oracle.candidates)}.
   - Missed-trial direction: the oracle finds ${headline.oracle.oracleEligible} (profile, trial) pairs eligible on group, age, sex and distance among trials in the build; the app's filters drop **${headline.oracle.missed}** of them (${pc(headline.oracle.missed / Math.max(1, headline.oracle.oracleEligible))}): ${headline.oracle.missedByGroup} because the app does not tag the trial with the profile's group (the oracle reads any generic "cancer" or "solid tumor" record as a basket, and a person should look at these before calling them recall losses), ${headline.oracle.missedByDistance} because the app finds no site in range.
   - Samples of flagged candidates: ${headline.oracle.candidates.samples.length ? headline.oracle.candidates.samples.join("; ") : "none"}.`
     : "- **National**: raw pages (`data/cache/national`) or national shards are not present here, so the oracle was not run at national scale.";
@@ -449,14 +449,14 @@ See docs/dev/DECISIONS.md. Production uses the variant in the first row unless a
   if (simNat) console.log(`national simulation: adaptive ${simNat.adaptive.map(f3).join("/")} fixed ${simNat.fixed.map(f3).join("/")}; non-response drops ${simNat.nonResponse.rankDrops + simNat.nonResponse.scoreDrops}`);
   console.log(`simulation: adaptive ${sim.adaptive.map(f3).join("/")} fixed ${sim.fixed.map(f3).join("/")} at k=${sim.ks.join(",")}; non-response drops ${sim.nonResponse.rankDrops + sim.nonResponse.scoreDrops}`);
   console.log(`oracle (seed): ${oracleLine(oracleSeed)}`);
-  if (headline) console.log(`oracle (national top 15): ${oracleLine(headline.oracle.returned)}; all candidates: ${oracleLine(headline.oracle.candidates)}`);
+  if (headline) console.log(`oracle (national top ${TOP_N}): ${oracleLine(headline.oracle.returned)}; all candidates: ${oracleLine(headline.oracle.candidates)}`);
   if (natStats) console.log(`national nDCG@10: random ${fmtCI(natStats.random)} bm25 ${fmtCI(natStats.bm25)} pipeline ${fmtCI(natStats.pipeline)}`);
   console.log(`seed nDCG@10 (p01-p30): random ${fmtCI(seedStats.random)} bm25 ${fmtCI(seedStats.bm25)} pipeline ${fmtCI(seedStats.pipeline)}`);
   const failures: string[] = [];
   if (totalViolations > 0) failures.push("hard-filter violations found");
   // Independent oracle: age, sex and distance are exact checks on raw fields and must be clean. Group flags are reported, not gated:
   // they mix real mis-tags with the oracle\'s own narrower term lists (see RESULTS.md section 2).
-  for (const [name, t] of [["seed", oracleSeed], ["national top 15", headline?.oracle.returned ?? emptyTally()]] as const) {
+  for (const [name, t] of [["seed", oracleSeed], [`national top ${TOP_N}`, headline?.oracle.returned ?? emptyTally()]] as const) {
     if (t.age > 0 || t.sex > 0 || t.distance > 0) failures.push(`independent oracle found age/sex/distance violations (${name}: age ${t.age}, sex ${t.sex}, distance ${t.distance})`);
   }
   if (v1First30 < 0.8) failures.push(`v1 full-pipeline nDCG@10 ${f3(v1First30)} < 0.800`);

@@ -11,7 +11,7 @@ import MiniSearch from "minisearch";
 import { FACT_POLICY, getCatalog } from "../../config/questionnaire";
 import type { CancerGroupId } from "../../config/cancer-groups";
 import { buildProfileText } from "../../lib/match/query";
-import { rankTrials, type RankEntry } from "../../lib/match/rank";
+import { TOP_N, rankTrials, type RankEntry } from "../../lib/match/rank";
 import { MINISEARCH_SEARCH, type SearchDoc } from "../../lib/match/minisearch-config";
 import type { IntakeAnswers } from "../../lib/types/intake";
 import type { QuestionnaireState } from "../../lib/types/questionnaire";
@@ -99,7 +99,7 @@ export async function runHeadline(opts: { national: National; zips: Map<string, 
     if (rawNational) {
       const sexAns = p.a.questionnaire?.answers["sex"];
       const patient = { group: g, age: p.a.age, origin: p.origin, travelMiles: p.origin ? p.a.travelMiles : null, sex: sexAns === "female" || sexAns === "male" ? sexAns : null } as const;
-      tallyResults(returned, rawNational, candidateIds.slice(0, 15), patient, p.id);
+      tallyResults(returned, rawNational, candidateIds.slice(0, TOP_N), patient, p.id);
       tallyResults(candidatesTally, rawNational, candidateIds, patient, p.id);
       const eligible = new Set(oracleEligibleIds(rawNational, patient));
       const cand = new Set(candidateIds);

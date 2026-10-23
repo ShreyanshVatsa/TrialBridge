@@ -4,7 +4,7 @@
  */
 export const MATCH_JUDGE = {
   /**
-   * Trials judged per request: the top N of the `TOP_N` (15) resolver-ranked results (lib/match/rank.ts). Five, not ten: one patient cost about 20k tokens at 10
+   * Trials judged per request: the top N of the `TOP_N` (20) resolver-ranked results (lib/match/rank.ts). Five, not ten: one patient cost about 20k tokens at 10
    * (eval/matching/RESULTS.md), against Groq's free tier of 8000 tokens/minute and 200k/day.
    */
   topN: 5,
