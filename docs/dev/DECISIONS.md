@@ -1,5 +1,20 @@
 # DECISIONS
 
+## Current decisions (v9, read this first; the log below is append-only history)
+
+- Static Next export on Cloudflare Workers free tier; matching runs in the browser, the Worker only serves the AI judge, Q&A and caches (D1).
+- Hard filters (cancer group, age, sex, distance) are code, never an LLM, and never use a below-gate fact.
+- Ranking: BM25 + MiniLM embeddings fused (RRF/fusion weights), rule pre-check, then the deterministic per-criterion resolver (`lib/match/resolve/`) on the top 15; Tier B = something we found may rule the patient out.
+- The LLM judge (free Groq tier) reads only the resolver's unknown items of the top 5, may lower a trial only with a verbatim quote, and the app is complete without it (degraded mode never lowers a trial).
+- A fact may lower a trial only at >= 85% measured precision (`docs/dev/FACTS.md`).
+- Privacy: only broad answers leave the browser (`lib/privacy/minimize.ts`); no accounts, no names, no exact age or ZIP sent.
+- Wording: "possible match", never "eligible"; amber only for barrier flags; no green in the palette.
+- Evaluation: decisions on dev splits only; each test split runs once per version after the last code change and is logged (`eval/README.md`). Vignette gold is LLM-judged, not clinician-reviewed; TREC qrels are human.
+- Metric framing (v9): report vignette nDCG@10 over the vignettes with a relevant trial next to the all-vignette mean and its ceiling, plus hit@k, excluded share and Tier B precision.
+- Translations: machine translation with a visible note; new strings hand-written in Spanish; no Groq translation runs during evals.
+
+## Log
+
 - Hosting: Cloudflare free tier (no paid plan, no other host). Reason: user has no paid hosting.
 - Local LLM runtime: llama.cpp (`llama-server`, OpenAI-compatible) instead of Ollama. Reason: already installed; Ollama is not.
 - Local LLM model: Qwen3-14B Q4_K_M (~9 GB). Reason: strongest practical fit for 48 GB RAM; compare vs Llama 3.1 8B later if desired.

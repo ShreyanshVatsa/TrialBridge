@@ -1,5 +1,7 @@
 # TrialBridge 2-minute demo (v6 criterion matching)
 
+> Superseded. This is the v6 script, kept for history; the screens and numbers changed in v7 to v9. The current demo flow is the sample patient on /find (`npm run demo`, or `/find/?demo=1`).
+
 All three patients below are **synthetic** (invented for the demo, not real people). Nothing in the demo is medical advice, and TrialBridge never says a person is eligible: it shows possible matches to discuss with a care team.
 
 ## Setup (before the demo)

@@ -15,7 +15,11 @@ import { fusedScore, type Features, type FusionWeights } from "./fusion";
 import { subtypeMatch, subtypeProfile, type SubtypeProfile } from "./subtype";
 import { getCancerGroup, type CancerGroupId } from "@/config/cancer-groups";
 
-/** How many results are kept for AI analysis (the UI shows 10, then "show more"). */
+/**
+ * How many results are kept and re-ranked by the deterministic resolver (the UI shows 10, then "show more"). Related
+ * limits: the LLM judge reads only the top `MATCH_JUDGE.topN` of these (config/match-judge.ts), and the vignette eval
+ * stores the top `STORED_K` = 50 per system (scripts/eval/vignettes/pool.ts).
+ */
 export const TOP_N = 15;
 
 export interface RankEntry {
