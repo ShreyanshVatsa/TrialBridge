@@ -35,7 +35,6 @@ interface SessionValue {
   setQuestionnaire: (next: QuestionnaireState) => void;
   session: SearchSession | null;
   setSession: (next: SearchSession | null | ((prev: SearchSession | null) => SearchSession | null)) => void;
-  reset: () => void;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -50,10 +49,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setQuestionnaire,
       session,
       setSession,
-      reset: () => {
-        setQuestionnaire(emptyState());
-        setSession(null);
-      },
     }),
     [questionnaire, session],
   );
