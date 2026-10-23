@@ -1,6 +1,6 @@
-# Evaluation results: v8
+# Evaluation results: v9
 
-Hand-written summary (2026-10-22, branch v8; the v7 sections below are kept for comparison). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or AI-reader labels, and no real patient was evaluated.
+Hand-written summary (2026-10-23, branch v9; the v8 and v7 sections below are kept for comparison). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or AI-reader labels, and no real patient was evaluated.
 
 Detailed, generated reports:
 - `eval/matching/RESULTS.md` (+ `dev.json`, `test.json`, `test-runs-v7.json`): TREC criterion-matching eval, `npm run eval:matching`.
@@ -10,6 +10,29 @@ Detailed, generated reports:
 
 Intervals are bootstrap 95% CIs over topics (TREC) or profiles (regression). "Distinguishable" means the paired-difference CI excludes 0.
 
+
+## 0v9. v9 (2026-10-23): wrong-disease and wrong-stage demotion, resolver pool 20
+
+Changes (each its own commit on branch v9, decided on dev only): (M1) sibling-disease subtype tags read from the trial's own title and conditions (non-Hodgkin for a Hodgkin patient, brain metastases for a primary brain tumor, melanoma for other skin cancers, soft-tissue for bone sarcoma, colorectal for anal cancer), subtype conflict weight -0.18 -> -0.35, and a case bug that kept "Follicular Lymphoma" from ever matching; (M2) a soft penalty (-0.6) when the trial's own title names only an extent the patient's definite `spread` answer contradicts (early-stage-only trials for spread far, metastatic-only trials for not spread or removed); (M3) receptor pairs and HER2 score ranges are one attribute, not options; (M6) the resolver re-ranks the top 20 instead of 15. Tried and reverted: cohort-level treated status (each cohort is its own split item, so failing one wrongly failed the trial; Tier B precision fell to 0.946). Not done: new questionnaire questions (M5) and re-pooling (M10). Code frozen at tag `v9-code-freeze` (1010ca7) before the test run.
+
+| what (pipeline + resolver) | v8 | v9 |
+| --- | --- | --- |
+| Vignette dev excluded share in top 10 | 0.516 | 0.431 (paired -0.086 [-0.114, -0.058]) |
+| Vignette dev nDCG@10, all 94 / 71 with a relevant trial | 0.368 / 0.487 | 0.366 [0.299, 0.432] / 0.484 [0.417, 0.551] (paired -0.002 [-0.024, 0.022]) |
+| Vignette dev condensed nDCG@10 (unjudged dropped), all / relevant-only | 0.377 / 0.500 | 0.420 / 0.556 |
+| Vignette dev unjudged share of top 10 | 0.057 | 0.167 |
+| Vignette dev wrong-population (gold not relevant) top-10 slots | 133 of 816 (16%) | about 106 after M1 alone (13%) |
+| Vignette dev Tier B demotion precision | 0.968 | 0.959 (1 gold-eligible, 12 possibly of 314 judged) |
+| Vignette test excluded share in top 10, run once | 0.455 | **0.386 (paired -0.069 [-0.104, -0.035])** |
+| Vignette test nDCG@10, all 70 / 57 with a relevant trial, run once | 0.296 / 0.364 | 0.285 [0.230, 0.341] / 0.351 [0.295, 0.406] (paired -0.010 [-0.037, 0.019]) |
+| Vignette test condensed nDCG@10 / unjudged share of top 10 | n/a | 0.333 / 0.157 |
+| Vignette test Tier B demotion precision | n/a | 0.899 (2 gold-eligible, 18 possibly of 199 judged) |
+| TREC dev nDCG@10: baseline / resolver / resolver+LLM | 0.521 / 0.545 / 0.562 | 0.521 / 0.561 [0.433, 0.694] / 0.569 [0.451, 0.689] |
+| TREC dev missed exclusions, resolver+LLM; judge Tier B precision | 0.240; 80% (4/5) | 0.240; 100% (4/4) |
+| TREC held-out (frozen since v7, not re-run) | 0.819 with the judge | not run |
+| Regression: national pipeline nDCG@10 / hard-filter oracle | 0.780 / 0 of 600 (top 15) | 0.804 [0.719, 0.876] / 0 of 800 (top 20) |
+
+Honest reading: v9 is a safety release, not an nDCG release. The share of the top 10 that the gold says rules the patient out falls on both vignette splits, and the drop replicates on the held-out test split (-0.069, CI excludes 0). Graded nDCG@10 does not move on either split. Part of that is measurement: the v9 lists surface trials the v1 pool never judged (unjudged share of the top 10 rose from about 6% to 16%), and the benchmark scores those as not relevant; with them dropped (condensed) dev rises 0.377 -> 0.420. We did not re-judge them, so the condensed number is an upper-bound check, not a claim. Tier B demotion precision held on dev (0.959) but is 0.899 on test: the deeper pool (20) demotes more trials, and on test 20 of 199 judged demotions were trials the gold calls eligible or possibly. TREC dev moves +0.016 (resolver) and +0.007 (with the judge), within its wide CI over 10 topics. The judge calls in that run were all served from the response cache (no new Groq tokens).
 
 ## 0a. How to read the vignette numbers (v9 metric framing, measured on the v8 code, vignette dev)
 

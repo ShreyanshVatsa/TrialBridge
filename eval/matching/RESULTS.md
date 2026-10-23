@@ -10,33 +10,33 @@ Definitions: P@10 = share of the top 10 judged eligible (2). Missed exclusions =
 
 ## dev (TREC 2021)
 
-Ran 2026-10-22T06:43:10.283Z. LLM arm evaluated on 10/10 topics (status: ok 10, degraded 0, quota 0, not_run 0; "degraded" = the judge failed and the app's resolver-only fallback is scored, "quota" = Groq daily cap reached, not scored).
+Ran 2026-10-23T03:30:42.180Z. LLM arm evaluated on 10/10 topics (status: ok 10, degraded 0, quota 0, not_run 0; "degraded" = the judge failed and the app's resolver-only fallback is scored, "quota" = Groq daily cap reached, not scored).
 
 ### All 10 topics
 
 | metric | baseline | resolver | resolver+LLM | resolver, full pool (exploratory) |
 | --- | --- | --- | --- | --- |
-| nDCG@10 | 0.521 [0.376, 0.652] | 0.545 [0.432, 0.665] | 0.562 [0.449, 0.681] | 0.586 [0.425, 0.746] |
-| P@10 | 0.360 [0.230, 0.490] | 0.390 [0.260, 0.520] | 0.390 [0.270, 0.520] | 0.450 [0.290, 0.630] |
-| missed exclusions | 0.340 [0.200, 0.490] | 0.280 [0.180, 0.390] | 0.240 [0.150, 0.330] | 0.190 [0.110, 0.280] |
-| unknown share | n/a | 0.957 [0.943, 0.971] | 0.875 [0.821, 0.924] | 0.841 [0.789, 0.887] |
+| nDCG@10 | 0.521 [0.376, 0.652] | 0.561 [0.433, 0.694] | 0.569 [0.451, 0.689] | 0.585 [0.425, 0.745] |
+| P@10 | 0.360 [0.230, 0.490] | 0.390 [0.240, 0.540] | 0.390 [0.250, 0.530] | 0.450 [0.290, 0.630] |
+| missed exclusions | 0.340 [0.200, 0.490] | 0.290 [0.190, 0.410] | 0.240 [0.150, 0.330] | 0.190 [0.110, 0.280] |
+| unknown share | n/a | 0.947 [0.933, 0.961] | 0.872 [0.820, 0.918] | 0.841 [0.789, 0.887] |
 
 Paired difference vs baseline (bootstrap 95% CI):
 
-- resolver-baseline ndcg10: +0.024 [-0.040, 0.096] (includes 0, not distinguishable)
-- resolver-baseline p10: +0.030 [-0.010, 0.080] (includes 0, not distinguishable)
-- resolver-baseline missedExclusions: -0.060 [-0.150, 0.010] (includes 0, not distinguishable)
-- llm-baseline ndcg10: +0.041 [-0.007, 0.098] (includes 0, not distinguishable)
-- llm-baseline p10: +0.030 [-0.030, 0.090] (includes 0, not distinguishable)
+- resolver-baseline ndcg10: +0.040 [-0.046, 0.128] (includes 0, not distinguishable)
+- resolver-baseline p10: +0.030 [-0.060, 0.120] (includes 0, not distinguishable)
+- resolver-baseline missedExclusions: -0.050 [-0.140, 0.020] (includes 0, not distinguishable)
+- llm-baseline ndcg10: +0.048 [-0.009, 0.107] (includes 0, not distinguishable)
+- llm-baseline p10: +0.030 [-0.050, 0.100] (includes 0, not distinguishable)
 - llm-baseline missedExclusions: -0.100 [-0.230, -0.010] (excludes 0, better)
-- resolverFull-baseline ndcg10: +0.065 [-0.062, 0.177] (includes 0, not distinguishable)
+- resolverFull-baseline ndcg10: +0.064 [-0.063, 0.177] (includes 0, not distinguishable)
 - resolverFull-baseline p10: +0.090 [-0.030, 0.220] (includes 0, not distinguishable)
 - resolverFull-baseline missedExclusions: -0.150 [-0.270, -0.030] (excludes 0, better)
 
 Tier B precision (top 10, pooled over topics; correct = TREC excluded, wrong = TREC eligible):
 
-- resolver: 3 tier B in top 10; 2 correct, 0 wrong (eligible), 1 not relevant; precision 100% (2/2)
-- llm: 7 tier B in top 10; 4 correct, 1 wrong (eligible), 2 not relevant; precision 80% (4/5)
+- resolver: 2 tier B in top 10; 2 correct, 0 wrong (eligible), 0 not relevant; precision 100% (2/2)
+- llm: 5 tier B in top 10; 4 correct, 0 wrong (eligible), 1 not relevant; precision 100% (4/4)
 
 LLM judge:
 
@@ -48,16 +48,16 @@ LLM judge:
 
 | topic | n | nDCG base | res | llm | missed excl base | res | llm | unknown res | llm | llm status | calls | tokens |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2021-1 | 171 | 0.423 | 0.473 | 0.456 | 0.800 | 0.400 | 0.200 | 0.976 | 0.736 | ok | 1 | 5493 |
-| 2021-4 | 174 | 0.641 | 0.534 | 0.586 | 0.400 | 0.300 | 0.400 | 0.976 | 0.933 | ok | 2 | 7784 |
-| 2021-8 | 193 | 0.503 | 0.691 | 0.617 | 0.500 | 0.500 | 0.500 | 0.938 | 0.900 | ok | 1 | 5543 |
-| 2021-11 | 132 | 0.720 | 0.635 | 0.680 | 0.300 | 0.300 | 0.300 | 0.970 | 0.952 | ok | 2 | 7389 |
-| 2021-13 | 43 | 0.071 | 0.322 | 0.322 | 0.000 | 0.100 | 0.100 | 0.956 | 0.960 | ok | 3 | 10879 |
-| 2021-15 | 115 | 0.884 | 0.923 | 0.932 | 0.300 | 0.200 | 0.200 | 0.975 | 0.885 | ok | 1 | 3640 |
-| 2021-17 | 322 | 0.560 | 0.490 | 0.565 | 0.600 | 0.600 | 0.400 | 0.990 | 0.959 | ok | 2 | 7529 |
+| 2021-1 | 171 | 0.423 | 0.473 | 0.456 | 0.800 | 0.400 | 0.200 | 0.949 | 0.759 | ok | 1 | 5493 |
+| 2021-4 | 174 | 0.641 | 0.429 | 0.547 | 0.400 | 0.300 | 0.300 | 0.972 | 0.935 | ok | 2 | 7784 |
+| 2021-8 | 193 | 0.503 | 0.798 | 0.663 | 0.500 | 0.400 | 0.400 | 0.933 | 0.885 | ok | 1 | 5543 |
+| 2021-11 | 132 | 0.720 | 0.771 | 0.801 | 0.300 | 0.200 | 0.200 | 0.961 | 0.950 | ok | 2 | 7389 |
+| 2021-13 | 43 | 0.071 | 0.322 | 0.322 | 0.000 | 0.100 | 0.100 | 0.954 | 0.952 | ok | 3 | 10879 |
+| 2021-15 | 115 | 0.884 | 0.875 | 0.897 | 0.300 | 0.300 | 0.300 | 0.947 | 0.819 | ok | 1 | 3640 |
+| 2021-17 | 322 | 0.560 | 0.496 | 0.530 | 0.600 | 0.700 | 0.500 | 0.985 | 0.949 | ok | 2 | 7529 |
 | 2021-25 | 363 | 0.398 | 0.375 | 0.435 | 0.100 | 0.100 | 0.000 | 0.944 | 0.904 | ok | 1 | 5272 |
-| 2021-31 | 214 | 0.337 | 0.295 | 0.295 | 0.300 | 0.200 | 0.200 | 0.930 | 0.730 | ok | 1 | 4779 |
-| 2021-61 | 416 | 0.675 | 0.714 | 0.736 | 0.100 | 0.100 | 0.100 | 0.918 | 0.786 | ok | 2 | 6965 |
+| 2021-31 | 214 | 0.337 | 0.290 | 0.290 | 0.300 | 0.300 | 0.300 | 0.903 | 0.709 | ok | 1 | 4779 |
+| 2021-61 | 416 | 0.675 | 0.782 | 0.749 | 0.100 | 0.100 | 0.100 | 0.925 | 0.856 | ok | 2 | 6965 |
 
 ## test (TREC 2022 + 2023)
 
