@@ -14,6 +14,8 @@ It is for patients and the family members who search for them, especially people
   <img src="docs/screenshots/access-mobile.png" alt="Access Intelligence on a phone" width="200">
 </p>
 
+New here? Start with the [master guide](guide/README.md): where everything is and how it runs.
+
 ## Quick start
 
 Requires Node.js 22 or newer. No API keys, accounts or paid services.

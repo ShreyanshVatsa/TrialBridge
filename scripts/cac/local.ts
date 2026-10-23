@@ -1,6 +1,6 @@
 /**
  * Local numbers for the Congressional App Challenge deck: `npm run cac:local -- --state=MA [--zip=01852 --group=breast]`.
- * Reads the generated data in public/data (national if it was ingested, else the seed) and writes ../TrialBridge-CAC/local-data.json (or the path given with --out=):
+ * Reads the generated data in public/data (national if it was ingested, else the seed) and writes resources-for-cac/local-data.json (or the path given with --out=):
  * the state's trial and barrier counts, the busiest cities, the trials with a site in the district's cities, and, for the
  * sample patient, how many trials of their cancer group sit within 25 / 50 / 100 / 250 miles of their ZIP. If the slide deck
  * (slides/index.html next to the output file) exists, its embedded copy of the JSON is refreshed too. Every figure is counted from the data files; nothing is estimated.
@@ -23,7 +23,7 @@ const GROUP = opt("group", "breast");
 const DISTRICT = opt("district", "Massachusetts' 3rd District");
 /** Cities of the district, for the "trials with a site in the district" count. Edit for another district. */
 const DISTRICT_CITIES = opt("cities", "Lowell,Lawrence,Haverhill,Fitchburg,Leominster,Marlborough,Concord,Andover").split(",").map((c) => c.trim().toLowerCase());
-const OUT = opt("out", "../TrialBridge-CAC/local-data.json");
+const OUT = opt("out", "resources-for-cac/local-data.json");
 const SLIDES = path.join(path.dirname(OUT), "slides", "index.html");
 
 const read = <T>(p: string): T => JSON.parse(readFileSync(p, "utf8")) as T;
