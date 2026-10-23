@@ -21,7 +21,7 @@ const config = [
     rules: { "no-restricted-syntax": noPhysicalDirection },
   },
   {
-    ignores: ["vendor/**", ".next/**", "out/**", ".wrangler/**", "coverage/**", "public/**", "data/**", "next-env.d.ts", "playwright-report/**", "test-results/**"],
+    ignores: ["vendor/**", ".next/**", "out/**", ".wrangler/**", "coverage/**", "public/**", "data/**", "next-env.d.ts", "playwright-report/**", "test-results/**", "resources-for-cac/**"],
   },
 ];
 export default config;
