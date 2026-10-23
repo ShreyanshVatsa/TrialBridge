@@ -30,6 +30,12 @@ type State =
 
 const INITIAL_SITES = 10;
 
+/** Titles that differ only in case, spacing or punctuation are the same title (the registry often repeats it). */
+function sameTitle(a: string, b: string): boolean {
+  const k = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return k(a) === k(b);
+}
+
 function Section({ title, children, id }: { title: string; children: ReactNode; id: string }) {
   return (
     <section id={id} aria-labelledby={`${id}-t`} className="tb-reveal scroll-mt-28 border-t border-foreground/12 pt-8">
@@ -117,8 +123,8 @@ function TrialBody({ card, sites, match }: { card: TrialCard; sites: Site[]; mat
           <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
           <span className="text-sm text-muted-foreground">{card.id}</span>
         </div>
-        <h1 className="tb-display animate-enter text-[clamp(2.1rem,4.6vw,3.75rem)]">{card.title}</h1>
-        {card.officialTitle && card.officialTitle !== card.title && <p className="max-w-[75ch] text-lg text-muted-foreground">{card.officialTitle}</p>}
+        <h1 className="tb-display animate-enter text-[clamp(1.9rem,3.6vw,3rem)]">{card.title}</h1>
+        {card.officialTitle && sameTitle(card.officialTitle, card.title) === false && <p className="max-w-[75ch] text-lg text-muted-foreground">{card.officialTitle}</p>}
         {/* Spec sheet: three facts on hairlines, like the masthead of a printed protocol. */}
         <dl className="grid border-y border-foreground/12 text-sm sm:grid-cols-3 sm:divide-x sm:divide-foreground/12">
           <div className="py-3 sm:pe-5">

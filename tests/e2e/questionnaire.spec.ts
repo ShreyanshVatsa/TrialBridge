@@ -61,6 +61,8 @@ test.describe("adaptive questionnaire", () => {
     await expect(summary).toBeVisible();
     await page.getByRole("button", { name: "Search trials" }).click();
     await expect(page.getByText(RESULTS_HEADING)).toBeVisible({ timeout: 90_000 });
+    // The reassurance lives in the status row's details disclosure.
+    await page.getByText("Details", { exact: true }).click();
     await expect(page.getByText(/never lowers your results/)).toBeVisible();
     await expect(page.getByRole("heading", { name: /Find out at your next appointment/ })).toBeVisible();
     await page.emulateMedia({ media: "print" });

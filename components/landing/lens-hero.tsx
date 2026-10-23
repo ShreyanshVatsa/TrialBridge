@@ -146,47 +146,10 @@ export function LensHero() {
 
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
-      <div
-        ref={wallRef}
-        role="group"
-        aria-label={m.lensLabel}
-        onPointerMove={fine ? moveTo : undefined}
-        onPointerDown={fine ? undefined : moveTo}
-        onPointerLeave={() => {
-          if (!fine || all) return;
-          at.current = -1;
-          target.current.w = 0;
-          target.current.h = 0;
-          kick();
-        }}
-        className="relative mt-10 h-[clamp(17rem,44svh,27rem)] sm:mt-14 touch-pan-y select-none [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
-      >
-        <CriteriaGrid pairs={m.lensPairs} show="legal" />
-        {/* Under the glass: the same grid in plain language, magnified slightly around the lens centre. */}
-        <div aria-hidden className="absolute inset-0 bg-lavender [clip-path:inset(calc(var(--ly,0px)-var(--lh,0px))_calc(100%-var(--lx,0px)-var(--lw,0px))_calc(100%-var(--ly,0px)-var(--lh,0px))_calc(var(--lx,0px)-var(--lw,0px))_round_1.75rem)]">
-          <div className="absolute inset-0 [transform-origin:var(--lx,0px)_var(--ly,0px)] scale-[1.035]">
-            <CriteriaGrid pairs={m.lensPairs} show="plain" />
-          </div>
-        </div>
-        {/* Physical left on purpose: pointer coordinates are physical in both LTR and RTL. */}
-        <div
-          aria-hidden
-          style={{ left: 0 }}
-          className="tb-glass pointer-events-none absolute top-0 rounded-[1.75rem] [width:calc(var(--lw,0px)*2)] [height:calc(var(--lh,0px)*2)] [transform:translate3d(calc(var(--lx,0px)-var(--lw,0px)),calc(var(--ly,0px)-var(--lh,0px)),0)]"
-        />
-        <ul className="sr-only">
-          {m.lensPairs.map((p) => (
-            <li key={p.legal}>
-              {p.legal} {p.plain}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mx-auto grid max-w-7xl gap-x-16 gap-y-8 px-4 pt-6 pb-20 sm:px-6 lg:grid-cols-[1.5fr_1fr] lg:items-end lg:pb-28">
+      <div className="mx-auto grid max-w-7xl gap-x-16 gap-y-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-12 lg:grid-cols-[1.5fr_1fr] lg:items-end lg:pb-10">
         <h1
           id="hero-title"
-          className="text-[clamp(2.9rem,7vw,7rem)] leading-[0.92] font-[760] tracking-[-0.012em] text-balance [font-stretch:66%]"
+          className="text-[clamp(2.6rem,6.2vw,6.25rem)] leading-[0.92] font-[760] tracking-[-0.012em] text-balance [font-stretch:66%]"
         >
           {m.headline.split(" ").map((word, i) => (
             <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
@@ -221,6 +184,43 @@ export function LensHero() {
           </p>
         </div>
       </div>
+      <div
+        ref={wallRef}
+        role="group"
+        aria-label={m.lensLabel}
+        onPointerMove={fine ? moveTo : undefined}
+        onPointerDown={fine ? undefined : moveTo}
+        onPointerLeave={() => {
+          if (!fine || all) return;
+          at.current = -1;
+          target.current.w = 0;
+          target.current.h = 0;
+          kick();
+        }}
+        className="relative mb-16 h-[clamp(17rem,44svh,27rem)] sm:mb-24 touch-pan-y select-none [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
+      >
+        <CriteriaGrid pairs={m.lensPairs} show="legal" />
+        {/* Under the glass: the same grid in plain language, magnified slightly around the lens centre. */}
+        <div aria-hidden className="absolute inset-0 bg-lavender [clip-path:inset(calc(var(--ly,0px)-var(--lh,0px))_calc(100%-var(--lx,0px)-var(--lw,0px))_calc(100%-var(--ly,0px)-var(--lh,0px))_calc(var(--lx,0px)-var(--lw,0px))_round_1.75rem)]">
+          <div className="absolute inset-0 [transform-origin:var(--lx,0px)_var(--ly,0px)] scale-[1.035]">
+            <CriteriaGrid pairs={m.lensPairs} show="plain" />
+          </div>
+        </div>
+        {/* Physical left on purpose: pointer coordinates are physical in both LTR and RTL. */}
+        <div
+          aria-hidden
+          style={{ left: 0 }}
+          className="tb-glass pointer-events-none absolute top-0 rounded-[1.75rem] [width:calc(var(--lw,0px)*2)] [height:calc(var(--lh,0px)*2)] [transform:translate3d(calc(var(--lx,0px)-var(--lw,0px)),calc(var(--ly,0px)-var(--lh,0px)),0)]"
+        />
+        <ul className="sr-only">
+          {m.lensPairs.map((p) => (
+            <li key={p.legal}>
+              {p.legal} {p.plain}
+            </li>
+          ))}
+        </ul>
+      </div>
+
     </section>
   );
 }

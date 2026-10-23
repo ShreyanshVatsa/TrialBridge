@@ -146,7 +146,7 @@ test.describe("guided intake polish", () => {
   test("intro sets expectations; caregiver wording; no identity stored", async ({ page }) => {
     await freshFind(page);
     await expect(page.getByRole("heading", { name: "Let's look for studies near you" })).toBeVisible();
-    await expect(page.getByText("about 2 to 4 minutes")).toBeVisible();
+    await expect(page.getByText("about 2 to 4 minutes").locator("visible=true").first()).toBeVisible();
     await page.getByLabel("I'm answering for someone else").check();
     await page.locator('section[data-question="cancer_type"]').getByRole("button", { name: "Breast cancer", exact: true }).click();
     await expect(page.locator('section[data-question="age"]').getByText("How old are they?").first()).toBeVisible();

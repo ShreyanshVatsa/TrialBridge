@@ -18,7 +18,7 @@ function safeGet(k: string): string | null {
 }
 
 /**
- * One dismissible note under the header when the active language is partly translated or machine
+ * One small dismissible chip under the header (the dismissal is remembered per language) when the active language is partly translated or machine
  * translated ("Partially translated. Some text is in English." / "Machine-translated, not reviewed").
  * Also reports a failed language load. Replaces the old fixed footer note.
  */
@@ -38,20 +38,20 @@ export function TranslationNote() {
   if (kind === "none" || dismissed === lang) return null;
   const parts = [kind === "partial" ? t("i18n.notePartial") : null, t("i18n.noteMachine")].filter(Boolean);
   return (
-    <div role="status" data-testid="translation-note" className="no-print mx-3 mt-3 flex items-start justify-between gap-3 rounded-2xl border border-border bg-muted/60 px-4 py-2 text-sm sm:mx-6">
-      <p className="mx-auto max-w-6xl flex-1">{parts.join(" ")}</p>
+    <div role="status" data-testid="translation-note" className="no-print mx-auto mt-2 flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-1 rounded-full border border-border bg-muted/60 py-0.5 ps-3.5 pe-0.5 text-xs leading-snug">
+      <p className="min-w-0">{parts.join(" ")}</p>
       <button
         type="button"
         aria-label={t("i18n.dismiss")}
         onClick={() => {
           try {
-            sessionStorage.setItem(NOTE_KEY, lang);
+            localStorage.setItem(NOTE_KEY, lang);
           } catch {
             /* not persisted */
           }
           setDismissed(lang);
         }}
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-background"
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-background"
       >
         <X className="size-4" aria-hidden />
       </button>

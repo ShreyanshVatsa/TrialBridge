@@ -251,7 +251,7 @@ export const en = {
       caregiverToggle: "I'm answering for someone else",
       caregiverHelp: "Questions will say “they” instead of “you”. We don't ask for any names.",
       sampleButton: "Try a sample patient",
-      sampleHelp: "Just looking? Load a made-up patient's answers to see how results look. Not a real person.",
+      sampleQuick: "A made-up patient. Results in about 10 seconds.",
       sampleLoaded: "These are a made-up sample patient's answers, for demonstration only. Edit anything, or clear them and start your own.",
       biomarkerCount: "{answered} of {total} answered. Leave the rest as “Don't know”.",
       biomarkerSearch: "Search test names",

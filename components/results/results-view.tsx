@@ -145,7 +145,7 @@ export function ResultsView({
         <p className="mt-1">{format(m.results.printIntro, { date: today })}</p>
       </div>
 
-      <div className="relative flex flex-col gap-5">
+      <div className="relative flex flex-col gap-4">
         <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[26rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="tb-display text-[clamp(2.25rem,5vw,3.75rem)] outline-none">
@@ -174,9 +174,10 @@ export function ResultsView({
         </div>
       </div>
 
-      <Disclaimer />
-
-      <StatusRow ai={aiState} filters={filters} />
+      <div className="space-y-3">
+        <StatusRow ai={aiState} filters={filters} />
+        <Disclaimer compact />
+      </div>
       {outcome.distanceUnavailable && <Notice>{m.results.distanceUnavailable}</Notice>}
       {outcome.keywordOnly && <Notice>{m.results.keywordOnly}</Notice>}
 

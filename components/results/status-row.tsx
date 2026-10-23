@@ -69,8 +69,8 @@ export function StatusRow({ ai, filters, className }: { ai: AiState; filters: Re
     );
   }
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="flex flex-wrap items-center gap-2" aria-live="polite">
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <div className="contents" aria-live="polite">
         {aiChip}
         {filters.length > 0 && (
           <span className={cn(chip, "border-border bg-background/60")}>
@@ -79,9 +79,10 @@ export function StatusRow({ ai, filters, className }: { ai: AiState; filters: Re
           </span>
         )}
       </div>
+      {/* Closed: one link at the end of the chip row. Open: takes the full width under it. */}
       {(aiDetail || filters.length > 0) && (
-        <details className="group text-sm">
-          <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1 font-medium text-primary underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
+        <details className="group text-sm open:basis-full">
+          <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1 px-1 font-medium text-primary underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
             {s.details}
             <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
           </summary>

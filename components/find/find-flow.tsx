@@ -220,7 +220,7 @@ export function FindFlow() {
     body = (
       <>
         {sample && (
-          <p role="status" className="animate-enter mb-6 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-3">
+          <p role="status" className="animate-enter mb-4 rounded-2xl border border-dashed border-border bg-secondary/60 px-4 py-2 text-sm">
             {m.results.sampleNote}
           </p>
         )}
@@ -256,7 +256,7 @@ export function FindFlow() {
   } else {
     body = (
       <>
-        <PageHead title={m.chat.title} size="md" className="mb-8 sm:mb-10" />
+        <PageHead title={m.chat.title} size="md" className="mb-6 sm:mb-10" />
         <QuestionnaireFlow
           state={questionnaire}
           setState={setQuestionnaire}
@@ -271,7 +271,7 @@ export function FindFlow() {
   }
 
   return (
-    <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 pt-8 pb-20 sm:px-6 sm:pt-14 sm:pb-28">
+    <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-20 sm:px-6 sm:pt-14 sm:pb-28">
       {body}
       {/* Turnstile renders an interaction-only widget here when a check is needed. */}
       <div className="no-print mt-6 flex justify-center" aria-label={m.results.verification} role="region" ref={turnstileRef} />

@@ -1071,5 +1071,9 @@
  "match.whyUnknown.other": "{count} requisitos aún son desconocidos.",
  "match.whyTierB.one": "Número {pos}: aparece más abajo porque 1 requisito podría excluirlo.",
  "match.whyTierB.many": "Número {pos}: aparece más abajo porque {count} requisitos podrían excluirlo.",
- "match.whyTierB.other": "Número {pos}: aparece más abajo porque {count} requisitos podrían excluirlo."
+ "match.whyTierB.other": "Número {pos}: aparece más abajo porque {count} requisitos podrían excluirlo.",
+ "questionnaire.ui.sampleQuick": "Un paciente inventado. Resultados en unos 10 segundos.",
+ "questionnaire.ui.sampleButton": "Probar con un paciente de ejemplo",
+ "questionnaire.ui.sampleLoaded": "Estas son las respuestas de un paciente de ejemplo inventado, solo para demostración. Edite lo que quiera, o bórrelas y empiece con las suyas.",
+ "results.sampleNote": "Paciente de ejemplo: estos resultados son de un ejemplo inventado, no de una persona real. Inicie una nueva búsqueda para usar sus propias respuestas."
 }

@@ -369,6 +369,23 @@ body::after {
     }
   }
 
+  /* Press depth: a card rises 1px with a deeper shadow under a fine pointer, and settles when pressed. */
+  .tb-press {
+    transition:
+      transform 120ms var(--ease-out),
+      box-shadow 120ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .tb-press:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--rim), var(--rim-low), var(--shadow-3);
+    }
+    .tb-press:active {
+      transform: translateY(0);
+      box-shadow: var(--rim), var(--shadow-1);
+    }
+  }
+
   /* Tilt: a physical lean toward the pointer (PointerFx writes --rx/--ry; reduced motion leaves them unset). */
   [data-tilt] {
     transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
