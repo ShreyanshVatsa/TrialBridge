@@ -18,7 +18,7 @@
  * through the rolling quota (same pattern as scripts/i18n/translate.ts). Without --wait a daily-cap 429 stops LLM calls;
  * topics without a complete LLM run are reported as not covered (never imputed).
  *
- * Usage: npm run eval:matching -- [--split=dev|test] [--no-llm] [--wait] [--dry] [--topics=k1,k2] [--report (rewrite RESULTS.md only)]
+ * Usage: npm run eval:matching -- [--split=dev|test] [--no-llm] [--cache-only] [--wait] [--dry] [--topics=k1,k2] [--report (rewrite RESULTS.md only)]
  * The test split may run once (eval/matching/test-runs.json records it); a second run needs --allow-test-rerun.
  */
 import { execSync } from "node:child_process";
@@ -59,6 +59,8 @@ const SPLIT_LABEL: Record<"dev" | "test", string> = { dev: "TREC 2021", test: "T
 const WAIT = flag("wait");
 const NO_LLM = flag("no-llm");
 const DRY = flag("dry");
+/** Replay the disk cache only: a request with no cached response fails like a daily-cap stop (no Groq call is made). */
+const CACHE_ONLY = flag("cache-only");
 /** Only these topic keys (comma-separated), for smoke runs; the reported numbers always come from full runs. */
 const ONLY = opt("topics")?.split(",");
 /** How many retrieved results the criteria ranking reorders: production passes rankTrials' TOP_N (15). */
@@ -167,7 +169,7 @@ function groqFetch(): typeof fetch {
       record(hit, true);
       return new Response(hit.body, { status: hit.status, headers: { "content-type": "application/json" } });
     }
-    if (dailyLimitHit) throw new DailyLimitError("daily quota reached");
+    if (dailyLimitHit || CACHE_ONLY) throw new DailyLimitError(CACHE_ONLY ? "not in cache (--cache-only)" : "daily quota reached");
     const est = Math.ceil(payload.length / 3.5) + EVAL_MAX_TOKENS;
     for (let attempt = 0; ; attempt++) {
       const slot = await pace(Math.min(MAX_TPM, est));

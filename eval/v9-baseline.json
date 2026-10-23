@@ -1,0 +1,56 @@
+{
+  "note": "v9 phase 0 baseline = v8 code on branch cac-2026 (f130d94), dev splits only, measured 2026-10-22.",
+  "vignetteDev": {
+    "command": "npx tsx scripts/eval/vignettes/live.ts --split=dev --audit",
+    "n": 94,
+    "ndcg10": 0.368,
+    "ci": [
+      0.306,
+      0.431
+    ],
+    "recall50Eligible": 0.772,
+    "excludedTop10": 0.516,
+    "retrievalOnlyNdcg10": 0.304,
+    "judgedShareTop10PerVignette": 0.903,
+    "tierBWrongDemotions": 9
+  },
+  "trecDev": {
+    "command": "npm run eval:matching -- --split=dev --cache-only",
+    "topics": 10,
+    "baseline": 0.521,
+    "resolver": 0.545,
+    "resolverLlmCached": 0.562,
+    "resolverFullPool": 0.586,
+    "llmTokensPerTopicMean": 6527
+  },
+  "regression": {
+    "command": "npm run eval",
+    "nationalPipelineNdcg10": 0.78,
+    "nationalCi": [
+      0.691,
+      0.858
+    ],
+    "oracleNationalTop15Violations": "0 of 600"
+  },
+  "perf": {
+    "command": "npx tsx scripts/perf/search-timings.ts --runs=3 (keyless wrangler dev on :8790, local, unthrottled, sample patient)",
+    "cold": {
+      "navToResultsMs": 1530,
+      "searchToResultsMs": 1394,
+      "modelLoadMs": 991,
+      "transferKB": {
+        "app": 661,
+        "data": 3610,
+        "model": 15685,
+        "wasm": 3636
+      }
+    },
+    "warm": {
+      "navToResultsMs": 382,
+      "searchToResultsMs": 336
+    },
+    "cold20Mbps": {
+      "navToResultsMs": 4733
+    }
+  }
+}
