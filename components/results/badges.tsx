@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, CircleHelp, CircleCheck, CircleMinus, Languages } from "lucide-react";
+import { AlertTriangle, ChevronDown, CircleHelp, CircleCheck, CircleMinus, Languages } from "lucide-react";
 import type { ReactNode } from "react";
 import { format, useMessages } from "@/components/i18n";
+import { focusQuote } from "@/lib/match/quote-focus";
 import type { Barrier, CriterionRef, FitLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -77,17 +78,32 @@ export function LanguageWarning() {
   );
 }
 
-/** Verbatim official criterion text, visually marked as a quote with its criterion number. */
-export function Quote({ text, criterionRef, className }: { text: string; criterionRef?: CriterionRef; className?: string }) {
+/**
+ * Verbatim official criterion text, visually marked as a quote with its criterion number. With `focus` (a fact key, or
+ * true for none) a long quote shows only the clause that carries it, with the whole text one click away.
+ */
+export function Quote({ text, criterionRef, className, focus }: { text: string; criterionRef?: CriterionRef; className?: string; focus?: string | true }) {
   const m = useMessages();
+  const excerpt = focus === undefined ? { text, partial: false } : focusQuote(text, focus === true ? undefined : focus);
   return (
     <figure className={cn("mt-1.5", className)}>
       <blockquote lang="en" className="border-s-2 border-primary/50 ps-3 text-foreground/90 italic">
-        “{text}”
+        “{excerpt.text}”
       </blockquote>
-      {criterionRef && (
-        <figcaption className="mt-1 ps-3 text-sm text-muted-foreground">
-          {format(m.card.criterionRef[criterionRef.section], { n: criterionRef.n })}
+      {(criterionRef || excerpt.partial) && (
+        <figcaption className="mt-1 flex flex-wrap items-baseline gap-x-3 ps-3 text-sm text-muted-foreground">
+          {criterionRef && <span>{format(m.card.criterionRef[criterionRef.section], { n: criterionRef.n })}</span>}
+          {excerpt.partial && (
+            <details className="group/full w-full">
+              <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1 font-medium text-primary underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
+                {m.card.showFull}
+                <ChevronDown className="size-3.5 transition-transform group-open/full:rotate-180" aria-hidden />
+              </summary>
+              <blockquote lang="en" className="mt-2 border-s-2 border-border ps-3 text-foreground/90 whitespace-pre-line">
+                {text}
+              </blockquote>
+            </details>
+          )}
         </figcaption>
       )}
     </figure>

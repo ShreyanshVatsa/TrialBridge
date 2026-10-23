@@ -25,7 +25,7 @@ test.describe("guided intake to AI results (mock)", () => {
   test("AI unavailable falls back to retrieval + rule results", async ({ page }) => {
     await page.route("**/api/analyze", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "x", requestId: "r" } }) }));
     await completeIntake(page, { cancer: "Breast cancer" });
-    await expect(page.getByText(/AI explanations are busy right now/i)).toBeVisible({ timeout: 90_000 });
+    await expect(page.getByText(/AI reading unavailable: showing rule-based order/i)).toBeVisible({ timeout: 90_000 });
     await expect(page.getByRole("link", { name: /Full trial details/i }).first()).toBeVisible();
   });
 

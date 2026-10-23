@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CriteriaChecklist, DegradedMatchBanner, HardFailureNote, TierBHeader, WhyRankedLine, markOf, screeningIds } from "@/components/results/match-checklist";
+import { CriteriaChecklist, HardFailureNote, TierBHeader, FitSummary, markOf, screeningIds } from "@/components/results/match-checklist";
 import { en } from "@/components/i18n/en";
 import type { CriterionLabel, SplitCriterionRecord, TrialMatchScore } from "@/lib/types";
 
@@ -99,24 +99,27 @@ describe("CriteriaChecklist", () => {
   });
 });
 
-describe("WhyRankedLine", () => {
-  it("tier A: met of checked, plus unknowns", () => {
-    const out = html(<WhyRankedLine score={score()} position={2} />);
-    expect(out).toContain("Number 2: looks to meet 2 of 3 requirements we could check");
-    expect(out).toContain("1 requirement is still unknown.");
+describe("FitSummary", () => {
+  it("tier A: met of checked, a to-confirm count and no eligibility wording", () => {
+    const out = html(<FitSummary score={score()} />);
+    expect(out).toContain("Looks to meet 2 of 3 requirements we could check. Nothing we found rules you out.");
+    expect(out).toContain("1 to confirm");
+    expect(out).toContain("0 may not fit");
+    expect(out.toLowerCase()).not.toContain("eligib");
   });
   it("tier A with nothing met yet", () => {
-    const out = html(<WhyRankedLine score={score({ counts: { met: 0, notMet: 0, excluded: 0, unknown: 0, notApplicable: 0 } })} position={1} />);
-    expect(out).toContain("We could not check the requirements yet");
+    const out = html(<FitSummary score={score({ counts: { met: 0, notMet: 0, excluded: 0, unknown: 0, notApplicable: 0 } })} />);
+    expect(out).toContain(en.match.fit.headlineNone);
   });
-  it("tier B: listed lower with the failure count", () => {
+  it("tier B: the failure count, drawn without amber", () => {
     const fail = labels[2]!;
-    const out = html(<WhyRankedLine score={score({ tier: "B", hardFailures: [fail, { ...fail, id: "E1" }] })} position={7} />);
-    expect(out).toContain("Number 7: listed lower because 2 requirements may rule you out.");
+    const out = html(<FitSummary score={score({ tier: "B", hardFailures: [fail, { ...fail, id: "E1" }] })} />);
+    expect(out).toContain("2 requirements may not fit you.");
+    expect(out).not.toContain("warn");
   });
 });
 
-describe("HardFailureNote / TierBHeader / DegradedMatchBanner", () => {
+describe("HardFailureNote / TierBHeader", () => {
   it("quotes our stored text for the failing criterion with its reason", () => {
     const out = html(<HardFailureNote failures={[labels[2]!]} criteria={criteria} />);
     expect(out).toContain("ECOG 0-1");
@@ -126,9 +129,8 @@ describe("HardFailureNote / TierBHeader / DegradedMatchBanner", () => {
   it("renders nothing when no failing id is in our criteria", () => {
     expect(html(<HardFailureNote failures={[labels[5]!]} criteria={criteria} />)).toBe("");
   });
-  it("tier B header and degraded banner use the English copy", () => {
+  it("tier B header uses the English copy", () => {
     expect(html(<TierBHeader />)).toContain(en.match.tierBTitle);
-    expect(html(<DegradedMatchBanner />)).toContain(en.match.degraded);
   });
 });
 
@@ -151,19 +153,9 @@ describe("checked at screening", () => {
     expect(out).toContain(en.match.screeningHeading);
     expect(out.split(en.match.screeningStatus).length - 1).toBe(2);
   });
-  it("the why-line does not count them as checkable or still unknown", () => {
-    const out = html(<WhyRankedLine score={score({ counts: { met: 1, notMet: 0, excluded: 0, unknown: 3, notApplicable: 0 } })} position={1} screening={2} />);
-    expect(out).toContain("looks to meet 1 of 2 requirements we could check");
-    expect(out).toContain("1 requirement is still unknown.");
-  });
-});
-
-describe("DegradedMatchBanner reasons", () => {
-  it("says the daily capacity is used up for budget and rate limits, else the generic text", () => {
-    // (The apostrophe in "Today's" is HTML-escaped in static markup.)
-    expect(html(<DegradedMatchBanner reason="budget_exhausted" />)).toContain("free AI reading capacity is used up");
-    expect(html(<DegradedMatchBanner reason="rate_limited" />)).toContain("free AI reading capacity is used up");
-    expect(html(<DegradedMatchBanner reason="ai_unavailable" />)).toContain(en.match.degraded);
-    expect(html(<DegradedMatchBanner />)).toContain(en.match.degraded);
+  it("the fit line does not count them as checkable or to confirm", () => {
+    const out = html(<FitSummary score={score({ counts: { met: 1, notMet: 0, excluded: 0, unknown: 3, notApplicable: 0 } })} screening={2} />);
+    expect(out).toContain("Looks to meet 1 of 2 requirements we could check");
+    expect(out).toContain("1 to confirm");
   });
 });

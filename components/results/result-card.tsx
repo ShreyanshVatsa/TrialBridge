@@ -9,16 +9,18 @@ import { buttonVariants } from "@/components/ui/button";
 import type { CriterionAssessment, RankedTrial } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BarrierBadge, Badge, FitBadge, LanguageWarning, Quote, TierBBadge } from "./badges";
-import { CriteriaChecklist, HardFailureNote, WhyRankedLine, screeningIds, type TrialMatchView } from "./match-checklist";
+import { CriteriaChecklist, FitSummary, HardFailureNote, screeningIds, type TrialMatchView } from "./match-checklist";
 
 interface Point {
   key: string;
   quote: string;
   ref: { section: "inclusion" | "exclusion"; n: number };
   explanation?: string;
+  /** Fact key the quote was matched on (rule pre-check), so a long criterion shows the clause that carries it. */
+  focus?: string;
 }
 
-const MAX_POINTS = 3;
+const MAX_POINTS = 2;
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
@@ -53,7 +55,7 @@ function PointList({ title, points, tone }: { title: string; points: Point[]; to
         {points.slice(0, MAX_POINTS).map((p) => (
           <li key={p.key}>
             {p.explanation && <p>{p.explanation}</p>}
-            <Quote text={p.quote} criterionRef={p.ref} />
+            <Quote text={p.quote} criterionRef={p.ref} focus={p.focus ?? true} />
           </li>
         ))}
       </ul>
@@ -105,12 +107,12 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
   const why: Point[] = oncePerCriterion(
     analysis
       ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_met"))
-      : precheck.filter((p) => p.kind === "support").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref })),
+      : precheck.filter((p) => p.kind === "support").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref, focus: p.key })),
   );
   const ruleOut: Point[] = oncePerCriterion(
     analysis
       ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "likely_not_met"))
-      : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref })),
+      : precheck.filter((p) => p.kind === "conflict").map((p) => ({ key: `${p.ref.section}-${p.ref.n}-${p.key}`, quote: p.quote, ref: p.ref, focus: p.key })),
   );
   const needsDoctor: Point[] = analysis ? fromAnalysis(analysis.criteria.filter((c) => c.assessment === "needs_doctor")) : [];
   // Tier B: the requirement that may not fit is shown once, in its own note. The older wording (fit chip,
@@ -136,7 +138,7 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
   }
 
   return (
-    <article aria-labelledby={titleId} className="tb-surface tb-spec rounded-3xl p-5 sm:p-7">
+    <article aria-labelledby={titleId} data-tier={tierB ? "B" : "A"} className={cn("tb-surface tb-spec tb-press rounded-3xl p-5 sm:p-7", tierB && "border-dashed opacity-95 saturate-[0.85]")}>
       {/* Rank numeral drawn from data-rank by CSS: decoration only (the list order and the sr-only number
           already say it), kept out of the text so it is never read twice. */}
       <span
@@ -144,33 +146,32 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         data-rank={String(index + 1).padStart(2, "0")}
         className="pointer-events-none absolute end-6 top-4 hidden font-heading text-[3.5rem] leading-none font-extrabold text-foreground/[0.08] [font-stretch:60%] before:content-[attr(data-rank)] sm:block"
       />
-      <div className="flex flex-wrap items-center gap-2 sm:pe-16">
-        {tierB ? <TierBBadge href={`#${hardId}`} /> : trial.scores.fit && <FitBadge level={trial.scores.fit} />}
-        <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
-        {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
-        <span className="text-sm text-muted-foreground">{card.id}</span>
-        {trial.scores.unknowns !== undefined && trial.scores.unknowns > 0 && <span className="text-sm text-muted-foreground">{format(m.card.unknowns, { n: String(trial.scores.unknowns) })}</span>}
-      </div>
-
-      <h3 id={titleId} className="mt-4 text-[1.5rem] leading-[1.08] font-bold text-balance [font-stretch:74%] sm:pe-10 sm:text-[1.875rem]">
+      <h3 id={titleId} className="text-[1.375rem] leading-[1.08] font-bold text-balance [font-stretch:74%] sm:pe-16 sm:text-[1.75rem]">
         <span className="sr-only">{index + 1}. </span>
         <Link href={trialHref(card.id)} className="decoration-primary/50 decoration-2 underline-offset-[5px] transition-colors hover:text-primary hover:underline">
           {card.title}
         </Link>
       </h3>
 
-      {nearest && (
-        <p className="mt-2 flex items-start gap-2 text-muted-foreground">
-          <MapPin className="mt-1 size-4 shrink-0" aria-hidden />
-          <span>
-            {format(m.card.nearest, { facility: nearest.site.facility, city: nearest.site.city, state: nearest.site.state })}
-            {" · "}
-            <strong className="font-semibold text-foreground">
-              {nearest.miles === null ? m.card.distanceUnknown : format(m.card.distance, { miles: formatMiles(nearest.miles) })}
-            </strong>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {tierB ? <TierBBadge href={`#${hardId}`} /> : trial.scores.fit && <FitBadge level={trial.scores.fit} />}
+        <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
+        {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
+        {nearest && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-sm leading-tight">
+            <MapPin className="size-3.5 shrink-0 text-primary" aria-hidden />
+            <span>
+              {format(m.card.nearest, { facility: nearest.site.facility, city: nearest.site.city, state: nearest.site.state })}
+              {" · "}
+              <strong className="font-semibold">
+                {nearest.miles === null ? m.card.distanceUnknown : format(m.card.distance, { miles: formatMiles(nearest.miles) })}
+              </strong>
+            </span>
           </span>
-        </p>
-      )}
+        )}
+        <span className="text-sm text-muted-foreground">{card.id}</span>
+        {!match && trial.scores.unknowns !== undefined && trial.scores.unknowns > 0 && <span className="text-sm text-muted-foreground">{format(m.card.unknowns, { n: String(trial.scores.unknowns) })}</span>}
+      </div>
 
       {(card.barriers.length > 0 || trial.languageWarning) && (
         <div className="mt-3 space-y-2">
@@ -187,12 +188,12 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
 
       {match && (
         <div id={hardId} className="scroll-mt-28">
-          <WhyRankedLine score={match.score} position={index + 1} screening={screeningIds(match.labels, card.criteria).size} className="mt-3" />
+          <FitSummary score={match.score} screening={screeningIds(match.labels, card.criteria).size} className="mt-4" />
           {tierB && <HardFailureNote failures={match.score.hardFailures} criteria={card.criteria} className="mt-4" />}
         </div>
       )}
 
-      {tierB ? <p className="mt-4 text-lg leading-relaxed">{m.match.tierBSummary}</p> : analysis?.summary && <p className="mt-4 text-lg leading-relaxed">{analysis.summary}</p>}
+      {tierB ? <p className="mt-4 leading-relaxed">{m.match.tierBSummary}</p> : analysis?.summary && <p className="mt-4 leading-relaxed">{analysis.summary}</p>}
 
       <div className="mt-4 space-y-5">
         <PointList title={m.card.whyFit} points={lists.why} tone="fit" />
@@ -200,18 +201,20 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         <PointList title={m.card.needsDoctor} points={lists.needsDoctor} tone="ask" />
         {section}
         {match && <CriteriaChecklist labels={match.labels} criteria={card.criteria} />}
-        <section>
-          <h4 className="font-sans text-base font-semibold">{m.card.askDoctor}</h4>
-          <ul className="mt-1 list-disc space-y-1 ps-5">
-            {questions.map((q) => (
-              <li key={q}>{q}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h4 className="font-sans text-base font-semibold">{m.card.contact}</h4>
-          <ContactLine trial={trial} />
-        </section>
+        <div className="grid gap-5 sm:grid-cols-[1.4fr_1fr]">
+          <section>
+            <h4 className="font-sans text-base font-semibold">{m.card.askDoctor}</h4>
+            <ul className="mt-1 list-disc space-y-1 ps-5">
+              {questions.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h4 className="font-sans text-base font-semibold">{m.card.contact}</h4>
+            <ContactLine trial={trial} />
+          </section>
+        </div>
       </div>
 
       <div className="no-print mt-6 flex flex-wrap gap-3 border-t border-border pt-5">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Pencil, Printer, RotateCcw, Sparkles } from "lucide-react";
+import { Info, Pencil, Printer, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, localeFor, useLanguage, useMessages } from "@/components/i18n";
 import { formatDate, formatNumber } from "@/components/format";
@@ -16,19 +16,16 @@ import { isEssential, isNonResponse } from "@/components/questionnaire/contract"
 import { useKeyT } from "@/components/questionnaire/t";
 import { prioritizeFindOut } from "@/lib/match/criteria-rank";
 import { ResultCard } from "./result-card";
-import { DegradedMatchBanner, TierBHeader, type TrialMatchView } from "./match-checklist";
+import { TierBHeader, type TrialMatchView } from "./match-checklist";
+import { StatusRow, rulesReasonOf, type AiState } from "./status-row";
 
 const INITIAL_VISIBLE = 10;
 
-function Notice({ children, tone = "info", icon }: { children: ReactNode; tone?: "info" | "warn"; icon?: ReactNode }) {
+/** A notice that changes how to read the list (distance or meaning search unavailable). Lavender, never amber. */
+function Notice({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={cn(
-        "animate-enter flex items-start gap-3 rounded-2xl border px-4 py-3",
-        tone === "warn" ? "border-warn-border bg-warn text-warn-foreground" : "border-border bg-secondary/60 text-foreground",
-      )}
-    >
-      {icon ?? <Info className="mt-1 size-4 shrink-0" aria-hidden />}
+    <div role="note" className="animate-enter flex items-start gap-3 rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-foreground">
+      <Info className="mt-1 size-4 shrink-0 text-primary" aria-hidden />
       <div>{children}</div>
     </div>
   );
@@ -84,7 +81,7 @@ export function ResultsView({
   session: SearchSession;
   /** Per-trial criteria score + labels keyed by NCT id. Optional; without it the list renders as before. */
   matches?: Readonly<Record<string, TrialMatchView>>;
-  /** True when no real LLM answered (resolver-only labels): shows the degraded-mode banner. */
+  /** True when no real LLM answered (resolver-only labels): the status row says rules were used. */
   matchDegraded?: boolean;
   onEdit: () => void;
   /** Reopen the questions on the Find-out list ("Fill in what you found out"). */
@@ -115,6 +112,31 @@ export function ResultsView({
   }, [qState, session.answers.cancerType, priority]);
   const sexAnswer = qState?.answers.sex;
   const unknownCount = qState ? Object.entries(qState.answers).filter(([id, v]) => !isEssential(id) && (isNonResponse(v) || qState.deferred.includes(id))).length : 0;
+  const rulesOnly = matchDegraded ? rulesReasonOf(session.criteria?.degradedReason) : undefined;
+  const aiState: AiState =
+    analysis.status === "pending"
+      ? { kind: "working" }
+      : analysis.status === "ok"
+        ? { kind: "done", trials: results.filter((r) => r.analysis).length, experimental: analysis.experimental, ...(rulesOnly ? { rulesOnly } : {}) }
+        : analysis.status === "degraded" || rulesOnly
+          ? { kind: "rules", ...(rulesOnly ? { reason: rulesOnly } : {}) }
+          : { kind: "off" };
+  // Notices that narrow or explain the list, collapsed behind one "Filters applied" chip.
+  const filters: ReactNode[] = [];
+  if (sexAnswer === "female" || sexAnswer === "male") {
+    filters.push(
+      <>
+        {t(`questionnaire.ui.sexHidden.${sexAnswer}`)}{" "}
+        {onFill && (
+          <Button variant="link" className="no-print h-auto min-h-0 p-0 align-baseline" onClick={() => onFill(["sex"])}>
+            {t("questionnaire.ui.sexHiddenChange")}
+          </Button>
+        )}
+      </>,
+    );
+  }
+  if (outcome.zipApproximate) filters.push(m.results.zipApproximate);
+  if (unknownCount > 0) filters.push(t("results.findOutUnknownNote", { count: unknownCount }));
 
   return (
     <div className="space-y-6">
@@ -154,33 +176,9 @@ export function ResultsView({
 
       <Disclaimer />
 
-      <div className="space-y-3" aria-live="polite">
-        {analysis.status === "pending" && (
-          <Notice icon={<TypingDots label={m.chat.typing} className="mt-2.5 text-primary" />}>{m.results.analyzing}</Notice>
-        )}
-        {analysis.status === "ok" && (
-          <Notice icon={<Sparkles className="mt-1 size-4 shrink-0 text-primary" aria-hidden />}>
-            {m.results.aiNote}
-            {analysis.experimental && <span className="mt-1 block font-medium">{m.results.experimental}</span>}
-          </Notice>
-        )}
-        {analysis.status === "degraded" && <Notice tone="warn">{m.results.degraded}</Notice>}
-        {matchDegraded && <DegradedMatchBanner {...(session.criteria?.degradedReason ? { reason: session.criteria.degradedReason } : {})} />}
-        {outcome.distanceUnavailable && <Notice tone="warn">{m.results.distanceUnavailable}</Notice>}
-        {outcome.zipApproximate && <Notice>{m.results.zipApproximate}</Notice>}
-        {outcome.keywordOnly && <Notice tone="warn">{m.results.keywordOnly}</Notice>}
-      </div>
-      {unknownCount > 0 && <Notice>{t("results.findOutUnknownNote", { count: unknownCount })}</Notice>}
-      {(sexAnswer === "female" || sexAnswer === "male") && (
-        <Notice>
-          {t(`questionnaire.ui.sexHidden.${sexAnswer}`)}{" "}
-          {onFill && (
-            <Button variant="link" className="no-print h-auto min-h-0 p-0 align-baseline" onClick={() => onFill(["sex"])}>
-              {t("questionnaire.ui.sexHiddenChange")}
-            </Button>
-          )}
-        </Notice>
-      )}
+      <StatusRow ai={aiState} filters={filters} />
+      {outcome.distanceUnavailable && <Notice>{m.results.distanceUnavailable}</Notice>}
+      {outcome.keywordOnly && <Notice>{m.results.keywordOnly}</Notice>}
 
       {results.length === 0 ? (
         <div className="tb-surface rounded-3xl p-8 text-center sm:p-10">

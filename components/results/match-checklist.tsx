@@ -6,6 +6,7 @@ import { format, useMessages, useT } from "@/components/i18n";
 import type { CriterionLabel, CriterionLabelValue, SplitCriterionRecord as SplitCriterion, TrialMatchScore } from "@/lib/types";
 import { isScreeningItem } from "@/lib/match/screening";
 import { cn } from "@/lib/utils";
+import { Quote } from "./badges";
 
 /** What the results UI needs per trial from the criteria ranking (score + per-criterion labels). */
 export interface TrialMatchView {
@@ -158,26 +159,48 @@ export function CriteriaChecklist({
 }
 
 /**
- * One-line "why ranked here": tier, how many checkable requirements look met, and what is still unknown.
- * `screening` = unknown items the study team checks at screening; they are neither "checkable" nor "still unknown".
+ * The card's one-glance fit line: a plain headline and a segmented bar of the requirements we could check (looks met /
+ * to confirm / may not fit). Lavender tints only; amber stays reserved for barrier flags. The bar is decoration: the
+ * legend under it carries the same numbers as text. `screening` = unknown items the study team checks at screening;
+ * they are neither "checkable" nor "to confirm".
  */
-export function WhyRankedLine({ score, position, screening = 0, className }: { score: TrialMatchScore; position: number; screening?: number; className?: string }) {
+export function FitSummary({ score, screening = 0, className }: { score: TrialMatchScore; screening?: number; className?: string }) {
   const m = useMessages();
   const { t } = useT();
-  const counts = { ...score.counts, unknown: Math.max(0, score.counts.unknown - screening) };
-  const checked = counts.met + counts.notMet + counts.unknown;
-  let text: string;
-  if (score.tier === "B") {
-    text = t("match.whyTierB", { count: Math.max(1, score.hardFailures.length), pos: position });
-  } else {
-    text = counts.met > 0 ? format(m.match.whyTierA, { pos: position, met: counts.met, checked }) : format(m.match.whyTierANone, { pos: position });
-    if (counts.unknown > 0) text += ` ${t("match.whyUnknown", { count: counts.unknown })}`;
-  }
+  const met = score.counts.met;
+  const fail = score.tier === "B" ? Math.max(1, score.hardFailures.length, score.counts.notMet) : score.counts.notMet;
+  const unknown = Math.max(0, score.counts.unknown - screening);
+  const total = Math.max(1, met + fail + unknown);
+  const headline =
+    score.tier === "B"
+      ? t("match.fit.headlineTierB", { count: Math.max(1, score.hardFailures.length) })
+      : met > 0
+        ? format(m.match.fit.headline, { met, checked: met + score.counts.notMet + unknown })
+        : m.match.fit.headlineNone;
+  const seg = (n: number, cls: string) => (n > 0 ? <span className={cn("h-full first:rounded-s-full last:rounded-e-full", cls)} style={{ width: `${(100 * n) / total}%` }} /> : null);
   return (
-    <p className={cn("text-sm text-muted-foreground", className)}>
-      <span className="font-semibold text-foreground">{m.match.whyRanked}: </span>
-      {text}
-    </p>
+    <div className={cn("space-y-2", className)}>
+      <p className="font-semibold text-foreground">{headline}</p>
+      <div aria-hidden className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.18)]">
+        {seg(met, "bg-primary")}
+        {seg(unknown, "bg-[repeating-linear-gradient(135deg,var(--lavender)_0_6px,color-mix(in_oklch,var(--lavender)_50%,transparent)_6px_10px)]")}
+        {seg(fail, "bg-foreground/55")}
+      </div>
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 rounded-full bg-primary" />
+          {format(m.match.counts.met, { n: met })}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 rounded-full bg-lavender" />
+          {format(m.match.fit.toConfirm, { n: unknown })}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 rounded-full bg-foreground/55" />
+          {format(m.match.counts.fail, { n: fail })}
+        </span>
+      </p>
+    </div>
   );
 }
 
@@ -198,13 +221,9 @@ export function HardFailureNote({ failures, criteria, className }: { failures: r
           const c = lookup.get(f.id)!;
           return (
             <li key={f.id} className="text-foreground">
-              <blockquote lang="en" className="border-s-2 border-warn-border ps-3 whitespace-pre-line">
-                {c.text}
-              </blockquote>
-              <p className="mt-1 ps-3 text-sm text-muted-foreground">
-                {format(m.card.criterionRef[c.section], { n: criterionNumber(c.id) })}
-                {f.reason && ` · ${f.reason}`}
-              </p>
+              {f.reason && <p className="font-medium">{f.reason}</p>}
+              <Quote text={c.text} focus className="[&_blockquote]:border-warn-border" />
+              <p className="mt-1 ps-3 text-sm text-muted-foreground">{format(m.card.criterionRef[c.section], { n: criterionNumber(c.id) })}</p>
             </li>
           );
         })}
@@ -226,13 +245,3 @@ export function TierBHeader({ id = "tier-b", className }: { id?: string; classNa
   );
 }
 
-/** Shown when no real LLM answered and labels are resolver-only. A used-up daily budget says so. */
-export function DegradedMatchBanner({ reason, className }: { reason?: string; className?: string }) {
-  const m = useMessages();
-  return (
-    <div role="note" className={cn("flex items-start gap-3 rounded-2xl border border-warn-border bg-warn px-4 py-3 text-warn-foreground", className)}>
-      <AlertTriangle className="mt-1 size-4 shrink-0" aria-hidden />
-      <p>{reason === "budget_exhausted" || reason === "rate_limited" ? m.match.degradedBudget : m.match.degraded}</p>
-    </div>
-  );
-}
