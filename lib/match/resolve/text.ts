@@ -39,6 +39,10 @@ export const BENIGN_OR = [
   /\b(?:BRCA ?1|BRCA)\s*(?:or|and\/or|\/)\s*BRCA ?2\b/gi,
   /\b(?:IDH ?1)\s*(?:or|and\/or|\/)\s*IDH ?2\b/gi,
   /\b(?:ER|estrogen receptor)\s*(?:and\/or|or|\/)\s*(?:PR|progesterone receptor)\b/gi,
+  // Hormone receptor status named by its two receptors with their results ("ER+ and/or PR+", "ER or PgR >= 1%").
+  /\b(?:ER|estrogen receptor)(?:\s*\(ER\))?(?:\s*[-+]|\s*-?\s*(?:positive|negative|low))?(?:\s*[[(]ER[+-]?[\])])?(?:\s*[<>\u2264\u2265]=?\s*\d+\s*%)?\s*,?\s*(?:and\/or|or|\/)\s*(?:PR|PgR|progesterone receptor)\b/gi,
+  // One HER2 score range ("IHC 0, 1+, or 2+", "IHC 1+ or 2+/ISH-negative").
+  /\b(?:IHC\s*)?(?:score\s*(?:of\s*)?)?[0-3]\+?(?:\s*,\s*[0-3]\+?)*\s*,?\s*(?:or|and\/or)\s*(?:IHC\s*)?[0-3]\+/gi,
   // Specimen, disease-extent and test-method pairs describe how or where, not a second criterion.
   /\b(?:tissue|blood|plasma|serum|archival|fresh|liquid)\s+(?:biopsy\s+)?(?:or|and\/or)\s+(?:tissue|blood|plasma|serum|archival|fresh|liquid)\b/gi,
   /\b(?:locally advanced|locally recurrent|advanced|metastatic|unresectable|inoperable|incurable|recurrent|stage\s*(?:iv|4|iii|3)[a-c]?)\b(?:\s*(?:,|\/|or|and\/or|and)\s*(?:locally advanced|locally recurrent|advanced|metastatic|unresectable|inoperable|incurable|recurrent|stage\s*(?:iv|4|iii|3)[a-c]?)\b)+/gi,

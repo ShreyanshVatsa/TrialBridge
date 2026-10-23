@@ -200,6 +200,13 @@ describe("resolver: facts", () => {
     expect(hasAlternatives("Metastatic or locally advanced unresectable breast cancer")).toBe(false);
     expect(hasAlternatives("Relapsed or refractory multiple myeloma")).toBe(false);
   });
+  it("receptor pairs with their results and HER2 score ranges are one attribute, real options stay (v9)", () => {
+    expect(hasAlternatives("Hormone receptor positive (estrogen receptor positive [ER+] and/or progesterone receptor positive [PR+]), HER-2 negative breast cancer")).toBe(false);
+    expect(hasAlternatives("HR-positive (either ER or PgR >= 1%) breast cancer")).toBe(false);
+    expect(hasAlternatives("HER2-negative (IHC score of 0, 1+, or 2+ with ISH not amplified)")).toBe(false);
+    expect(hasAlternatives("Triple negative or hormone resistant HER2-negative breast cancer")).toBe(true);
+    expect(hasAlternatives("EGFR mutation or ALK rearrangement")).toBe(true);
+  });
   it("brain metastases with and without the active-only carve-out", () => {
     const t = "Active, untreated brain metastases";
     expect(lab("exclusion", t, profile("lung", { spread: "distant", brain_mets: "none" }))).toBe("not_excluded");
