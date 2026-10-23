@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bootstrapCI, cohensKappa, excludedShareAtK, ndcgAtK, recallEligibleAtK, rng } from "./metrics";
+import { binaryNdcgAtK, bootstrapCI, cohensKappa, condensed, excludedShareAtK, hasRelevant, hitAtK, ndcgAtK, precisionCeilingAtK, precisionRelevantAtK, recallEligibleAtK, recallRelevantAtK, rng, unjudgedShareAtK } from "./metrics";
 
 const labels = { A: "eligible", B: "possibly", C: "excluded", D: "not_relevant", E: "eligible" } as const;
 
@@ -61,5 +61,39 @@ describe("cohensKappa", () => {
     expect(cohensKappa(["a", "b", "a", "b"], ["a", "b", "a", "b"])).toBe(1);
     expect(cohensKappa(["a", "a", "b", "b"], ["a", "b", "a", "b"])).toBeCloseTo(0, 10);
     expect(cohensKappa(["a", "a"], ["a", "a"])).toBe(1);
+  });
+});
+
+describe("v9 reporting metrics", () => {
+  const none = { C: "excluded", D: "not_relevant" } as const;
+  it("hasRelevant splits the two denominators", () => {
+    expect(hasRelevant(labels)).toBe(true);
+    expect(hasRelevant(none)).toBe(false);
+  });
+  it("binary nDCG counts eligible and possibly as 1, or eligible only", () => {
+    expect(binaryNdcgAtK(["B", "A", "E"], labels, 10)).toBeCloseTo(1, 10);
+    const ideal = 1 + 1 / Math.log2(3);
+    expect(binaryNdcgAtK(["B", "A", "E"], labels, 10, true)).toBeCloseTo((1 / Math.log2(3) + 1 / Math.log2(4)) / ideal, 10);
+    expect(binaryNdcgAtK(["C"], none, 10)).toBeNaN();
+  });
+  it("hit@k is NaN without a relevant trial", () => {
+    expect(hitAtK(["C", "D", "B"], labels, 2)).toBe(0);
+    expect(hitAtK(["C", "D", "B"], labels, 3)).toBe(1);
+    expect(hitAtK(["C"], none, 10)).toBeNaN();
+  });
+  it("P@k divides by k, its ceiling is min(relevant, k)/k", () => {
+    expect(precisionRelevantAtK(["A", "C"], labels, 10)).toBeCloseTo(0.1, 10);
+    expect(precisionCeilingAtK(labels, 10)).toBeCloseTo(0.3, 10);
+    expect(precisionCeilingAtK(labels, 2)).toBe(1);
+    expect(precisionCeilingAtK(none, 10)).toBeNaN();
+  });
+  it("unjudged share and condensed lists drop never-pooled ids", () => {
+    expect(unjudgedShareAtK(["X", "A", "Y", "C"], labels, 10)).toBe(0.5);
+    expect(condensed(["X", "A", "Y", "C"], labels)).toEqual(["A", "C"]);
+    expect(ndcgAtK(condensed(["X", "A", "E", "B"], labels), labels, 10)).toBeCloseTo(1, 10);
+  });
+  it("recall of relevant trials", () => {
+    expect(recallRelevantAtK(["A", "C"], labels, 10)).toBeCloseTo(1 / 3, 10);
+    expect(recallRelevantAtK(["C"], none, 10)).toBeNaN();
   });
 });

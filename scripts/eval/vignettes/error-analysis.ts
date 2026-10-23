@@ -12,9 +12,10 @@
  *   extractor_gap       no usable fact was extracted although the criterion is about a questionnaire topic
  *   free_text_only      the judge's reason rests on detail the questionnaire does not ask (drug names, dates, labs...)
  *   no_answer           the question exists but the vignette answered unknown / did not answer
- * With --live the current pipeline is re-run (rankTrials + resolver) instead of the stored pool ranking.
+ * With --live the current pipeline is re-run (rankTrials + resolver) instead of the stored pool ranking. --depth=50 looks
+ * at the top 50 instead of the top 10; --buckets=<file> writes the per-pair bucket and topic map that diagnose.ts reads.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { factPolicy } from "../../../config/questionnaire/fact-policy";
 import { factsForCriterion } from "../../../lib/ingest/facts";
 import { normalizeMarkers, profileFromState, resolveItem, type ResolverProfile } from "../../../lib/match/criteria-resolve";
@@ -37,6 +38,9 @@ if (split === "test") throw new Error("error analysis runs on dev only");
 const system = args.get("system") ?? "pipeline:v7+resolver";
 const live = args.has("live");
 const maxExamples = Number(args.get("examples") ?? 12);
+const depth = Number(args.get("depth") ?? 10);
+const bucketsOut = args.get("buckets");
+const pairBuckets: Record<string, { bucket: Bucket; topic: string }> = {};
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -83,7 +87,7 @@ async function main(): Promise<void> {
   const pool = readPool();
   if (!pool) throw new Error("pool missing");
   const gold = JSON.parse(readFileSync(GOLD_FILE, "utf8")) as GoldFile;
-  const vignettes = readVignettes(undefined, split).filter((v) => gold.vignettes[v.id]);
+  const vignettes = readVignettes(undefined, split, args.get("answers")).filter((v) => gold.vignettes[v.id]);
   const ctxs = vignetteContexts(vignettes, national);
   const qs = live ? await queryVectors(ctxs) : [];
   const judge = new Map<string, Map<string, JudgmentFile["labels"][number]>>();
@@ -126,7 +130,7 @@ async function main(): Promise<void> {
       byTrialTier = Object.fromEntries(Object.entries(r.byTrial).map(([id, t]) => [id, t.score.tier]));
     }
     const profile = profileFromState(vignetteState(v), ctx.catalog);
-    const top10 = ranked.slice(0, 10);
+    const top10 = ranked.slice(0, depth);
     top10Total += top10.length;
     for (const [id, l] of Object.entries(labels)) {
       if (l.l !== "eligible") continue;
@@ -183,12 +187,14 @@ async function main(): Promise<void> {
       }
       bucket ??= "free_text_only";
       buckets[bucket]++;
+      pairBuckets[`${v.id}|${id}`] = { bucket, topic };
       topicCounts[topic] = (topicCounts[topic] ?? 0) + 1;
       (topics[bucket] ??= {})[topic] = (topics[bucket]?.[topic] ?? 0) + 1;
       if (examples[bucket].length < maxExamples) examples[bucket].push(`${v.id} ${id} ${detail}`);
     }
   });
 
+  if (bucketsOut) writeFileSync(bucketsOut, JSON.stringify(pairBuckets));
   console.log(`${split}: ${ctxs.length} vignettes, system ${live ? "live pipeline" : system}`);
   console.log(`top-10 slots ${top10Total}, gold-excluded in top 10: ${excludedTop10} (${((100 * excludedTop10) / top10Total).toFixed(1)}%), of which already Tier B: ${tierBInTop10}`);
   console.log("buckets:", buckets);

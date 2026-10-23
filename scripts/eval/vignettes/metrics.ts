@@ -1,4 +1,7 @@
-/** Metrics for the vignette benchmark: graded nDCG, recall of eligible, excluded share, paired bootstrap. Pure functions. */
+/**
+ * Metrics for the vignette benchmark: graded and binary nDCG, hit@k, P@k and its ceiling, recall, excluded and unjudged
+ * share, condensed (judged-only) lists, paired bootstrap. Pure functions.
+ */
 import { GAIN, type Label } from "./judge-prompt";
 
 /** Labels of the judged trials of one vignette (NCT id -> label). Unjudged (never pooled) trials count as gain 0. */
@@ -25,6 +28,62 @@ export function recallEligibleAtK(ranked: readonly string[], labels: VignetteLab
 export function excludedShareAtK(ranked: readonly string[], labels: VignetteLabels, k: number): number {
   const top = ranked.slice(0, k);
   return top.length === 0 ? Number.NaN : top.filter((id) => labels[id] === "excluded").length / top.length;
+}
+
+/** True when the vignette has at least one relevant (eligible or possibly) judged trial: the TREC-style denominator. */
+export function hasRelevant(labels: VignetteLabels): boolean {
+  return Object.values(labels).some((l) => GAIN[l] > 0);
+}
+
+/**
+ * Binary nDCG@k: gain 1 for every relevant label (eligible + possibly), or, with `eligibleOnly`, for eligible only.
+ * NaN when nothing qualifies, so a mean over vignettes uses only the ones that can score.
+ */
+export function binaryNdcgAtK(ranked: readonly string[], labels: VignetteLabels, k: number, eligibleOnly = false): number {
+  const rel = (id: string) => (labels[id] === undefined ? 0 : eligibleOnly ? (labels[id] === "eligible" ? 1 : 0) : GAIN[labels[id] as Label] > 0 ? 1 : 0);
+  const n = Object.keys(labels).filter((id) => rel(id) === 1).length;
+  if (n === 0) return Number.NaN;
+  const dcg = ranked.slice(0, k).reduce((a, id, i) => a + rel(id) / Math.log2(i + 2), 0);
+  let ideal = 0;
+  for (let i = 0; i < Math.min(n, k); i++) ideal += 1 / Math.log2(i + 2);
+  return dcg / ideal;
+}
+
+/** 1 when at least one relevant judged trial is in the top k, 0 when none is, NaN when the vignette has none at all. */
+export function hitAtK(ranked: readonly string[], labels: VignetteLabels, k: number): number {
+  if (!hasRelevant(labels)) return Number.NaN;
+  return ranked.slice(0, k).some((id) => labels[id] !== undefined && GAIN[labels[id] as Label] > 0) ? 1 : 0;
+}
+
+/** Share of the top k that is relevant (eligible or possibly); NaN for an empty list. */
+export function precisionRelevantAtK(ranked: readonly string[], labels: VignetteLabels, k: number): number {
+  const top = ranked.slice(0, k);
+  return top.length === 0 ? Number.NaN : top.filter((id) => labels[id] !== undefined && GAIN[labels[id] as Label] > 0).length / k;
+}
+
+/** Best P@k any order could reach: min(relevant judged, k) / k. NaN when the vignette has no relevant trial. */
+export function precisionCeilingAtK(labels: VignetteLabels, k: number): number {
+  const n = Object.values(labels).filter((l) => GAIN[l] > 0).length;
+  return n === 0 ? Number.NaN : Math.min(n, k) / k;
+}
+
+/** Share of the top k that was never judged (pooling gap); NaN for an empty list. */
+export function unjudgedShareAtK(ranked: readonly string[], labels: VignetteLabels, k: number): number {
+  const top = ranked.slice(0, k);
+  return top.length === 0 ? Number.NaN : top.filter((id) => labels[id] === undefined).length / top.length;
+}
+
+/** Condensed list (Sakai 2007): the ranking with unjudged trials removed, so a surfaced unjudged trial costs nothing. */
+export function condensed(ranked: readonly string[], labels: VignetteLabels): string[] {
+  return ranked.filter((id) => labels[id] !== undefined);
+}
+
+/** Recall of relevant (eligible + possibly) judged trials in the top k; NaN when the vignette has none. */
+export function recallRelevantAtK(ranked: readonly string[], labels: VignetteLabels, k: number): number {
+  const rel = Object.keys(labels).filter((id) => GAIN[labels[id] as Label] > 0);
+  if (rel.length === 0) return Number.NaN;
+  const top = new Set(ranked.slice(0, k));
+  return rel.filter((id) => top.has(id)).length / rel.length;
 }
 
 /** Small deterministic PRNG (mulberry32) so bootstrap intervals are reproducible. */

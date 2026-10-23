@@ -11,6 +11,27 @@ Detailed, generated reports:
 Intervals are bootstrap 95% CIs over topics (TREC) or profiles (regression). "Distinguishable" means the paired-difference CI excludes 0.
 
 
+## 0a. How to read the vignette numbers (v9 metric framing, measured on the v8 code, vignette dev)
+
+`npx tsx scripts/eval/vignettes/live.ts --split=dev` prints every row below with a bootstrap 95% CI; `npx tsx scripts/eval/vignettes/diagnose.ts` prints the oracle rows and the waterfall. The all-vignette mean scores a vignette with no relevant judged trial as 0, so it cannot exceed the share of vignettes that have one (71 of 94 on dev, 0.755; 57 of 70 on test). From v9 the headline is graded nDCG@10 over the vignettes with a relevant trial (the TREC convention), always printed next to the all-vignette mean. Recall below is the micro share of all relevant trials; live.ts also prints the per-vignette mean.
+
+| metric (vignette dev, v8 code) | value | ceiling / note |
+| --- | --- | --- |
+| graded nDCG@10, all 94 (v8 headline) | 0.368 [0.306, 0.431] | ceiling 0.755 |
+| graded nDCG@10, 71 with a relevant trial (v9 headline) | 0.487 [0.424, 0.550] | ceiling 1.0 |
+| binary nDCG@10 (eligible + possibly = 1), all / relevant-only | 0.381 / 0.504 | |
+| eligible-only binary nDCG@10 (41 vignettes with an eligible trial) | 0.333 | 53 of 94 have none |
+| retrieval order only (no resolver), all / relevant-only | 0.304 / 0.402 | |
+| oracle: perfect order of the top 15 / top 50, all / relevant-only | 0.513 / 0.679, 0.678 / 0.898 | what the best possible re-ranker of these lists could score |
+| P@10 relevant (divided by 10, relevant-only vignettes) | 0.303 | mean achievable 0.637 (median 4 relevant per vignette) |
+| hit@10 / hit@50 (vignettes with a relevant trial) | 0.915 / 1.000 | |
+| recall of relevant trials @10 / @15 / @30 / @50 | 36% / 45% / 71% / 81% | 597 relevant trials; all 597 pass the hard filters |
+| top-10 slot composition (816 slots) | relevant 26%, excluded 51%, not relevant 16%, unjudged 6% | |
+| condensed nDCG@10 (unjudged trials dropped), all / relevant-only | 0.377 / 0.500 | pooling-bias check: +0.009 today |
+| Tier B demotion precision (gold excluded or not relevant, of judged Tier B trials in the re-ranked top 15) | 0.968 (272 of 281; 0 gold-eligible, 9 possibly) | the "does not wrongly rule out" metric |
+
+Waterfall (cumulative oracles on the live top 50, nDCG@10 over all 94): current 0.368; remove trials the resolver already fails but still shows +0.004; trials the resolver could settle from the answers +0.037; trials whose criterion is about an asked topic but no fact was extracted +0.072; trials excluded on detail no question asks +0.037; gold not-relevant trials (wrong population or purpose) +0.045; dropping the unjudged trials that fill the freed slots +0.093 (a pooling-bias bound, not a gain); perfect order of the rest +0.022, total 0.678. Read: about 0.11 of the gap is resolver and extractor engineering on the existing questionnaire, 0.04 needs new questions, 0.045 is trial purpose and population. nDCG@10 in the 0.9s is not reachable with this gold, questionnaire and judge; the safety and coverage numbers (Tier B precision, hit@50, hard-filter loss 0) are the ones that are in the 90s, and they measure "does not wrongly rule out", not matching accuracy.
+
 ## 0. v8 (2026-10-22): resolver coverage, query construction, judge output shrink
 
 Changes (docs/dev/V8_PLAN.md has the per-step before/after with CIs): the deterministic resolver reads the extent of disease from the `spread` answer, treated status and line counts from the item's own wording, alternatives option by option, negated marker lists, plain subtype and hepatitis items, and ignores definitions, assessment windows and registration headers; the BM25/embedding query names positive biomarkers only; the judge prompt (analyze-v3.2) returns a reason and answer ids only for definite labels. Every decision was made on TREC 2021 dev and vignette dev; the vignette test split ran once at the end; the TREC test split was not run (frozen since v7).
