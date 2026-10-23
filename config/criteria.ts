@@ -181,7 +181,8 @@ export const HISTOLOGY_PATTERNS: readonly HistologyPattern[] = [
   { id: "cml", groups: ["leukemia"], re: /\b(CML|chronic myeloid leuk\w*|chronic myelogenous leuk\w*)\b/i },
   { id: "mds", groups: ["leukemia"], re: /\b(MDS|myelodysplastic syndromes?|myelodysplasia)\b/i },
   { id: "dlbcl", groups: ["lymphoma"], re: /\b(DLBCL|diffuse large B[- ]cell)\b/i },
-  { id: "follicular", groups: ["lymphoma"], re: /\b(follicular lymphoma|follicular NHL|\bFL\b(?=\s*(grade|\(|,|or|and|\)|patients)))/ },
+  // Case-insensitive words; "FL" stays upper-case only (it is a common English pair of letters otherwise).
+  { id: "follicular", groups: ["lymphoma"], re: /\b(?:[Ff]ollicular (?:[Ll]ymphomas?|NHL)|FOLLICULAR LYMPHOMA|FL\b(?=\s*(?:grade|\(|,|or|and|\)|patients)))/ },
   { id: "mantle_cell", groups: ["lymphoma"], re: /\b(mantle[- ]cell|MCL)\b/i },
   { id: "marginal_zone", groups: ["lymphoma"], re: /\b(marginal[- ]zone|MZL|MALT lymphoma)\b/i },
   { id: "hodgkin", groups: ["lymphoma"], re: /(?<!non[- ]?)(?<!non)\b(hodgkin('?s)? (lymphoma|disease)|classical hodgkin|cHL)\b/i },

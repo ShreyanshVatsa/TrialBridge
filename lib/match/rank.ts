@@ -61,7 +61,7 @@ function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { preche
     const unknown = unknownCounter(compiled);
     const pref = state.answers["phase_pref"];
     const prefId = typeof pref === "string" ? pref : null;
-    const profile: SubtypeProfile | null = subtypeProfile(compiled);
+    const profile: SubtypeProfile | null = subtypeProfile(compiled, state.answers);
     const group = answers.cancerType;
     return { precheck: (card) => ({ notes: check(card.facts), phase: phaseBonus(prefId, card.phases), subtype: subtypeMatch(profile, card, group), unknowns: unknown(card.facts) }), sex: hardFilters(compiled).sex ?? null };
   }

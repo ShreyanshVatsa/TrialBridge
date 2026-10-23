@@ -8,9 +8,15 @@
  *   conflict -1  the trial registers histologies and ALL of them are ones the patient does NOT have
  *    0           the patient gave no subtype (or a non-response), or the trial names no histology of the group
  *
+ * v9: the patient's subtype answer may also list sibling-disease tags (config/subtype-tags.ts: non-Hodgkin for a
+ * Hodgkin patient, brain metastases for a glioma, ...). Those tags join the trial's histologies only for that patient:
+ * a conflict tag counts as a histology the patient does not have; an `own` tag means the trial may be about the
+ * patient's disease, so the trial is never a conflict.
+ *
  * "Unknown" / skip / deferred subtype answers compile to no rules, so they return 0 here: unknown never lowers rank.
  */
 import { HISTOLOGY_PATTERNS } from "@/config/criteria";
+import { SUBTYPE_TAG_RULES, SUBTYPE_TAGS } from "@/config/subtype-tags";
 import type { CancerGroupId } from "@/config/cancer-groups";
 import type { CompiledAnswer } from "@/lib/questionnaire/rules";
 import type { TrialCard } from "@/lib/types/trial";
@@ -20,23 +26,42 @@ export interface SubtypeProfile {
   is: ReadonlySet<string>;
   /** Histologies it is not. */
   isNot: ReadonlySet<string>;
+  /** Sibling-disease tags (config/subtype-tags.ts) that mean another disease, and tags that may be the patient's. */
+  conflictTags?: ReadonlySet<string>;
+  ownTags?: ReadonlySet<string>;
 }
 
-/** The patient's subtype as histology sets, read from the compiled `subtype` answer; null when not answered. */
-export function subtypeProfile(compiled: readonly CompiledAnswer[]): SubtypeProfile | null {
-  const c = compiled.find((x) => x.question === "subtype");
-  if (!c || c.rules.size === 0) return null;
+/** Question ids whose answer names the patient's subtype (`group_status` in groups like myeloma and bladder). */
+const SUBTYPE_QUESTIONS = ["subtype", "group_status"];
+
+/**
+ * The patient's subtype as histology sets, read from the compiled `subtype` (or `group_status`) answer, plus the
+ * sibling-disease tags of the chosen option (`answers`: the raw questionnaire answers); null when not answered.
+ */
+export function subtypeProfile(compiled: readonly CompiledAnswer[], answers: Readonly<Record<string, unknown>> = {}): SubtypeProfile | null {
   const is = new Set<string>();
   const isNot = new Set<string>();
-  for (const [key, rules] of c.rules) {
-    if (!key.startsWith("histology:")) continue;
-    const id = key.slice("histology:".length);
-    for (const { rule } of rules) {
-      if (rule.whenRequired === "support") is.add(id);
-      else if (rule.whenRequired === "conflict") isNot.add(id);
+  for (const c of compiled) {
+    if (!SUBTYPE_QUESTIONS.includes(c.question)) continue;
+    for (const [key, rules] of c.rules) {
+      if (!key.startsWith("histology:")) continue;
+      const id = key.slice("histology:".length);
+      for (const { rule } of rules) {
+        if (rule.whenRequired === "support") is.add(id);
+        else if (rule.whenRequired === "conflict") isNot.add(id);
+      }
     }
   }
-  return is.size + isNot.size > 0 ? { is, isNot } : null;
+  const conflictTags = new Set<string>();
+  const ownTags = new Set<string>();
+  for (const q of SUBTYPE_QUESTIONS) {
+    const v = answers[q];
+    const rule = typeof v === "string" ? SUBTYPE_TAG_RULES[v] : undefined;
+    for (const t of rule?.conflict ?? []) conflictTags.add(t);
+    for (const t of rule?.own ?? []) ownTags.add(t);
+  }
+  if (is.size + isNot.size + conflictTags.size + ownTags.size === 0) return null;
+  return { is, isNot, ...(conflictTags.size > 0 ? { conflictTags } : {}), ...(ownTags.size > 0 ? { ownTags } : {}) };
 }
 
 const tagCache = new Map<string, ReadonlySet<string>>();
@@ -49,6 +74,7 @@ function trialHistologies(card: Partial<Pick<TrialCard, "conditions" | "title" |
   if (hit) return hit;
   const ids = new Set<string>();
   for (const h of HISTOLOGY_PATTERNS) if (h.groups.includes(group) && h.re.test(text) && !h.negated?.test(text)) ids.add(h.id);
+  for (const t of SUBTYPE_TAGS) if (t.groups.includes(group) && t.re.test(text)) ids.add(t.id);
   // "Squamous NSCLC" names one disease: the parent/child pair is not a list of competing diseases.
   if (ids.has("nsclc") && ids.has("lung_squamous")) ids.delete("lung_squamous");
   if (tagCache.size > 20000) tagCache.clear();
@@ -59,9 +85,13 @@ function trialHistologies(card: Partial<Pick<TrialCard, "conditions" | "title" |
 /** +1 match, -1 conflict, 0 neutral. */
 export function subtypeMatch(profile: SubtypeProfile | null, card: Partial<Pick<TrialCard, "conditions" | "title" | "officialTitle">>, group: CancerGroupId): -1 | 0 | 1 {
   if (!profile) return 0;
-  const tags = trialHistologies(card, group);
-  if (tags.size === 0) return 0;
-  for (const t of tags) if (profile.is.has(t)) return 1;
-  for (const t of tags) if (!profile.isNot.has(t)) return 0;
-  return -1;
+  const extra = new Set(SUBTYPE_TAGS.map((t) => t.id));
+  const all = [...trialHistologies(card, group)];
+  for (const t of all) if (profile.is.has(t)) return 1;
+  // Specific histologies decide on their own, exactly as before the sibling tags existed.
+  const specific = all.filter((t) => !extra.has(t));
+  if (specific.length > 0) return specific.every((t) => profile.isNot.has(t) || profile.conflictTags?.has(t)) ? -1 : 0;
+  // Only family-level tags: another disease when one is a conflict for this patient and none may be theirs.
+  if (all.some((t) => profile.ownTags?.has(t))) return 0;
+  return all.some((t) => profile.conflictTags?.has(t)) ? -1 : 0;
 }
