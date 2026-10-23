@@ -13,6 +13,7 @@ import { mergeLabels, normalizeRrf, phaseBonus, precheckBonus, precheckPenalty, 
 import type { CriterionLabel, TrialCriteriaLabels, TrialCriteriaResult } from "@/lib/types/criteria";
 import { fusedScore, type Features, type FusionWeights } from "./fusion";
 import { subtypeMatch, subtypeProfile, type SubtypeProfile } from "./subtype";
+import { extentConflict } from "./extent";
 import { getCancerGroup, type CancerGroupId } from "@/config/cancer-groups";
 
 /**
@@ -49,6 +50,8 @@ interface PrecheckResult {
   phase: number;
   /** Structured subtype match against the trial's registered conditions: 1 match, -1 conflict, 0 neutral. */
   subtype: -1 | 0 | 1;
+  /** 1 when the trial's own stated extent contradicts the definite `spread` answer (extent.ts). */
+  extent: 0 | 1;
   /** Directional criteria the answers say nothing about (see unknownCounter); undefined for the legacy intake. */
   unknowns?: number;
 }
@@ -63,13 +66,14 @@ function prepareMatching(answers: RankAnswers, ctx: MatchContext = {}): { preche
     const prefId = typeof pref === "string" ? pref : null;
     const profile: SubtypeProfile | null = subtypeProfile(compiled, state.answers);
     const group = answers.cancerType;
-    return { precheck: (card) => ({ notes: check(card.facts), phase: phaseBonus(prefId, card.phases), subtype: subtypeMatch(profile, card, group), unknowns: unknown(card.facts) }), sex: hardFilters(compiled).sex ?? null };
+    const spread = state.answers["spread"];
+    return { precheck: (card) => ({ notes: check(card.facts), phase: phaseBonus(prefId, card.phases), subtype: subtypeMatch(profile, card, group), extent: extentConflict(spread, card), unknowns: unknown(card.facts) }), sex: hardFilters(compiled).sex ?? null };
   }
-  return { precheck: (card) => ({ notes: precheck(answers, card.facts), phase: 0, subtype: 0 }), sex: null };
+  return { precheck: (card) => ({ notes: precheck(answers, card.facts), phase: 0, subtype: 0, extent: 0 }), sex: null };
 }
 
 /** The fusion features of one candidate (see fusion.ts). */
-export function featuresOf(r: { retrieval: number; notes: readonly PrecheckNote[]; phase: number; subtype: -1 | 0 | 1; viaBasket: boolean; weakGroup?: boolean } & Partial<Pick<Features, "kw" | "vec" | "cosine" | "bm25">>): Features {
+export function featuresOf(r: { retrieval: number; notes: readonly PrecheckNote[]; phase: number; subtype: -1 | 0 | 1; viaBasket: boolean; weakGroup?: boolean; extent?: 0 | 1 } & Partial<Pick<Features, "kw" | "vec" | "cosine" | "bm25">>): Features {
   return {
     retrieval: r.retrieval,
     kw: r.kw ?? 0,
@@ -83,6 +87,7 @@ export function featuresOf(r: { retrieval: number; notes: readonly PrecheckNote[
     subtypeConflict: r.subtype === -1 ? 1 : 0,
     basket: r.viaBasket ? 1 : 0,
     weakGroup: r.weakGroup ? 1 : 0,
+    extentConflict: r.extent ?? 0,
   };
 }
 
@@ -175,13 +180,14 @@ export function rankTrials(input: RankInput): SearchOutcome {
   // 4. Pre-check (legacy rules or the questionnaire catalog) + final score.
   const ranked: RankedTrial[] = fused.map((f) => {
     const c = candidates.get(f.id) as RankEntry & { nearest: ReturnType<typeof nearestSite> };
-    const { notes, phase, subtype, unknowns } = matching.precheck(c.card);
+    const { notes, phase, subtype, extent, unknowns } = matching.precheck(c.card);
     const retrieval = normalizeRrf(f.score, rankings.length, rrfK);
     const features = featuresOf({
       retrieval,
       notes,
       phase,
       subtype,
+      extent,
       viaBasket: reachesViaBasket(c.card, answers.cancerType),
       weakGroup: !groupNamed(c.card, answers.cancerType),
       kw: f.ranks[0] ? (rrfK + 1) / (rrfK + f.ranks[0]) : 0,

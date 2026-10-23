@@ -62,6 +62,7 @@ export const SIGNS: Readonly<Record<keyof Features, 1 | -1 | 0>> = {
   subtypeConflict: -1,
   basket: 0,
   weakGroup: 0,
+  extentConflict: -1,
 };
 
 export interface FitOptions {

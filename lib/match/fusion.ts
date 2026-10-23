@@ -34,6 +34,8 @@ export interface Features {
   basket: number;
   /** 1 when the group was assigned to the trial from MeSH/keywords only: no condition or title names it (see groupNamed). */
   weakGroup: number;
+  /** 1 when the trial's own title/conditions name only an extent the patient's definite `spread` answer contradicts (extent.ts). */
+  extentConflict: number;
 }
 
 export type FusionWeights = Readonly<Record<keyof Features, number>>;
