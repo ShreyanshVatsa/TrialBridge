@@ -23,7 +23,6 @@ export const DISEASE_STATUSES = ["new", "recurrent_or_progressing", "on_treatmen
 export const PRIOR_LINES = ["0", "1", "2", "3+", "not_sure"] as const;
 export const ACTIVITY_BANDS = ["0-1", "2", "3-4", "not_sure"] as const;
 export const BRAIN_METS = ["none", "treated_stable", "active", "not_sure"] as const;
-export const AI_DRUG_CLASS_IDS = DRUG_CLASS_IDS;
 
 /** Health-history categories: the questionnaire's own closed option lists (config/questionnaire/common.ts). */
 export const SEX_LISTED = ["female", "male"] as const;
@@ -107,9 +106,6 @@ export const TrialAnalysisSchema = z.strictObject({
   summary: z.string().min(1).max(400),
 });
 export type TrialAnalysis = z.infer<typeof TrialAnalysisSchema>;
-
-/** What the AI model must return (validated before quote verification). */
-export const ModelAnalysisOutputSchema = z.object({ trials: z.array(TrialAnalysisSchema) });
 
 export const AnalyzeResponseSchema = z.strictObject({
   /** ok = AI analysis present; degraded = AI unavailable, use retrieval + rules only. */

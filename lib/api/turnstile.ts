@@ -25,7 +25,13 @@ function loadScript(): Promise<TurnstileApi> {
     const s = document.createElement("script");
     s.src = SCRIPT_SRC;
     s.async = true;
-    s.onload = () => (window.turnstile ? resolve(window.turnstile) : reject(new Error("Turnstile unavailable")));
+    s.onload = () => {
+      if (window.turnstile) resolve(window.turnstile);
+      else {
+        scriptPromise = null;
+        reject(new Error("Turnstile unavailable"));
+      }
+    };
     s.onerror = () => {
       scriptPromise = null;
       reject(new Error("Turnstile failed to load"));
