@@ -18,7 +18,7 @@ const GROUPS: RegExp[] = [
   /safety|emergenc|under18|aiNever|not.*(advice|medical)/i,
   /^questionnaire\.ui\.(whyAsk|why|reassure|reassureNoCount|reassureDeferred|afterEssentials|modeQuickHelp|modeThoroughHelp|nonResponseHint|notSure|skip|preferNot|doctorLater|summaryIntro|caregiverHelp|introLead|introPrivate|introFree|introTime|counterNoConflict|privacyNote|about\.)/,
   /^questionnaire\.ui\.labelFor|^questionnaire\..*\.labelFor/,
-  /^chat\.(cancerQ|zipQ|travelQ|ageQ|spreadQ|treatmentsQ|treatmentsHint|biomarkersQ|pregnantQ|trialQ|privacyNote)/,
+  /^chat\.(spreadQ|biomarkersQ)/,
   /^privacy\.(intro|aiBody|aiNever|browserBody)/,
   /^(questionnaire\.ui\.|results\.|landing\.(sub|promises|how)|findOut\.)/,
 ];

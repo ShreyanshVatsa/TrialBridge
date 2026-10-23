@@ -5,79 +5,79 @@
   "en": {
    "status": "reviewed",
    "coverage": 1,
-   "sourceHash": "1tdp20d",
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "es": {
    "status": "machine",
    "coverage": 1,
-   "sourceHash": "1tdp20d",
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "pt": {
    "status": "partial",
-   "coverage": 0.9833,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.9826,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "ht": {
    "status": "partial",
-   "coverage": 0.9766,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.9756,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "zh-Hans": {
    "status": "partial",
-   "coverage": 0.5345,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5217,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "zh-Hant": {
    "status": "partial",
-   "coverage": 0.5345,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5217,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "vi": {
    "status": "partial",
-   "coverage": 0.5317,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5187,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "ko": {
    "status": "partial",
-   "coverage": 0.5336,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5207,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "tl": {
    "status": "partial",
-   "coverage": 0.5201,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5088,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "ar": {
    "status": "partial",
-   "coverage": 0.5212,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.5142,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "ru": {
    "status": "partial",
-   "coverage": 0.5345,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.525,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "fr": {
    "status": "partial",
-   "coverage": 0.9638,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.9651,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   },
   "hi": {
    "status": "partial",
-   "coverage": 0.9841,
-   "sourceHash": "1tdp20d",
+   "coverage": 0.9834,
+   "sourceHash": "1po5wk4",
    "updated": "2026-10-23"
   }
  }
