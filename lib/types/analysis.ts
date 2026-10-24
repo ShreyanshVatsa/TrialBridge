@@ -133,4 +133,3 @@ export const ApiErrorCodeSchema = z.enum([
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export const ApiErrorSchema = z.object({ error: z.object({ code: ApiErrorCodeSchema, message: z.string(), requestId: z.string() }) });
-export type ApiError = z.infer<typeof ApiErrorSchema>;

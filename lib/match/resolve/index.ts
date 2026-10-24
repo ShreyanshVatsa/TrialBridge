@@ -221,7 +221,7 @@ export function unresolved(labels: readonly CriterionLabel[]): string[] {
   return labels.filter((l) => l.label === "unknown").map((l) => l.id);
 }
 
-export { type Range, type ResolverProfile, profileFromState } from "./profile";
+export { type ResolverProfile, profileFromState } from "./profile";
 export { parseAgeBounds } from "./demographics";
-export { hasAlternatives, normalizeMarkers, stripDefinitions } from "./text";
+export { hasAlternatives, normalizeMarkers } from "./text";
 export { negatedMarkers } from "./markers";

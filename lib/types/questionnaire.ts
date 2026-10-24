@@ -5,7 +5,7 @@ import { z } from "zod";
  * QuestionDef, FactRule, ...) live in config/questionnaire/types.ts and are re-exported here.
  * The state never leaves the browser: it is kept only in this tab's sessionStorage.
  */
-export type { QuestionDef, OptionDef, OptionEffect, FactRule, FactRelation, Prereq, HardFilterPatch, FindOutDef, FactPolicy, Tier, AnswerType, MessageKey, AiFieldId, QuestionId } from "@/config/questionnaire/types";
+export type { QuestionDef, FactRule, FactRelation, HardFilterPatch, FindOutDef, FactPolicy, Tier } from "@/config/questionnaire/types";
 export { UNKNOWN, PREFER_NOT, SKIP, DEFERRED } from "@/config/questionnaire/types";
 import { DEFERRED, NON_RESPONSE_IDS as CATALOG_NON_RESPONSE_IDS } from "@/config/questionnaire/types";
 

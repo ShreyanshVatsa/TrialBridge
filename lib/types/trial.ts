@@ -83,7 +83,6 @@ export const BASE_FACT_KEYS = [
   "liver_disease",
   "heart_disease",
 ] as const;
-export type BaseFactKey = (typeof BASE_FACT_KEYS)[number];
 
 /** Closed-vocabulary id used in template fact keys (histology:<id>, prior_drug:<id>); the id lists live in config. */
 const FactIdSegmentSchema = z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/);

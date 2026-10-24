@@ -23,13 +23,10 @@ export const TreatmentSchema = z.enum(TREATMENTS);
 export type Treatment = z.infer<typeof TreatmentSchema>;
 
 export const SpreadSchema = z.enum(["yes", "no", "not_sure"]);
-export type Spread = z.infer<typeof SpreadSchema>;
 
 export const BiomarkerStatusSchema = z.enum(["positive", "negative", "dont_know"]);
-export type BiomarkerStatus = z.infer<typeof BiomarkerStatusSchema>;
 
 export const PregnancySchema = z.enum(["yes", "no", "not_sure", "prefer_not"]);
-export type Pregnancy = z.infer<typeof PregnancySchema>;
 
 const YesNoSchema = z.enum(["yes", "no"]);
 
