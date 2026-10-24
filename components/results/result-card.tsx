@@ -146,6 +146,11 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         data-rank={String(index + 1).padStart(2, "0")}
         className="pointer-events-none absolute end-6 top-4 hidden font-heading text-[3.5rem] leading-none font-extrabold text-foreground/[0.08] [font-stretch:60%] before:content-[attr(data-rank)] sm:block"
       />
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:pe-16">
+        <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
+        {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
+        <span className="text-sm text-muted-foreground tabular-nums">{card.id}</span>
+      </div>
       <h3 id={titleId} className="text-[1.375rem] leading-[1.08] font-bold text-balance [font-stretch:74%] sm:pe-16 sm:text-[1.75rem]">
         <span className="sr-only">{index + 1}. </span>
         <Link href={trialHref(card.id)} className="decoration-primary/50 decoration-2 underline-offset-[5px] transition-colors hover:text-primary hover:underline">
@@ -153,10 +158,8 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
         </Link>
       </h3>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {tierB ? <TierBBadge href={`#${hardId}`} /> : trial.scores.fit && <FitBadge level={trial.scores.fit} />}
-        <Badge>{phase ? format(m.card.phase, { phase }) : m.card.phaseNone}</Badge>
-        {card.sex !== "ALL" && <Badge>{m.trial.sex[card.sex]}</Badge>}
         {nearest && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-sm leading-tight">
             <MapPin className="size-3.5 shrink-0 text-primary" aria-hidden />
@@ -169,7 +172,6 @@ export function ResultCard({ trial, index, match }: { trial: RankedTrial; index:
             </span>
           </span>
         )}
-        <span className="text-sm text-muted-foreground">{card.id}</span>
         {!match && trial.scores.unknowns !== undefined && trial.scores.unknowns > 0 && <span className="text-sm text-muted-foreground">{format(m.card.unknowns, { n: String(trial.scores.unknowns) })}</span>}
       </div>
 

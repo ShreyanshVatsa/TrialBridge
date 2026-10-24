@@ -72,7 +72,7 @@ function CriterionRow({ label, criterion, screening = false }: { label: Criterio
             {criterion.scope}
           </p>
         )}
-        <blockquote lang="en" className="border-s-2 border-primary/40 ps-3 whitespace-pre-line text-foreground/90">
+        <blockquote lang="en" className="border-s-2 border-primary/40 ps-3 text-[0.9375rem] leading-relaxed whitespace-pre-line text-foreground/90">
           {criterion.text}
         </blockquote>
         {label.reason && !screening && <p className="text-sm text-muted-foreground">{label.reason}</p>}
@@ -114,10 +114,10 @@ export function CriteriaChecklist({
 
   return (
     <details open={defaultOpen} className={cn("group rounded-2xl border border-border bg-card/60", className)}>
-      <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl px-4 py-3 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl px-4 py-3.5 transition-colors hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
         <span className="font-sans text-base font-semibold">{m.match.checklistShow}</span>
-        <span className="flex flex-wrap gap-x-3 text-sm text-muted-foreground">
-          <span>✓ {format(m.match.counts.met, { n: tally.pass })}</span>
+        <span className="flex flex-wrap gap-1.5 text-sm text-muted-foreground [&>span]:rounded-full [&>span]:bg-muted [&>span]:px-2.5 [&>span]:py-0.5 [&>span]:tabular-nums">
+          <span className="!bg-success !text-success-foreground">✓ {format(m.match.counts.met, { n: tally.pass })}</span>
           <span>✗ {format(m.match.counts.fail, { n: tally.fail })}</span>
           <span>? {format(m.match.counts.unknown, { n: tally.unknown })}</span>
           {atScreening.length > 0 && <span>{format(m.match.counts.screening, { n: atScreening.length })}</span>}

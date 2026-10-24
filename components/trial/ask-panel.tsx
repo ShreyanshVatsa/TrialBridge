@@ -112,8 +112,8 @@ function ResponseView({ r }: { r: AskResponse }) {
       {r.piiRemoved && <p className="text-sm text-muted-foreground">{m.ask.piiRemoved}</p>}
       {r.experimental && <p className="text-sm font-medium">{m.ask.experimental}</p>}
       {r.kind === "answer" && (
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Sparkles className="size-3.5" aria-hidden />
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <Sparkles className="mt-[0.2rem] size-3.5 shrink-0" aria-hidden />
           {m.ask.aiNote}
         </p>
       )}
@@ -251,18 +251,20 @@ export function AskPanel({ nctId }: { nctId: string }) {
           aria-invalid={error ? true : undefined}
           className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.08)] transition-[border-color,box-shadow] placeholder:text-muted-foreground hover:border-primary/40 focus-visible:border-ring focus-visible:shadow-[inset_0_1px_2px_oklch(0.2_0.06_295/0.08),0_0_0_4px_color-mix(in_oklch,var(--ring)_18%,transparent)] disabled:opacity-60"
         />
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-          <span className="tabular-nums">{format(m.ask.chars, { count: question.length, max: MAX_QUESTION_CHARS })}</span>
-          <span className={cn("tabular-nums", limitReached && "font-medium text-warn-foreground")}>
-            {limitReached ? m.ask.limit : format(m.ask.remaining, { count: remaining, max: MAX_QUESTIONS_PER_TRIAL })}
-          </span>
-        </div>
-        <p id={errId} aria-live="polite" className="min-h-5 text-sm text-destructive">
+        <p id={errId} aria-live="polite" className="text-sm text-destructive empty:-mt-3">
           {error}
         </p>
-        <Button type="submit" size="lg" className="min-w-32" disabled={pending || limitReached}>
-          {m.ask.submit}
-        </Button>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <p className="flex flex-col text-sm text-muted-foreground tabular-nums sm:flex-row sm:gap-x-4">
+            <span>{format(m.ask.chars, { count: question.length, max: MAX_QUESTION_CHARS })}</span>
+            <span className={cn(limitReached && "font-medium text-warn-foreground")}>
+              {limitReached ? m.ask.limit : format(m.ask.remaining, { count: remaining, max: MAX_QUESTIONS_PER_TRIAL })}
+            </span>
+          </p>
+          <Button type="submit" size="lg" className="min-w-32" disabled={pending || limitReached}>
+            {m.ask.submit}
+          </Button>
+        </div>
         <div ref={turnstileRef} role="region" aria-label={m.ask.verification} />
       </form>
     </section>
