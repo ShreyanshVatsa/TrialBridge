@@ -142,7 +142,7 @@ The browser entry point is `lib/match/search.ts` (loads data shards, the ZIP cen
 
 ## 7. Testing and evaluation
 
-- **Unit tests.** Vitest, in `tests/unit/` (and a few `*.test.ts` beside scripts). `npm test` runs them with coverage. The root README reports 1,320 unit tests.
+- **Unit tests.** Vitest, in `tests/unit/` (and a few `*.test.ts` beside scripts). `npm test` runs them with coverage. The root README reports 1,325 unit tests.
 - **End-to-end and accessibility.** Playwright specs in `tests/e2e/` (`a11y.spec.ts` uses axe; also questionnaire, match, Q&A, i18n, offline/perf, and a network test that checks no raw questionnaire field leaves the browser). The root README reports 84 end-to-end and accessibility tests. `npm run test:e2e` copies the build, applies local D1 migrations and seed, then runs Playwright.
 - **Budgets.** `perf/budgets.json` and `scripts/budgets.ts` hold route JavaScript, data shard downloads and the cold-search download to fixed sizes.
 - **Evaluation harnesses.** Start with [`eval/README.md`](../eval/README.md), which lists every file and the script that produces it. Results with confidence intervals and caveats are in [`eval/RESULTS.md`](../eval/RESULTS.md); the regression report is `eval/REGRESSION.md`. Harness code is in `scripts/eval/` (vignettes, TREC matching, criteria splitter check, hard-filter oracle).
