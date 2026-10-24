@@ -52,3 +52,15 @@ describe("helpers", () => {
     expect(describeData("seed-1", 12)).toBe("Seed, 12 trials");
   });
 });
+
+describe("demo mode self-check", () => {
+  it("passes when the server reports the mock provider", async () => {
+    const r = await runSelfCheck("http://x", routes({ "/api/health": () => Response.json({ ok: true, ai: "mock" }) }), { expectMock: true });
+    expect(r.ok).toBe(true);
+  });
+  it("fails when real provider keys are in effect", async () => {
+    const r = await runSelfCheck("http://x", routes({ "/api/health": () => Response.json({ ok: true, ai: "live" }) }), { expectMock: true });
+    expect(r.ok).toBe(false);
+    expect(r.results.find((c) => !c.ok)?.detail).toContain("expected the mock AI provider");
+  });
+});

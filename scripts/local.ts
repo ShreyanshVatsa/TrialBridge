@@ -30,6 +30,8 @@ function die(msg: string, hint?: string, code = 1): never {
   process.exit(code);
 }
 
+/** Demo mode serves with this env file: `wrangler dev --env-file` stops wrangler from loading .dev.vars, so every AI key is blank. */
+const KEYLESS_ENV = "tests/e2e/keyless.env";
 const MODEL_FILES = ["public/models/Xenova/all-MiniLM-L6-v2/onnx/model_quantized.onnx", "public/ort/ort-wasm-simd-threaded.wasm"];
 const DEV_VARS_TEMPLATE = `# Local secrets for \`wrangler dev\`. Gitignored. Paste values yourself; never share them in chat.
 # Leave empty to use the mock AI provider.
@@ -39,6 +41,13 @@ OPENROUTER_API_KEY=
 TURNSTILE_SECRET_KEY=
 RATE_LIMIT_SALT=
 `;
+
+/** Interface languages: the entries of public/i18n/manifest.json (English included). */
+function localeCount(): number {
+  try {
+    return Object.keys((JSON.parse(readFileSync("public/i18n/manifest.json", "utf8")) as { locales: Record<string, unknown> }).locales).length;
+  } catch { return 0; }
+}
 
 const mtime = (p: string): number | null => {
   try { return statSync(p).mtimeMs; } catch { return null; }
@@ -104,11 +113,11 @@ async function main() {
   const state = gather();
   const plan = planLocal(state);
   const env = existsSync(".dev.vars") ? parseEnvFile(readFileSync(".dev.vars", "utf8")) : {};
-  const ai = aiMode(AI_PROVIDERS, env);
+  const ai = mode === "demo" ? { mode: "mock" as const } : aiMode(AI_PROVIDERS, env);
 
   say(`Node ${process.versions.node} ok, dependencies installed`);
   say(`Data: ${state.dataVersion ?? "none"}${plan.ingest ? ` -> will run ${plan.ingest} ingest` : " (kept as is)"}`);
-  say(`AI: ${ai.mode === "mock" ? "mock provider (no usable API keys; works fully offline)" : `real provider(s): ${ai.providers.join(", ")}`}`);
+  say(`AI: ${ai.mode === "mock" ? (mode === "demo" ? "mock provider (demo mode ignores .dev.vars)" : "mock provider (no usable API keys; works fully offline)") : `real provider(s): ${ai.providers.join(", ")}`}`);
   say(`Plan: ${[plan.fetchModels && "fetch models", plan.ingest && `${plan.ingest} ingest`, plan.createDevVars && "create .dev.vars", plan.build ? "build" : "skip build", "preview"].filter(Boolean).join(", ")}`);
   if (plan.reasons.length) say(`Why: ${plan.reasons.join("; ")}`);
   if (check) {
@@ -147,7 +156,16 @@ async function main() {
 
   // (6) preview
   say(`\n> Starting preview on port ${port} (Ctrl+C to stop)`);
-  const child: ChildProcess = spawn("npm", ["run", "preview", "--", "--port", String(port)], { stdio: ["ignore", "pipe", "pipe"], detached: true });
+  let child: ChildProcess;
+  if (mode === "demo") {
+    runStep("Preparing the local database", "npm", ["run", "db:migrate:local"]);
+    runStep("Loading trial criteria into the local database", "npm", ["run", "db:seed:local"]);
+    // A fresh demo starts with empty rate-limit counters and no cached answers from earlier runs.
+    runStep("Clearing local rate limits and cached answers", "npx", ["wrangler", "d1", "execute", "trialbridge", "--local", "--command", "DELETE FROM kv"]);
+    child = spawn("npx", ["wrangler", "dev", "--port", String(port), "--env-file", KEYLESS_ENV], { stdio: ["ignore", "pipe", "pipe"], detached: true });
+  } else {
+    child = spawn("npm", ["run", "preview", "--", "--port", String(port)], { stdio: ["ignore", "pipe", "pipe"], detached: true });
+  }
   let announced = false;
   let stopping = false;
   const announce = () => {
@@ -156,9 +174,9 @@ async function main() {
     const url = `http://localhost:${port}`;
     say(`\n=== TrialBridge is running at ${url} ===`);
     say("Available offline: guided questionnaire, private in-browser matching on the dataset above, trial pages,");
-    say("Access Intelligence, saved print views, PWA install, 18-language UI (machine-translated), mock AI analysis / Trial Q&A.");
+    say(`Access Intelligence, saved print views, PWA install, ${localeCount()}-language UI (machine-translated), mock AI analysis / Trial Q&A.`);
     say("Needs internet or keys only for: real AI providers, live ClinicalTrials.gov refresh (npm run ingest).\n");
-    void runSelfCheck(url).then((c) => {
+    void runSelfCheck(url, fetch, { expectMock: mode === "demo" }).then((c) => {
       printSelfCheck(c);
       if (!c.ok) {
         console.error("The server is running but a check failed, so the browser was NOT opened. See the FAIL lines above.");

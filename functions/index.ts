@@ -50,7 +50,7 @@ export default {
         res = url.pathname === "/api/analyze" ? await handleAnalyze(request, deps) : url.pathname === "/api/match" ? await handleMatch(request, deps) : await handleAsk(request, deps);
         if (Math.random() < 0.02) ctx.waitUntil(store.purgeExpired());
       } else if (url.pathname === "/api/health") {
-        res = json({ ok: true, dataVersion: env.DATA_VERSION ?? null }, 200, requestId);
+        res = json({ ok: true, dataVersion: env.DATA_VERSION ?? null, ai: resolveProviders(env).every((p) => p.name === "mock") ? "mock" : "live" }, 200, requestId);
       } else {
         res = apiError("not_found", requestId);
       }

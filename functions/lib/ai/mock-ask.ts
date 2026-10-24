@@ -15,7 +15,14 @@ const STOP = new Set(
 const DOMAIN =
   /\b(trial|study|criteri|requirement|include|exclude|inclusion|exclusion|join|participat|enrol|phase|drug|medic|treat|therap|dose|side effect|placebo|random|chemo|radiat|surg|metasta|stage|cancer|tumou?r|age|old|pregnan|breastfeed|biops|scan|test|visit|cost|pay|insur|sponsor|long|duration|how many|ensayo|estudio|estudo|criterio|crit[eé]rio|edad|idade|embaraz|gr[aá]vida|tratamiento|tratamento|medicamento|etid|tretman|laj)/i;
 
-const stem = (w: string) => w.replace(/(ies|es|s|ing|ed)$/i, "");
+/** Crude stemmer so singular/plural pairs meet: metastasis/metastases, therapy/therapies, disease/diseases. */
+export function stem(word: string): string {
+  let w = word.toLowerCase();
+  if (/[^s]sis$/.test(w) || /[^s]ses$/.test(w)) w = w.slice(0, -2);
+  else if (/ies$/.test(w) && w.length > 4) w = `${w.slice(0, -3)}y`;
+  else w = w.replace(/(es|s|ing|ed)$/, "");
+  return w.length > 3 ? w.replace(/e$/, "") : w;
+}
 function terms(text: string): Set<string> {
   return new Set(
     text

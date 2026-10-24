@@ -20,7 +20,7 @@ export function buildAnalyzeBody(cancerType: string, nctIds: string[]) {
   };
 }
 
-export async function runSelfCheck(base: string, f: F = fetch): Promise<SelfCheck> {
+export async function runSelfCheck(base: string, f: F = fetch, opts: { expectMock?: boolean } = {}): Promise<SelfCheck> {
   const results: CheckResult[] = [];
   const add = (name: string, ok: boolean, detail: string) => results.push({ name, ok, detail });
   const attempt = async (name: string, fn: () => Promise<string>) => {
@@ -61,7 +61,8 @@ export async function runSelfCheck(base: string, f: F = fetch): Promise<SelfChec
     return `${(len / 1e6).toFixed(1)} MB`;
   });
   await attempt("API + mock AI analysis", async () => {
-    await get("/api/health");
+    const health = (await (await get("/api/health")).json()) as { ai?: string };
+    if (opts.expectMock && health.ai !== "mock") throw new Error(`expected the mock AI provider but the server reports "${health.ai ?? "unknown"}"`);
     if (!ids.length) throw new Error("skipped: no trial IDs from the shard check");
     const r = await f(`${base}/api/analyze`, {
       method: "POST",
@@ -74,7 +75,7 @@ export async function runSelfCheck(base: string, f: F = fetch): Promise<SelfChec
     try { body = JSON.parse(text); } catch { /* reported below */ }
     if (!body) throw new Error(`/api/analyze returned non-JSON (HTTP ${r.status})`);
     if (!r.ok) throw new Error(`/api/analyze answered HTTP ${r.status}: ${JSON.stringify(body).slice(0, 120)}`);
-    return `HTTP 200, status=${body.status ?? "ok"}`;
+    return `HTTP 200, status=${body.status ?? "ok"}${opts.expectMock ? ", mock provider" : ""}`;
   });
   await attempt("service worker script", async () => {
     const t = await (await get("/sw.js")).text();
