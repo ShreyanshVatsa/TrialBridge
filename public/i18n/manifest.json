@@ -15,14 +15,14 @@
    "updated": "2026-10-24"
   },
   "pt": {
-   "status": "partial",
-   "coverage": 0.9824,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "18xfhin",
    "updated": "2026-10-24"
   },
   "ht": {
-   "status": "partial",
-   "coverage": 0.9754,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "18xfhin",
    "updated": "2026-10-24"
   },
@@ -69,14 +69,14 @@
    "updated": "2026-10-24"
   },
   "fr": {
-   "status": "partial",
-   "coverage": 0.9649,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "18xfhin",
    "updated": "2026-10-24"
   },
   "hi": {
-   "status": "partial",
-   "coverage": 0.9833,
+   "status": "machine",
+   "coverage": 1,
    "sourceHash": "18xfhin",
    "updated": "2026-10-24"
   }

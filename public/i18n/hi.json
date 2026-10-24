@@ -998,5 +998,22 @@
  "results.findOutUnknownNote.one": "1 उत्तर “निश्चित नहीं” या छोड़ा गया था। यह कभी भी आपके परिणामों को घटाता नहीं है।",
  "results.findOutUnknownNote.other": "{count} उत्तर “निश्चित नहीं” या छोड़े गए थे। यह कभी भी आपके परिणामों को घटाता नहीं है।",
  "match.notApplicable.one": "1 आवश्यकता आप पर लागू नहीं हुई और छिपा दी गई है।",
- "match.notApplicable.other": "{count} आवश्यकताएँ आप पर लागू नहीं हुईं और छिपा दी गई हैं।"
+ "match.notApplicable.other": "{count} आवश्यकताएँ आप पर लागू नहीं हुईं और छिपा दी गई हैं।",
+ "questionnaire.ui.sampleButton": "नमूना मरीज़ आज़माएँ",
+ "questionnaire.ui.sampleQuick": "एक काल्पनिक मरीज़। नतीजे लगभग 10 सेकंड में।",
+ "questionnaire.ui.sampleLoaded": "ये एक काल्पनिक नमूना मरीज़ के उत्तर हैं, केवल प्रदर्शन के लिए। कुछ भी बदलें, या इन्हें साफ़ करके अपने उत्तर भरें।",
+ "results.sampleNote": "नमूना मरीज़: ये नतीजे एक काल्पनिक उदाहरण के हैं, किसी असली व्यक्ति के नहीं। अपने उत्तरों के लिए नई खोज शुरू करें।",
+ "results.status.working": "AI से मानदंड पढ़े जा रहे हैं…",
+ "results.status.done": "AI स्पष्टीकरण जोड़े गए",
+ "results.status.doneTrials": "AI ने {n} परीक्षण पढ़े",
+ "results.status.rules": "AI पठन उपलब्ध नहीं: नियम-आधारित क्रम दिखाया जा रहा है",
+ "results.status.rulesDetail": "आपके मेल AI के बिना भी पूरे हैं। वे परीक्षण के मानदंडों और आपके उत्तरों पर आधारित हैं।",
+ "results.status.filters": "फ़िल्टर लागू ({n})",
+ "results.status.details": "विवरण",
+ "card.showFull": "पूरा मानदंड दिखाएँ",
+ "match.fit.headline": "जिन {checked} आवश्यकताओं की हम जाँच कर सके, उनमें से {met} पूरी होती दिखती हैं। हमें ऐसा कुछ नहीं मिला जो आपको बाहर करे।",
+ "match.fit.headlineNone": "हमें ऐसा कुछ नहीं मिला जो आपको बाहर करे। विवरण की पुष्टि परीक्षण टीम करेगी।",
+ "match.fit.headlineTierB.one": "1 आवश्यकता आपके लिए फिट नहीं हो सकती। अपनी देखभाल टीम से पूछें कि क्या यह सच में लागू होती है।",
+ "match.fit.headlineTierB.other": "{count} आवश्यकताएँ आपके लिए फिट नहीं हो सकतीं। अपनी देखभाल टीम से पूछें कि क्या वे सच में लागू होती हैं।",
+ "match.fit.toConfirm": "{n} की पुष्टि बाकी"
 }
