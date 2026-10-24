@@ -152,8 +152,8 @@ export function LensHero() {
           className="text-[clamp(2.6rem,6.2vw,6.25rem)] leading-[0.92] font-[760] tracking-[-0.012em] text-balance [font-stretch:66%]"
         >
           {m.headline.split(" ").map((word, i) => (
-            <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-              <span className="inline-block animate-rise" style={{ animationDelay: `${120 + i * 55}ms` }}>
+            <span key={i} className="inline-block pb-[0.08em] align-bottom">
+              <span className="inline-block animate-rise" style={{ animationDelay: `${i * 35}ms` }}>
                 {word}
                 {" "}
               </span>

@@ -146,7 +146,7 @@ export function ResultsView({
       </div>
 
       <div className="relative flex flex-col gap-4">
-        <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[26rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
+        <div aria-hidden className="tb-head-bloom" />
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="tb-display text-[clamp(2.25rem,5vw,3.75rem)] outline-none">
             {m.results.title}

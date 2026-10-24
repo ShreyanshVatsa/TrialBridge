@@ -112,7 +112,7 @@ function TrialBody({ card, sites, match }: { card: TrialCard; sites: Site[]; mat
   return (
     <article className="space-y-10">
       <header className="relative max-w-5xl space-y-5">
-        <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[28rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
+        <div aria-hidden className="tb-head-bloom" />
         {session && (
           <Link href="/find/" className="group/back no-print inline-flex min-h-11 items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
             <ArrowLeft className="size-4 transition-transform duration-300 group-hover/back:-translate-x-1 rtl:-scale-x-100 rtl:group-hover/back:translate-x-1" aria-hidden />

@@ -4,8 +4,8 @@ import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Editorial page head shared by the inner pages: an eyebrow, a condensed display title whose words rise
- * out of their line boxes (the landing's load moment, shorter), and a lead paragraph. A quiet lavender
+ * Editorial page head shared by the inner pages: an eyebrow, a condensed display title whose words settle
+ * into place (the landing's load moment), and a lead paragraph. A quiet lavender
  * bloom sits behind it; never a pattern, so the text always reads against flat colour.
  */
 export function PageHead({
@@ -27,7 +27,7 @@ export function PageHead({
 }) {
   return (
     <header className={cn("relative", className)}>
-      <div aria-hidden className="tb-ambient pointer-events-none absolute -inset-x-[50vw] -top-40 -z-10 h-[28rem] [mask-image:linear-gradient(to_bottom,black_40%,transparent)]" />
+      <div aria-hidden className="tb-head-bloom" />
       {eyebrow && <p className="mb-4 text-sm font-semibold tracking-[0.08em] text-primary uppercase">{eyebrow}</p>}
       <h1
         ref={titleRef}
@@ -37,8 +37,8 @@ export function PageHead({
         {title.split(" ").map((word, i) => (
           <Fragment key={i}>
             {i > 0 && " "}
-            <span className="inline-block overflow-hidden pb-[0.1em] align-bottom">
-              <span className="inline-block animate-rise [animation-duration:750ms]" style={{ animationDelay: `${60 + i * 45}ms` }}>
+            <span className="inline-block pb-[0.1em] align-bottom">
+              <span className="inline-block animate-rise" style={{ animationDelay: `${i * 30}ms` }}>
                 {word}
               </span>
             </span>

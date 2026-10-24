@@ -93,14 +93,8 @@ export function PointerFx() {
       el.style.setProperty("--lift", "-3px");
     };
 
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
-      px = e.clientX;
-      py = e.clientY;
-      const t = e.target instanceof Element ? e.target : null;
-      setLit((t?.closest(".tb-spec") as HTMLElement | null) ?? null, e);
-      setTilt((t?.closest("[data-tilt]") as HTMLElement | null) ?? null, e);
-      if (!aura) return;
+    /** Wrap the control under the pointer, or fall back to the small trailing dot. */
+    const aim = (t: Element | null) => {
       if (t?.closest(TEXT)) {
         Object.assign(target, { x: px, y: py, w: 8, h: 8, r: 4, o: 0 });
       } else {
@@ -121,6 +115,24 @@ export function PointerFx() {
           Object.assign(target, { x: px, y: py, w: 30, h: 30, r: 15, o: 0.9 });
         }
       }
+    };
+    let recheck = 0;
+    /** A click can remove or move the control under a still pointer (a panel closes, a route changes): re-aim. */
+    const reaim = () => {
+      if (!aura || px < 0) return;
+      aim(document.elementFromPoint(px, py));
+      kick();
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+      px = e.clientX;
+      py = e.clientY;
+      const t = e.target instanceof Element ? e.target : null;
+      setLit((t?.closest(".tb-spec") as HTMLElement | null) ?? null, e);
+      setTilt((t?.closest("[data-tilt]") as HTMLElement | null) ?? null, e);
+      if (!aura) return;
+      aim(t);
       if (cur.o === 0 && cur.x === -100) Object.assign(cur, { x: px, y: py });
       kick();
     };
@@ -137,6 +149,11 @@ export function PointerFx() {
     const onUp = () => {
       pressed = false;
       paint();
+      clearTimeout(recheck);
+      recheck = window.setTimeout(() => {
+        reaim();
+        recheck = window.setTimeout(reaim, 450);
+      }, 120);
     };
     // Layout moves under a still pointer (scroll): drop the wrap rather than float over the wrong thing.
     const onScroll = () => {
@@ -158,6 +175,7 @@ export function PointerFx() {
       document.documentElement.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
+      clearTimeout(recheck);
     };
   }, [fine, reduced]);
 

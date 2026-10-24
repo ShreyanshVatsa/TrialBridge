@@ -284,10 +284,11 @@ body::after {
   height: 5.5rem;
 }
 
-/* The page's one load moment: headline words rise out of their own line box. */
+/* The page's one load moment: headline words settle into place. Always legible: never clipped or transparent. */
 @keyframes tb-rise {
   from {
-    transform: translateY(105%);
+    opacity: 0.55;
+    transform: translateY(0.12em);
   }
   to {
     transform: none;
@@ -295,7 +296,7 @@ body::after {
 }
 
 @utility animate-rise {
-  animation: tb-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: tb-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @utility animate-fade-up {
@@ -519,6 +520,21 @@ body::after {
       radial-gradient(40% 50% at 88% -20%, color-mix(in oklch, var(--ambient) 60%, transparent), transparent 70%);
   }
 
+  /* The bloom behind a page head. It starts above the top of the page, so it never shows a hard top edge
+     under the transparent header; it fades out below the head. */
+  .tb-head-bloom {
+    position: absolute;
+    inset-inline: -50vw;
+    top: -20rem;
+    height: 46rem;
+    z-index: -10;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 46% at 12% 26%, var(--ambient), transparent 70%),
+      radial-gradient(40% 34% at 88% 20%, color-mix(in oklch, var(--ambient) 60%, transparent), transparent 70%);
+    mask-image: linear-gradient(to bottom, black 50%, transparent);
+  }
+
   /* Print never gets the material. */
   @media print {
     .tb-surface,
@@ -582,7 +598,7 @@ body::after {
 @keyframes tb-reveal {
   from {
     opacity: 0;
-    transform: translateY(32px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -594,7 +610,7 @@ body::after {
     .tb-reveal {
       animation: tb-reveal linear both;
       animation-timeline: view();
-      animation-range: entry 0% entry 55%;
+      animation-range: entry 0% entry 30%;
     }
   }
 }
