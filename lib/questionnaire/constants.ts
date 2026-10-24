@@ -14,7 +14,7 @@ export const ESSENTIAL_ORDER = [Q_CANCER_TYPE, Q_AGE, Q_ZIP, Q_TRAVEL] as const;
 
 /** Information gain is measured over the K best-scoring candidates (the ones a patient would actually see). */
 export const TOP_K = 60;
-/** Softmax temperature over candidate scores: p(t) ∝ exp(score / TAU). The spec proposed 0.15, which puts
+/** Softmax temperature over candidate scores: p(t) ∝ exp(score / TAU). 0.15 puts
  *  almost all mass on the top 1-3 trials once one pulls ahead, so information gain went to ~0 while trials 4-10
  *  (what the patient sees) could still change. 0.5 spreads mass over roughly the top 10-20: in the national
  *  simulation (5,726 trials, 120 patients) adaptive nDCG@10 at k = 1..7 rose from 0.731-0.825 to 0.746-0.901. */

@@ -55,7 +55,7 @@ All functions are browser-safe and client-only (call from `"use client"` compone
 ## Local full-stack run
 `npm run build && npm run preview` serves the static export and `/api/*` together via `wrangler dev` (local D1 seeded from data/build/criteria.sql). `next dev` alone has no API: `requestAnalysis` then returns a degraded response.
 
-## Adaptive questionnaire (v2, `lib/questionnaire/engine.ts`, WP2)
+## Adaptive questionnaire (`lib/questionnaire/engine.ts`)
 Pure functions over a `QuestionnaireState` (`lib/types/questionnaire.ts`, zod `QuestionnaireStateSchema`) and the catalog from `config/questionnaire` (`getCatalog("cancer", group)`, `FACT_POLICY`). Nothing here sends anything anywhere.
 - State: `createState(mode = "quick")`, `setMode(state, "quick" | "thorough")`. Answers: `string` (single, ZIP, cancer type), `string[]` (multi), `number` (age; travel miles), `"anywhere"` (travel), `Record<BiomarkerId, "positive"|"negative"|"not_tested"|"unknown">` (biomarker grid), `null` (deferred).
 - Non-response option ids: `UNKNOWN` ("unknown"), `SKIP` ("__skip"), `PREFER_NOT` ("prefer_not"), `DEFER`/`DEFERRED` ("deferred", "My doctor can fill this in later"). All four have identical matching semantics: no facts, no query terms, no hard filter, so the counter never drops.

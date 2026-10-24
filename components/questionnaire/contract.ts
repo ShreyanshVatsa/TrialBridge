@@ -1,5 +1,5 @@
 /**
- * UI-side view of the questionnaire contracts (docs/dev/QUESTIONNAIRE_SPEC.md §1.2 C1, §2.5, §8 C3).
+ * UI-side view of the questionnaire contracts (docs/dev/QUESTIONNAIRE_SPEC.md §1.2, §2.5).
  * Types come from lib/types/questionnaire; this file adds UI helpers so components import from one place.
  */
 import {

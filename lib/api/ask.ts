@@ -29,7 +29,7 @@ function degraded(reason: NonNullable<AskResponse["degradedReason"]>, language: 
  * is reached). Show crisis resources when `crisis` is true.
  */
 export async function askQuestion(nctId: string, question: string, language: Language, turnstileToken: string, opts: { signal?: AbortSignal } = {}): Promise<AskResponse> {
-  // Crisis resources never depend on the network or the question limit (PLAN Part 4).
+  // Crisis resources never depend on the network or the question limit.
   if (detectCrisisLocal(question)) return localCrisisResponse();
   if (questionsRemaining(nctId) <= 0) return degraded("question_limit", language);
   const scrub = scrubPersonalInfo(question.slice(0, MAX_QUESTION_CHARS));

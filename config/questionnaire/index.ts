@@ -1,5 +1,5 @@
 /**
- * Question catalog entry point (contract C1). `getCatalog("cancer", group)` returns the ordered,
+ * Question catalog entry point. `getCatalog("cancer", group)` returns the ordered,
  * group-specific questions; `enabled` is set by the precision gate: a question whose primary fact
  * family is below 85% measured precision ships switched off with a `disabledReason`, unless legacy facts
  * also back it (then the failing family is support-only via FACT_POLICY).

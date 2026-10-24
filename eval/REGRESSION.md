@@ -18,7 +18,7 @@ Paired bootstrap over profiles (4000 resamples, seed 20261012; the interval is f
 - Pipeline minus BM25: **+0.115 [0.066, 0.168] (excludes 0, better)**
 - BM25 minus random: +0.307 [0.229, 0.381] (excludes 0, better)
 
-Plan gate "random baseline <= 0.45 on the headline set": **met** (random scores 0.382). Caution: the pipeline's excluded-label share is **not better than random**. The "excluded" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.
+Gate "random baseline <= 0.45 on the headline set": **met** (random scores 0.382). Caution: the pipeline's excluded-label share is **not better than random**. The "excluded" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.
 
 ## 2. Safety: hard filters checked by an independent oracle
 The app's filters (cancer group, age, distance, definite sex) read derived card fields. Checking a result with the same filter functions can never fail, so the old "0 violations" line (reproduced in the last bullet) is true by construction and is not evidence. `scripts/eval/oracle.ts` instead re-derives each decision from the **raw CT.gov record** with separate code: its own cancer-group term lists over conditions, keywords and titles; its own parser of the raw minimum/maximum age strings; and its own haversine over the registry's facility coordinates of recruiting U.S. sites. Distance is counted with 25 miles of slack, because the app measures to ZIP centroids and the registry gives facility coordinates (the strict count is shown too). A "group" flag means the raw text names a different cancer than the profile's; it can also be the oracle's term list being narrower than the registry's wording, so read flagged samples before concluding anything.
@@ -44,7 +44,7 @@ On the 30 v1 profiles (95% bootstrap CI over profiles):
 - Pipeline minus random: **+0.057 [0.009, 0.105] (excludes 0, better)**; pipeline minus BM25: **-0.021 [-0.070, 0.019] (includes 0, not distinguishable)**; BM25 minus random: +0.078 [0.023, 0.147] (excludes 0, better).
 - v2 questionnaire pipeline on all 40 profiles: 0.814 [0.752, 0.870]; v2 minus random +0.067 [0.029, 0.105] (excludes 0, better); v2 minus v1 -0.011 [-0.049, 0.022] (includes 0, not distinguishable).
 - Excluded-label share of the top 10, pipeline 0.256 [0.182, 0.331] vs random 0.262 [0.191, 0.337].
-- Plan gate "random baseline <= 0.45": **NOT met** on the seed (random 0.751). The seed is small (about 16 candidates per profile), so random ordering already puts many relevant trials in the top 10.
+- Gate "random baseline <= 0.45": **NOT met** on the seed (random 0.751). The seed is small (about 16 candidates per profile), so random ordering already puts many relevant trials in the top 10.
 
 ### Embedding variants (recall@10 and nDCG@10, mean over the 30 v1 profiles, legacy answers)
 - Random order: recall@10 **0.805**, nDCG@10 **0.751**

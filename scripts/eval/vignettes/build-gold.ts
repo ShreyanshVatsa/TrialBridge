@@ -2,7 +2,7 @@
  * Merge verified judge files into the vignette gold set: `npx tsx scripts/eval/vignettes/build-gold.ts [--second=judge-b]`.
  * Writes eval/gold/vignettes-gold-v1.json (primary-judge label per pooled pair, the second judge's label where it judged
  * the pair, `contested` where they differ), the inter-judge agreement (raw + Cohen's kappa, stratified by split), and
- * eval/gold/vignettes-review-packet-v1.md (all disagreements + a seeded random 15% of the pairs, for the owner).
+ * eval/gold/vignettes-review-packet-v1.md (all disagreements + a seeded random 15% of the pairs, for a human reviewer).
  * Only vignettes the primary judge covered completely are included. Labels are LLM-judged, not clinician-reviewed.
  */
 import { existsSync, writeFileSync } from "node:fs";
@@ -17,7 +17,7 @@ import { splitOf } from "./schema";
 export const GOLD_FILE = "eval/gold/vignettes-gold-v1.json";
 export const REVIEW_FILE = "eval/gold/vignettes-review-packet-v1.md";
 export const PRIMARY = "judge-a";
-/** Second judge's directory: an independent, fresh-context LLM judge ("judge-b") on a seeded 20% vignette sample (second-sample.ts). */
+/** Second judge's directory: an independent LLM judge ("judge-b") on a seeded 20% vignette sample (second-sample.ts). */
 export const SECOND = process.argv.find((a) => a.startsWith("--second="))?.slice(9) ?? "judge-b";
 
 export interface GoldPair {
@@ -108,15 +108,15 @@ function main(): void {
   };
   writeFileSync(GOLD_FILE, `${JSON.stringify(gold)}\n`);
 
-  // Review packet for the owner: all disagreements + a seeded random 15% of the remaining pairs.
+  // Review packet for a human reviewer: all disagreements + a seeded random 15% of the remaining pairs.
   const national = loadNational();
   const rand = rng(20261012);
   const titles = (id: string) => national?.trial(id)?.card.title ?? "";
   const contested = rows.filter((r) => r.b && r.a.label !== r.b.label);
   const sample = rows.filter((r) => !(r.b && r.a.label !== r.b.label) && rand() < 0.15);
   const ev = (j: Judgment) => j.evidence.map((e) => `${e.section[0]!.toUpperCase()}${e.n} ${e.verdict}: "${e.quote}"`).join(" / ");
-  const block = (r: (typeof rows)[number]) => `- ${r.v} ${r.id} ${titles(r.id).slice(0, 110)}\n  ${PRIMARY}: **${r.a.label}** - ${ev(r.a)}${r.a.note ? ` (${r.a.note})` : ""}\n${r.b ? `  ${SECOND}: **${r.b.label}** - ${ev(r.b)}${r.b.note ? ` (${r.b.note})` : ""}\n` : ""}  Owner verdict: [ ]\n`;
-  const md = `# Vignette gold: owner review packet\n\nLLM-judged labels (not clinicians). Please overwrite "Owner verdict" with eligible | possibly | excluded | not_relevant where you disagree with the primary label.\nPatients are in eval/gold/vignettes-v1.json; criteria text is in the trial records (NCT id). Section 1 lists every pair where the two judges disagree (${contested.length}); section 2 is a seeded random ${Math.round(15)}% sample of the other judged pairs (${sample.length} of ${rows.length - contested.length}).\n\n## 1. Judge disagreements (${contested.length})\n\n${contested.map(block).join("\n")}\n## 2. Random 15% sample (${sample.length})\n\n${sample.map(block).join("\n")}`;
+  const block = (r: (typeof rows)[number]) => `- ${r.v} ${r.id} ${titles(r.id).slice(0, 110)}\n  ${PRIMARY}: **${r.a.label}** - ${ev(r.a)}${r.a.note ? ` (${r.a.note})` : ""}\n${r.b ? `  ${SECOND}: **${r.b.label}** - ${ev(r.b)}${r.b.note ? ` (${r.b.note})` : ""}\n` : ""}  Reviewer verdict: [ ]\n`;
+  const md = `# Vignette gold: reviewer packet\n\nLLM-judged labels (not clinicians). Please overwrite "Reviewer verdict" with eligible | possibly | excluded | not_relevant where you disagree with the primary label.\nPatients are in eval/gold/vignettes-v1.json; criteria text is in the trial records (NCT id). Section 1 lists every pair where the two judges disagree (${contested.length}); section 2 is a seeded random ${Math.round(15)}% sample of the other judged pairs (${sample.length} of ${rows.length - contested.length}).\n\n## 1. Judge disagreements (${contested.length})\n\n${contested.map(block).join("\n")}\n## 2. Random 15% sample (${sample.length})\n\n${sample.map(block).join("\n")}`;
   writeFileSync(REVIEW_FILE, md);
   const cnt = Object.fromEntries(LABELS.map((l) => [l, rows.filter((r) => r.a.label === l).length]));
   console.log(`gold: ${Object.keys(vignettes).length} vignettes, ${rows.length} pairs`, cnt);

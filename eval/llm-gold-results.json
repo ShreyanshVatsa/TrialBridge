@@ -1,5 +1,5 @@
 {
- "note": "Gold = eval/gold/gold-v1.json + gold-v2.json, labeled by an AI reader (not clinicians); measured once, never tuned on. n = committed directional facts; precision excludes facts where gold says ambiguous (counted separately).",
+ "note": "Gold = eval/gold/gold-v1.json + gold-v2.json, labeled by a model (not clinicians); measured once, never tuned on. n = committed directional facts; precision excludes facts where gold says ambiguous (counted separately).",
  "minConfidence": 0.95,
  "results": {
   "rules": {

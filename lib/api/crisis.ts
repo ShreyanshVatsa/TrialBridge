@@ -1,5 +1,5 @@
 /**
- * Client-side crisis detector for Trial Q&A (PLAN Part 4: serious distress => supportive reply with
+ * Client-side crisis detector for Trial Q&A (serious distress => supportive reply with
  * crisis resources: U.S. call or text 988, emergencies 911, and "tell your care team").
  *
  * Runs in the browser from static patterns, with no network call, so crisis resources still appear

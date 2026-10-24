@@ -7,7 +7,7 @@
  *   npx tsx scripts/ingest/v1-precision.ts --measure                    (writes config/questionnaire/precision-v1.generated.ts)
  *
  * The sample is drawn once, with a fixed seed, from the held-out partition (lib/ingest/precision.ts partitionOf),
- * minus every trial of the v1 sample, using the current rule layer. Labels are AI-reader judgments of the quoted
+ * minus every trial of the v1 sample, using the current rule layer. Labels are model judgments of the quoted
  * criterion (not clinician-reviewed). A key keeps penalizing at >= 85% precision on its labeled items.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -52,7 +52,7 @@ function sample(): void {
       items.push({ id: c.id, key, value: f.value, ...(f.param !== undefined ? { param: f.param } : {}), ref: refOf(f), quote: f.quote, correct: null });
     }
   }
-  writeFileSync(LABELS, `${JSON.stringify({ note: "v7 held-out sample of v1 rule facts (rules version 5). correct = the fact (key and direction) is a reasonable reading of the quoted criterion for a patient answering the matching question. AI-reader labels, not clinician-reviewed.", items }, null, 1)}\n`);
+  writeFileSync(LABELS, `${JSON.stringify({ note: "v7 held-out sample of v1 rule facts (rules version 5). correct = the fact (key and direction) is a reasonable reading of the quoted criterion for a patient answering the matching question. model labels, not clinician-reviewed.", items }, null, 1)}\n`);
   console.log(`wrote ${items.length} items to ${LABELS}`);
 }
 

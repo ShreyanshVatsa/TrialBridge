@@ -1,4 +1,4 @@
-# Manual CI (workflow_dispatch only; the owner has no CI minutes budget to spend on every push).
+# Manual CI (workflow_dispatch only; no CI minutes budget to spend on every push).
 # Mirrors `npm run ci` plus the e2e + axe suite.
 name: ci
 on:

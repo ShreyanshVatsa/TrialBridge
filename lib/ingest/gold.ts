@@ -1,6 +1,6 @@
 /**
  * Scoring our committed facts against the blind gold set (eval/gold/gold-v1.json, schema in eval/gold/README.md).
- * The gold labels were written by an AI reader (not clinicians) from the criteria text alone. These rules were
+ * The gold labels were written by a model (not clinicians) from the criteria text alone. These rules were
  * fixed BEFORE the gold labels were read and are applied once; they are not tuned against the gold set.
  *
  * A committed fact (directional, not needsReview) is:

@@ -1,5 +1,5 @@
 /**
- * Closed vocabularies for the questionnaire and the fact layer (QUESTIONNAIRE_SPEC §1.4, contract C2).
+ * Closed vocabularies for the questionnaire and the fact layer (QUESTIONNAIRE_SPEC §1.4).
  * Data only. Schemas in lib/types import these lists; ingestion (lib/ingest/eligibility-facts.ts)
  * emits `histology:<HistologyId>` and `prior_drug:<DrugClassId>` facts from them.
  */

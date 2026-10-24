@@ -50,7 +50,7 @@ This is a small project with no dedicated security team and no guaranteed respon
 
 - See docs/dev/SECURITY_AUDIT.md for the latest review, fixes, and remaining items.
 - No external security review has been done.
-- Not yet deployed at the time of writing; CI workflows and Dependabot are not set up yet (deferred in docs/dev/PROGRESS.md/DECISIONS.md), so dependency updates and `npm audit` are manual.
+- Not yet deployed at the time of writing; CI workflows and Dependabot are not set up yet (deferred, see docs/dev/DECISIONS.md), so dependency updates and `npm audit` are manual.
 - `npm audit --audit-level=high` previously failed on dev tooling only; it was addressed with overrides (docs/dev/DECISIONS.md). Re-run it to confirm the current state.
 - The rate-limit salt falls back to a fixed dev salt (dev) or a random per-isolate salt (production) if `RATE_LIMIT_SALT` is not set. Set it in production.
 - Rate limits are per IP hash; shared networks share limits and determined attackers can rotate IPs.

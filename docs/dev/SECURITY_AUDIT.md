@@ -1,6 +1,6 @@
 # Security audit (2026-10-07)
 
-Scope: whole repository (backend `functions/`, `lib/privacy`, `prompts/`, `public/_headers`, client, service worker, secrets, dependencies). Reviewer: internal automated review (not an external audit). Every fix has a regression test in `tests/unit/security-audit.test.ts` (and `tests/unit/backend-hardening.test.ts` where noted).
+Scope: whole repository (backend `functions/`, `lib/privacy`, `prompts/`, `public/_headers`, client, service worker, secrets, dependencies). Reviewer: internal review (not an external audit). Every fix has a regression test in `tests/unit/security-audit.test.ts` (and `tests/unit/backend-hardening.test.ts` where noted).
 
 ## Result summary
 
@@ -21,7 +21,7 @@ No critical or high issues found. No secrets in tracked files or git history (se
 | 9 | Low | Analysis cache fragmented by NCT ID order (not a poisoning risk: keys are hashes of validated input and only verified output is stored). | `functions/lib/analyze.ts` | Fixed: IDs sorted. |
 | 10 | Low | One corrupt D1 trial row made the whole request 500. | `functions/lib/trials.ts` | Fixed: row skipped. |
 | 11 | Low | Headers: no CORP, no explicit no-cache for `/sw.js`, narrow Permissions-Policy. | `public/_headers` | Fixed: added `Cross-Origin-Resource-Policy`, `X-Permitted-Cross-Domain-Policies`, `X-DNS-Prefetch-Control`, `/sw.js` no-cache, more disabled features. CSP/HSTS/frame-ancestors/nosniff verified by test. |
-| 12 | Low | Build secret scan covered only 7 patterns. | `scripts/postbuild.ts` (Bugs agent file, one added block of patterns) | Fixed: added Bearer, AWS, GitHub, Slack, Hugging Face tokens and env-style secret assignments. Build passes (scan clean). |
+| 12 | Low | Build secret scan covered only 7 patterns. | `scripts/postbuild.ts` | Fixed: added Bearer, AWS, GitHub, Slack, Hugging Face tokens and env-style secret assignments. Build passes (scan clean). |
 
 Verified, no change needed: strict zod schemas reject unexpected fields (ZIP smuggling test), 16 KB limit enforced by Content-Length and a streaming reader, safe error envelopes (no stack/internal text), logs carry only request ID/route/status/latency/provider, no open redirects or SSRF (the Worker makes outbound calls only to the fixed Turnstile URL and registry provider URLs), CORS headers only in non-production for allow-listed origins, quote/citation verification (case-sensitive substring of the trial's own text, min 8 chars, unrequested trials dropped), `lockfile` with integrity hashes (registry-only resolved URLs except the two vendored packages), install scripts allow-listed.
 

@@ -1,5 +1,5 @@
 {
- "note": "v7 held-out sample of v1 rule facts (rules version 5). correct = the fact (key and direction) is a reasonable reading of the quoted criterion for a patient answering the matching question. AI-reader labels, not clinician-reviewed.",
+ "note": "v7 held-out sample of v1 rule facts (rules version 5). correct = the fact (key and direction) is a reasonable reading of the quoted criterion for a patient answering the matching question. model labels, not clinician-reviewed.",
  "items": [
   {
    "id": "NCT06594939",

@@ -12,7 +12,7 @@ import { FACT_FAMILIES } from "@/lib/ingest/eligibility-facts";
 
 const catalogs = CANCER_GROUP_IDS.map((g) => [g, getCatalog("cancer", g)] as const);
 
-describe("question catalog (C1)", () => {
+describe("question catalog", () => {
   it.each(catalogs)("%s validates (options, effects, keys, prerequisites, priors)", (_g, c) => {
     expect(validateCatalog(c)).toEqual([]);
   });

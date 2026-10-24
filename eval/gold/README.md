@@ -4,7 +4,7 @@
 (`lib/ingest/eligibility-facts.ts`) against something that did not come from it.
 
 ## Status and limits
-- Labeled by an A language model (automated labeling), **not clinicians**. Provisional. Expect disagreement on judgment calls.
+- Labeled by a language model (automated labeling), **not clinicians**. Provisional. Expect disagreement on judgment calls.
 - Labels come from the trial's raw numbered inclusion/exclusion text only. Strict reading: if wording is vague, cohort-specific or
   investigator-dependent, the row is `ambiguous`, or carries `applies_to` and a lower `confidence`.
 - 120 trials is small. Rare values (biomarkers, hepatitis `required`) have few examples; per-value precision/recall will be noisy.

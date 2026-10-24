@@ -12,7 +12,7 @@ export default defineConfig({
       include: ["lib/**/*.ts", "functions/lib/**/*.ts"],
       exclude: ["**/*.test.ts", "lib/**/*.worker.ts", "lib/types/**"],
       reporter: ["text-summary"],
-      // Enforced targets for lib/ and functions/lib/ (PLAN: 90%+).
+      // Enforced targets for lib/ and functions/lib/.
       thresholds: { lines: 90, statements: 90, functions: 90, branches: 85 },
     },
   },

@@ -57,7 +57,7 @@ export const BASE_FACT_KEYS = [
   "previously_treated",
   "pregnancy",
   "concurrent_trial",
-  // Catalog fact families (QUESTIONNAIRE_SPEC §1.4, contract C2). Thresholds live in Fact.param.
+  // Catalog fact families (QUESTIONNAIRE_SPEC §1.4). Thresholds live in Fact.param.
   "ecog_max", // param: highest ECOG allowed (number)
   "brain_mets", // param "active_only": only active/untreated brain metastases are excluded
   "measurable_disease",

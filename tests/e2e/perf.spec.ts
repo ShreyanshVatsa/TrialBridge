@@ -6,7 +6,7 @@ const BUDGETS = (JSON.parse(readFileSync("perf/budgets.json", "utf8")) as { byte
 
 /**
  * First-search latency (cold cache) and repeat-search latency, with transferred bytes by kind.
- * Latency budgets are generous (local machine) and logged for docs/dev/PROGRESS.md; the bytes transferred per kind are
+ * Latency budgets are generous (local machine) and logged in the test output; the bytes transferred per kind are
  * held to perf/budgets.json (cold search: model + wasm + the data for one group plus ZIP/manifest files).
  */
 test("first-search and repeat-search latency", async ({ page }) => {

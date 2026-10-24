@@ -7,7 +7,7 @@
  *       (eval/llm-dev-labels.json). Unjudged committed facts are listed (--pending) for labeling. Thresholds
  *       are chosen here and nowhere else.
  *   npx tsx scripts/ingest/llm-eval.ts --gold [--min=0.9]
- *       Final, one-shot measurement on the blind gold set (eval/gold/gold-v1.json, an AI reader's labels, not
+ *       Final, one-shot measurement on the blind gold set (eval/gold/gold-v1.json, a model's labels, not
  *       clinicians'). Never tune on it. Writes eval/gold/llm-precision.json.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -174,7 +174,7 @@ function gold(cards: TrialCard[]): void {
   }
   if (missingLlm.length) console.log(`WARNING: ${missingLlm.length} gold trials without LLM results (run: npm run ingest:llm -- --ids <gold ids>)`);
   for (const b of ["all", "v1", "v2:keyword", "v2:random"]) {
-    console.log(`\n== ${b} (min confidence ${min}; gold = AI reader labels, not clinicians) ==`);
+    console.log(`\n== ${b} (min confidence ${min}; gold = model labels, not clinicians) ==`);
     console.log("family             | rules: n  prec   amb  cov        | LLM+verify: n  prec   amb  cov(any) cov(correct)");
     for (const fam of fams) {
       const r = res.rules?.[b]?.[fam] ?? tally();
@@ -183,7 +183,7 @@ function gold(cards: TrialCard[]): void {
       console.log(`${fam.padEnd(18)} | ${String(r.n).padStart(8)} ${p(r).padStart(5)} ${String(r.ambiguous).padStart(5)} ${`${r.covered}/${r.relevant}`.padStart(8)}   | ${String(l.n).padStart(12)} ${p(l).padStart(5)} ${String(l.ambiguous).padStart(5)} ${`${l.covered}/${l.relevant}`.padStart(8)} ${`${l.coveredCorrect}/${l.relevant}`.padStart(8)}`);
     }
   }
-  writeFileSync("eval/llm-gold-results.json", `${JSON.stringify({ note: "Gold = eval/gold/gold-v1.json + gold-v2.json, labeled by an AI reader (not clinicians); measured once, never tuned on. n = committed directional facts; precision excludes facts where gold says ambiguous (counted separately).", minConfidence: min, results: res, errors }, null, 1)}\n`);
+  writeFileSync("eval/llm-gold-results.json", `${JSON.stringify({ note: "Gold = eval/gold/gold-v1.json + gold-v2.json, labeled by a model (not clinicians); measured once, never tuned on. n = committed directional facts; precision excludes facts where gold says ambiguous (counted separately).", minConfidence: min, results: res, errors }, null, 1)}\n`);
   if (args.has("errors")) for (const [fam, e] of Object.entries(errors)) for (const x of e) console.log(`ERR ${fam} ${x}`);
 }
 

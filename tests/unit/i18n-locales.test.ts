@@ -37,7 +37,7 @@ describe("locale registry", () => {
     expect(LOCALES.map((l) => l.tag)).toEqual([...LOCALE_TAG_LIST]);
     expect(new Set(LOCALE_TAG_LIST).size).toBe(LOCALE_TAG_LIST.length);
   });
-  it("covers en, es, pt, ht plus the spec's machine-translated languages", () => {
+  it("covers en, es, pt, ht plus the machine-translated languages", () => {
     for (const t of ["en", "es", "pt", "ht", "zh-Hans", "zh-Hant", "vi", "ko", "tl", "ar", "ru", "fr", "hi"]) expect(isLocaleTag(t)).toBe(true);
     expect(isLocaleTag("xx")).toBe(false);
     expect(isLocaleTag(undefined)).toBe(false);

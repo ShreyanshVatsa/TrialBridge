@@ -57,7 +57,7 @@ Waterfall (cumulative oracles on the live top 50, nDCG@10 over all 94): current 
 
 ## 0. v8 (2026-10-22): resolver coverage, query construction, judge output shrink
 
-Changes (docs/dev/V8_PLAN.md has the per-step before/after with CIs): the deterministic resolver reads the extent of disease from the `spread` answer, treated status and line counts from the item's own wording, alternatives option by option, negated marker lists, plain subtype and hepatitis items, and ignores definitions, assessment windows and registration headers; the BM25/embedding query names positive biomarkers only; the judge prompt (analyze-v3.2) returns a reason and answer ids only for definite labels. Every decision was made on TREC 2021 dev and vignette dev; the vignette test split ran once at the end; the TREC test split was not run (frozen since v7).
+Changes: the deterministic resolver reads the extent of disease from the `spread` answer, treated status and line counts from the item's own wording, alternatives option by option, negated marker lists, plain subtype and hepatitis items, and ignores definitions, assessment windows and registration headers; the BM25/embedding query names positive biomarkers only; the judge prompt (analyze-v3.2) returns a reason and answer ids only for definite labels. Every decision was made on TREC 2021 dev and vignette dev; the vignette test split ran once at the end; the TREC test split was not run (frozen since v7).
 
 | what | v7 | v8 |
 | --- | --- | --- |
@@ -106,7 +106,7 @@ resolver+LLM - baseline nDCG@10 +0.060 [0.002, 0.120] (distinguishable); v6 dev:
 
 ## 2. Regression eval (synthetic profiles, title/condition regex labels; a smoke test)
 
-| metric | v6 (step 10) | v7 |
+| metric | v6 | v7 |
 | --- | --- | --- |
 | National pipeline nDCG@10 (40 profiles, 5,726 trials) | 0.775 [0.688, 0.850] | 0.779 [0.690, 0.856] |
 | National BM25 / random | n/a | 0.685 / 0.384 |
@@ -153,7 +153,7 @@ Baselines (dev / test nDCG@10): BM25 0.219 / 0.256, embeddings 0.194 / 0.217, Cl
 - Free-tier throughput: about one full judgment per minute.
 
 ## What is unvalidated
-- The vignette gold is LLM-judged (two independent LLM judge runs, kappa 0.841), not clinician-reviewed; the owner review packet is unfilled.
+- The vignette gold is LLM-judged (two independent LLM judge runs, kappa 0.841), not clinician-reviewed; the reviewer packet is unfilled.
 - The resolver's vignette gain does not replicate on the vignette test split (TREC held-out: +0.056 nDCG for the resolver alone, distinguishable; vignette test: -0.012, not distinguishable).
 - Precision of the judge's met/not-met labels item by item (only Tier B demotions are checked against TREC).
 - Translations of the new checklist and privacy text (English fallback where missing).

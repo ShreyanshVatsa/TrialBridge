@@ -1,5 +1,5 @@
 /**
- * Engine adapter for the questionnaire UI (contracts C1 + C3). Components import engine and catalog functions
+ * Engine adapter for the questionnaire UI. Components import engine and catalog functions
  * only from here. The engine is lib/questionnaire; the catalog, find-out items and fact policy come from
  * config/questionnaire via ./catalog-source. This file only binds them (policy and items are passed in).
  */

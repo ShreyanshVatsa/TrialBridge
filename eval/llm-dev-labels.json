@@ -1,5 +1,5 @@
 {
- "note": "Build-agent judgments of committed facts produced by the verified-LLM layer on DEVELOPMENT-partition trials only (partitionOf = dev). Provisional, not clinician-reviewed. correct = (key, value, param) is the right reading of the cited criterion for every participant. Used to choose thresholds/guards; never mixed with gold.",
+ "note": "Model judgments of committed facts produced by the verified-LLM layer on DEVELOPMENT-partition trials only (partitionOf = dev). Provisional, not clinician-reviewed. correct = (key, value, param) is the right reading of the cited criterion for every participant. Used to choose thresholds/guards; never mixed with gold.",
  "items": [
   {
    "id": "NCT02332668",

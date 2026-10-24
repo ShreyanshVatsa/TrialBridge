@@ -102,9 +102,9 @@ the floor to beat, not a TrialBridge result. Regenerate with `npx tsx scripts/ev
   dialysis trials for the myeloma patient, urology trials for 2021-13). `buildRecord` drops those as out of scope, so
   "eligible that are cards" is the ceiling for TrialBridge on each topic. Scores should be computed over the loadable
   trials (as `report.ts` does) or the gap should be reported explicitly.
-- **Structured answers were written by an AI assistant, not a clinician.** They map each topic's free text onto the
+- **Structured answers were not written or reviewed by a clinician.** They map each topic's free text onto the
   questionnaire's option ids as carefully as possible, leave out anything the topic does not state, and record the
-  reasoning in `rationale`, but they have not been reviewed by a doctor. Two topics have internal inconsistencies in
+  reasoning in `rationale`. Two topics have internal inconsistencies in
   the source text (2021-17 names both an allogeneic and an autologous transplant; 2021-25 says right breast then left
   upper outer quadrant); the rationale says how each was resolved.
 - **Topics are admission-note style, not patient voice.** TREC topics are clinician-written case summaries with

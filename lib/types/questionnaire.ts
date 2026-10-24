@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Adaptive questionnaire state (QUESTIONNAIRE_SPEC §2.5, contract C3). The catalog types (C1:
+ * Adaptive questionnaire state (QUESTIONNAIRE_SPEC §2.5). The catalog types (
  * QuestionDef, FactRule, ...) live in config/questionnaire/types.ts and are re-exported here.
  * The state never leaves the browser: it is kept only in this tab's sessionStorage.
  */

@@ -14,7 +14,6 @@ patients are synthetic profiles or the public TREC topics, and labels are hand r
 | `results.json` | machine-readable form of `REGRESSION.md` | `npm run eval` | live |
 | `rrf-k.md` | rank-fusion constant sweep | `npm run eval` | live |
 | `v9-baseline.json` | v9 phase 0 baseline numbers (vignette dev, TREC dev, regression) | phase 0 runs, recorded by hand | historical |
-| `baseline/` | outputs captured before the v8/v9 changes, with the git sha | saved command output | historical |
 
 ## Benchmarks
 
@@ -24,7 +23,7 @@ patients are synthetic profiles or the public TREC topics, and labels are hand r
 | `gold/vignettes-pool-v1.json` | top-50 rankings per system per vignette (bm25, vector, ctgov, pipeline by tag) | `vignettes/pool.ts`, `vignettes/add-pipeline.ts --tag=...` | live (append only) |
 | `gold/vignettes-gold-v1.json` | LLM-judged labels per pooled pair, second-judge labels, contested flags | `vignettes/build-gold.ts` from `gold/judgments/` | frozen |
 | `gold/judgments/` | raw judge files (judge-a, judge-b), quote-verified | judges, checked by `vignettes/judge-check.ts` | frozen |
-| `gold/vignettes-review-packet-v1.md` | owner review packet for contested pairs | `vignettes/build-gold.ts` | unfilled |
+| `gold/vignettes-review-packet-v1.md` | reviewer packet for contested pairs | `vignettes/build-gold.ts` | unfilled |
 | `trec/` | TREC CT 2021/2022 cancer topics with hand-written structured answers | `scripts/eval/trec/select-topics.ts`; see `trec/README.md` | frozen |
 | `matching/dev.json`, `matching/test.json` | TREC matching arms (baseline, resolver, +LLM) per topic | `npm run eval:matching` | dev live; test frozen |
 | `matching/test-runs*.json` | log of every held-out run (v7: one run) | `npm run eval:matching -- --split=test` | frozen |

@@ -1,5 +1,5 @@
 /**
- * Questionnaire catalog types (QUESTIONNAIRE_SPEC §1.2, contract C1). Questions are data: a new
+ * Questionnaire catalog types (QUESTIONNAIRE_SPEC §1.2). Questions are data: a new
  * disease area is a new catalog folder plus an `area` value, with no engine changes.
  */
 import type { CancerGroupId } from "@/config/cancer-groups";
@@ -119,7 +119,7 @@ export interface FindOutDef {
   whyKey: MessageKey;
 }
 
-/** Matching policy per fact key or family (contract C1). */
+/** Matching policy per fact key or family. */
 export interface FactPolicy {
   /** May a conflict lower the score? Only at >= 85% measured precision. */
   penalize: boolean;

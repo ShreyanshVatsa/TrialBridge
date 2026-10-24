@@ -1,5 +1,5 @@
 /**
- * Prompt: per-criterion matching, version analyze-v3 (v6 step 4).
+ * Prompt: per-criterion matching, version analyze-v3.
  *
  * Ported from TrialGPT's `get_matching_prompt()` (Jin et al., NCBI/NLM; github.com/ncbi-nlp/TrialGPT,
  * trialgpt_matching/TrialGPT.py; public domain as a work of the US Government). Changes from the original:

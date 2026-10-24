@@ -12,7 +12,7 @@ import { readChunkIndex } from "./judge-packets";
 import { JudgmentSchema, packetTrial, verifyJudgment, type Judgment, type JudgmentFile, type PacketTrial } from "./judge-prompt";
 import { splitOf } from "./schema";
 
-export const MODELS_BY_JUDGE: Record<string, string> = { "judge-a": "LLM judge A", "judge-b": "LLM judge B (independent, fresh context)" };
+export const MODELS_BY_JUDGE: Record<string, string> = { "judge-a": "LLM judge A", "judge-b": "LLM judge B (independent)" };
 
 export interface ChunkCheck {
   chunk: string;

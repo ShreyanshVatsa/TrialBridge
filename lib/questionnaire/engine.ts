@@ -1,5 +1,5 @@
 /**
- * Adaptive questionnaire engine (QUESTIONNAIRE_SPEC §2, contract C3). Pure and deterministic: no I/O
+ * Adaptive questionnaire engine (QUESTIONNAIRE_SPEC §2). Pure and deterministic: no I/O
  * except the three session helpers at the bottom (tab-scoped sessionStorage).
  *
  * Flow: the four essentials in fixed order (they are hard filters), then repeatedly the question with the
@@ -739,6 +739,6 @@ export function clearSession(): void {
   }
 }
 
-// Contract C3 also lists the pool builder and the adapter here (they live in their own modules).
+// Pool builder and adapter live in their own modules.
 export { buildCandidatePool, poolFromEntries } from "./pool";
 export { toIntakeAnswers } from "./adapter";

@@ -348,7 +348,7 @@ Paired bootstrap over profiles (4000 resamples, seed 20261012; the interval is f
 - Pipeline minus BM25: **${fmtDiff(natStats.pipeMinusBm25)}**
 - BM25 minus random: ${fmtDiff(natStats.bm25MinusRandom)}
 
-Plan gate "random baseline <= 0.45 on the headline set": **${natStats.random.mean <= 0.45 ? "met" : "NOT met"}** (random scores ${f3(natStats.random.mean)}). ${natStats.pipelineExcluded.mean > natStats.randomExcluded.mean ? "Caution: the pipeline's excluded-label share is **not better than random**. The \"excluded\" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. " : ""}When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.`
+Gate "random baseline <= 0.45 on the headline set": **${natStats.random.mean <= 0.45 ? "met" : "NOT met"}** (random scores ${f3(natStats.random.mean)}). ${natStats.pipelineExcluded.mean > natStats.randomExcluded.mean ? "Caution: the pipeline's excluded-label share is **not better than random**. The \"excluded\" regexes match topic words (for example a different HER2 status) that sit close to the query text, so lexical and semantic ranking surface them; lower is better, so read this as a known weakness, not noise. " : ""}When most candidates are labelled relevant, any ranking looks good, so only the gaps to random and to BM25 carry information.`
     : "National shards are not present in `public/data` (seed-only build), so no national headline was computed. Run `npm run local:national` (or restore `public/data`) and re-run `npm run eval`.";
 
   const natOracle = headline && rawNational
@@ -388,7 +388,7 @@ On the ${V1_PROFILES} v1 profiles (95% bootstrap CI over profiles):
 - Pipeline minus random: **${fmtDiff(seedStats.pipeMinusRandom)}**; pipeline minus BM25: **${fmtDiff(seedStats.pipeMinusBm25)}**; BM25 minus random: ${fmtDiff(seedStats.bm25MinusRandom)}.
 - v2 questionnaire pipeline on all ${profiles.length} profiles: ${fmtCI(seedStats.v2)}; v2 minus random ${fmtDiff(seedStats.v2MinusRandom)}; v2 minus v1 ${fmtDiff(seedStats.v2MinusV1)}.
 - Excluded-label share of the top 10, pipeline ${fmtCI(seedStats.pipelineExcluded)} vs random ${fmtCI(seedStats.randomExcluded)}.
-- Plan gate "random baseline <= 0.45": **${seedStats.random.mean <= 0.45 ? "met" : "NOT met"}** on the seed (random ${f3(seedStats.random.mean)}). The seed is small (about ${(kw.slice(0, V1_PROFILES).reduce((s, r) => s + r.candidates, 0) / V1_PROFILES).toFixed(0)} candidates per profile), so random ordering already puts many relevant trials in the top 10.
+- Gate "random baseline <= 0.45": **${seedStats.random.mean <= 0.45 ? "met" : "NOT met"}** on the seed (random ${f3(seedStats.random.mean)}). The seed is small (about ${(kw.slice(0, V1_PROFILES).reduce((s, r) => s + r.candidates, 0) / V1_PROFILES).toFixed(0)} candidates per profile), so random ordering already puts many relevant trials in the top 10.
 
 ### Embedding variants (recall@10 and nDCG@10, mean over the 30 v1 profiles, legacy answers)
 - Random order: recall@10 **${f3(mean(kw.slice(0, V1_PROFILES).map((r) => r.randRecall)))}**, nDCG@10 **${f3(seedStats.random.mean)}**

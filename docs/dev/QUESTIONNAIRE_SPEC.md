@@ -1,14 +1,13 @@
 # TrialBridge Smart Questionnaire: Design Spec (v2, cancer only)
 
-Status: design only. Nothing in `app/`, `components/`, `lib/` or `config/` has been changed. Branch `v2` (v1.0 tagged).
-Scope: replace the fixed 10-step chat intake (`components/chat/intake-chat.tsx`, PLAN Part 2) with an adaptive questionnaire whose questions are data (`config/questionnaire/`), so non-cancer areas can be added later as new catalogs. It also covers two addenda: non-response as a first-class feature (§2.4, §5.3) and a data-driven i18n platform for many languages (§6).
+Scope: replace the fixed 10-step chat intake (`components/chat/intake-chat.tsx`) with an adaptive questionnaire whose questions are data (`config/questionnaire/`), so non-cancer areas can be added later as new catalogs. It also covers two addenda: non-response as a first-class feature (§2.4, §5.3) and a data-driven i18n platform for many languages (§6).
 Unchanged rules: no AI in intake; answers never leave the browser except through the minimized profile; never say "eligible" or "qualify"; "not sure" never penalizes; hard filters stay absolute; there is no free text in intake.
 
 ---
 
 ## 0. Evidence: what gates eligibility in the national data
 
-Source: `public/data/shards/national-20261007-d5ef8be42a`, **5,726 unique trials** (union of the full shards, deduplicated). Scripts are in the session scratchpad (`analyze.py`, `facts_by_group.py`). Method: case-insensitive regexes over each trial's numbered inclusion and exclusion criteria. "any" means the trial mentions the attribute anywhere; "inc" and "exc" are the section. A mention is an upper bound on gating: it means the attribute appears, not that a rule was parsed. Directional coverage comes from the existing rule facts. Percentages are of trials in the group.
+Source: `public/data/shards/national-20261007-d5ef8be42a`, **5,726 unique trials** (union of the full shards, deduplicated). Method: case-insensitive regexes over each trial's numbered inclusion and exclusion criteria. "any" means the trial mentions the attribute anywhere; "inc" and "exc" are the section. A mention is an upper bound on gating: it means the attribute appears, not that a rule was parsed. Directional coverage comes from the existing rule facts. Percentages are of trials in the group.
 
 ### 0.1 Cross-cancer attributes (all 5,726 trials)
 | Attribute | any | inc | exc | Notes |
@@ -62,7 +61,7 @@ Source: `public/data/shards/national-20261007-d5ef8be42a`, **5,726 unique trials
 breast: pregnancy 58%, HER2 38%, metastatic 38%, HR 32%, previously_treated 25%. lung: previously_treated 32%, metastatic 28%, prior_immunotherapy 19%, EGFR 15%. prostate: metastatic 47%. leukemia: previously_treated 41%, newly_diagnosed 23%. lymphoma: previously_treated 48%. Overall: 22,415 rule facts and 13 LLM facts, 3.9 facts per trial, 591 trials with no facts. Fact precision on the seed sample is 66% (eval/RESULTS.md).
 
 ### 0.4 Consequences for the design
-1. **Missing facts.** The highest-value new attributes have no facts today: ECOG ceiling, brain-mets policy, measurable disease, histology/subtype, line count, specific prior drug classes, HIV/hepatitis/transplant/autoimmune/other cancer, castration status, platinum sensitivity. A question with no backing fact cannot move ranking (only the BM25/embedding text). WP1 must extract them, or the question stays off (`enabled: false` in the catalog).
+1. **Missing facts.** The highest-value new attributes have no facts today: ECOG ceiling, brain-mets policy, measurable disease, histology/subtype, line count, specific prior drug classes, HIV/hepatitis/transplant/autoimmune/other cancer, castration status, platinum sensitivity. A question with no backing fact cannot move ranking (only the BM25/embedding text). The fact layer must extract them, or the question stays off (`enabled: false` in the catalog).
 2. **Group-specific biomarker lists.** Today's `BIOMARKERS_BY_GROUP` is close but not evidence-ordered. Add MET/RET/HER2 for lung, HPV/p16 for head-neck, Claudin 18.2 for gastroesophageal, Ph+/NPM1/TP53 for leukemia, MGMT for brain, RET for thyroid. Drop melanoma NRAS and KIT (1%) and prostate MSI (1%) from the default flow.
 3. **Subtype is the top splitter after the essentials** in leukemia (82%), uterine-cervical (80%), liver (68%), lymphoma (67%), gastroesophageal (62%), pancreatic (62%), brain (59%) and lung (43%). It is asked before biomarkers there.
 4. **Daily activity (ECOG)** applies to 67% of trials with a near-even ≤1 vs ≤2 split, so it is the best cross-cancer question after spread and treatment status.
@@ -73,7 +72,7 @@ breast: pregnancy 58%, HER2 38%, metastatic 38%, HR 32%, previously_treated 25%.
 
 ## 1. Question catalog (config as data)
 
-### 1.1 Files (WP1 owns them)
+### 1.1 Files
 - `config/questionnaire/types.ts`: types (§1.2).
 - `config/questionnaire/common.ts`: cross-cancer questions.
 - `config/questionnaire/cancer/<group>.ts`: one file per group with subtype, biomarker, status and drug-class questions, plus answer priors.
@@ -108,7 +107,7 @@ export interface QuestionDef {
   effects: OptionEffect[];
   aiField?: AiFieldId;           // present only if the coarse answer may go to AI (§4)
   priors?: Partial<Record<CancerGroupId, Record<string, number>>>; // P(option), including unknown; used by the engine
-  enabled: boolean;              // false until the backing facts pass the precision gate (§7, WP1)
+  enabled: boolean;              // false until the backing facts pass the precision gate (§7)
   evidence: string;              // e.g. "lung 31% EGFR mention (national 2026-10-07)"
 }
 ```
@@ -149,12 +148,12 @@ Tier E = Essentials (cannot be skipped, they are hard filters). H = Helpful (ask
 Language: not asked in the flow. It defaults to the UI language, with a "Language you'd like to talk with the study team in" chip on the summary card; this keeps the `languageWarning` behavior.
 Help text examples (`en`): daily_activity.help: "Doctors call this 'performance status.' Many studies only include people who are up and about most of the day." lines.help: "A treatment plan is one set of medicines given together, like 'chemo for 4 months.' Count each new plan after the cancer grew."
 
-### 1.4 New fact keys and BiomarkerId additions (contract C2, `lib/types/trial.ts`, WP2 owns the edit, WP1 produces the data)
+### 1.4 New fact keys and BiomarkerId additions (contract C2, `lib/types/trial.ts`)
 `FactSchema` gains an optional `param: z.union([z.number(), z.string()]).optional()`. New `BASE_FACT_KEYS`: `ecog_max`, `brain_mets`, `measurable_disease`, `min_prior_lines`, `max_prior_lines`, `recurrent`, `locally_advanced`, `adjuvant_setting`, `castration_resistant`, `platinum_resistant`, `platinum_sensitive`, `mibc`, `resectable`, `rai_refractory`, `other_malignancy`, `hiv`, `hepatitis_b`, `hepatitis_c`, `organ_transplant`, `allo_sct`, `autoimmune`, `kidney_disease`, `liver_disease`, `heart_disease`. Template keys: `histology:<HistologyId>`, `prior_drug:<DrugClassId>`. BiomarkerIds gain `MET`, `RET`, `HPV`, `CLDN18`, `PH`, `NPM1`, `TP53`, `MGMT`, `PIK3CA`, `ESR1`, `PALB2`, `KIT`. The lite card tuple becomes `[key, value, param?]`.
 
 ---
 
-## 2. Adaptive engine (`lib/questionnaire/engine.ts`, pure, WP2)
+## 2. Adaptive engine (`lib/questionnaire/engine.ts`, pure)
 
 ### 2.1 Phases
 1. **Essentials, fixed order:** cancer_type, age, zip, travel. After cancer_type, `prefetchSearch` starts (already exists). After travel, `buildCandidatePool()` applies the hard filters over the loaded shard with **no embeddings** (group, age, distance, plus sex once answered) and computes a prior relevance with BM25 only over the current profile text. This takes milliseconds, and the counter appears.
@@ -195,7 +194,7 @@ export interface QuestionnaireState {
 }
 ```
 - Back: pops the history, and the question re-renders with its answer. Editing an answer recomputes downstream prerequisites; dependent answers whose prerequisite no longer holds are dropped and the UI says so.
-- Resume: the state is serialized to `sessionStorage["tb-questionnaire-v2"]` (tab-scoped, gone when the tab closes; never localStorage or IndexedDB, never server). It is validated with zod on load and discarded if invalid or older than 12 hours. There is a visible "Clear my answers" button. The privacy page copy that says answers "disappear when you close or refresh the tab" must change to "are kept only in this browser tab until you close it" in every locale (WP4 and WP3). The service worker must not cache it (it does not touch storage).
+- Resume: the state is serialized to `sessionStorage["tb-questionnaire-v2"]` (tab-scoped, gone when the tab closes; never localStorage or IndexedDB, never server). It is validated with zod on load and discarded if invalid or older than 12 hours. There is a visible "Clear my answers" button. The privacy page copy that says answers "disappear when you close or refresh the tab" must change to "are kept only in this browser tab until you close it" in every locale. The service worker must not cache it (it does not touch storage).
 - Deferred ("My doctor can fill this in later"): an option on cost-3 questions. It counts as unknown for matching, appears in the Find-out list, and stays one tap away under "Questions waiting for your doctor" in this session, so a patient can fill it in during or after an appointment in the same tab.
 
 ### 2.6 Live counter
@@ -203,7 +202,7 @@ export interface QuestionnaireState {
 
 ---
 
-## 3. Matching integration (WP2)
+## 3. Matching integration
 
 ### 3.1 Precheck generalization
 `lib/match/precheck.ts` becomes catalog-driven: `evaluateAnswers(state, catalog, facts) → PrecheckNote[]`. Existing behavior is a special case and is kept (the existing tests stay green). The rules:
@@ -236,10 +235,10 @@ Never exclude on facts. Hard filters remain: group, age, distance, and a definit
 
 ---
 
-## 4. Data minimization (WP2 owns the schema; any change needs a privacy test)
+## 4. Data minimization (any change needs a privacy test)
 
 ### 4.1 Principle
-Only **coarse disease-describing categories** may go to AI providers. **v7 change (owner decision, 2026-10-19):** coarse health-history categories (sex in records, measurable disease, other cancer, HIV, hepatitis, transplant, autoimmune, organ problems) may also be sent, as the option id the user picked, so the criterion judge can check exclusion rules (`sexListed`, `measurableDisease`, `otherCancer`, `hivStatus`, `hepatitisStatus`, `transplantType`, `autoimmuneStatus`, `organProblems` in `MinimizedProfileSchema`). Not sure, prefer-not and deferred answers are never sent. Pregnancy details beyond the existing enum, exact age, ZIP, travel, phase preference and the deferred list **stay in the browser**. There is still no free text (the questionnaire has none).
+Only **coarse disease-describing categories** may go to AI providers. **Change in v7:** coarse health-history categories (sex in records, measurable disease, other cancer, HIV, hepatitis, transplant, autoimmune, organ problems) may also be sent, as the option id the user picked, so the criterion judge can check exclusion rules (`sexListed`, `measurableDisease`, `otherCancer`, `hivStatus`, `hepatitisStatus`, `transplantType`, `autoimmuneStatus`, `organProblems` in `MinimizedProfileSchema`). Not sure, prefer-not and deferred answers are never sent. Pregnancy details beyond the existing enum, exact age, ZIP, travel, phase preference and the deferred list **stay in the browser**. There is still no free text (the questionnaire has none).
 
 ### 4.2 Updated schema (`lib/types/analysis.ts`)
 ```ts
@@ -300,7 +299,7 @@ ZIP, travel, exact age, phase preference, deferred list, Find-out list, session 
 
 ---
 
-## 6. Languages and i18n platform (Addendum B, WP4)
+## 6. Languages and i18n platform
 
 ### 6.1 Source of truth and keys
 - `components/i18n/en.ts` stays the **typed English source**: nested `as const` object. Key paths are locale-agnostic (`questionnaire.daily_activity.label`), and `type MessageKey` is derived by a template-literal path type. Catalog keys (`labelKey` etc.) are typed as `MessageKey`, so a missing English key is a compile error.
@@ -352,7 +351,7 @@ Proposed: **zh-Hans, zh-Hant, vi, ko, tl, ar, ru, fr, hi, pl, bn, gu**, plus ur 
 
 ---
 
-## 7. Test plan (WP5 unless noted)
+## 7. Test plan 
 
 ### 7.1 Engine and mapping (Vitest, pure)
 - Catalog schema: every non-essential question has unknown and skip; sensitive questions have prefer_not; unknown options carry no effects; keys exist in `en`; prerequisites are acyclic; `enabled` questions have ≥ 1 backing fact key present in data (checked against the seed).
@@ -383,7 +382,7 @@ Proposed: **zh-Hans, zh-Hant, vi, ko, tl, ar, ru, fr, hi, pl, bn, gu**, plus ur 
 ### 7.5 Accessibility
 axe (no serious or critical issues) on every question type in en, ar (RTL) and zh-Hans; keyboard-only completion of the full flow; screen-reader live-region announcements asserted via text in the counter region; 200% zoom and 320 px viewport have no horizontal scroll.
 
-### 7.6 i18n (WP4)
+### 7.6 i18n
 - Key parity: each locale JSON's keys ⊆ en keys (no orphans); coverage is reported.
 - Placeholders: identical sets per key; plural categories complete per `Intl.PluralRules`.
 - Banned words per locale ("eligible/qualify" equivalents from glossary files) are absent.
@@ -393,29 +392,18 @@ axe (no serious or critical issues) on every question type in en, ar (RTL) and z
 
 ---
 
-## 8. Work packages (parallel, minimal overlap)
+## 8. Interface contracts
 
-| WP | Owns (exclusive write) | Reads | Delivers |
-|---|---|---|---|
-| **WP1 Data, config and extraction** | `config/questionnaire/**`, `config/biomarkers.ts`, `config/criteria.ts`, `lib/ingest/facts.ts`, `lib/ingest/llm-facts.ts`, `scripts/ingest/**`, `prompts/facts-*`, `eval/facts-labels*.json` | types from WP2 (C2) | catalog files (C1), new fact keys extracted (rule layer plus optional LLM prompt v2), precision samples per family, `fact-policy.ts` (penalize flags), regenerated seed shards |
-| **WP2 Engine, matching and privacy** | `lib/questionnaire/**` (new), `lib/match/**`, `lib/types/**`, `lib/privacy/**`, `functions/lib/analyze.ts`, `functions/lib/ask.ts` (language param only), `prompts/analyze-v2.ts`, `API.md` | catalog (C1), locale registry (C5) | C3 engine, C4 matching, minimized schema v2, adapter, unit tests for its own modules |
-| **WP3 Questionnaire UI** | `components/questionnaire/**` (new), `components/chat/**` (retire intake-chat), `components/results/**` (Find-out list, print), `app/find/**` | C3, C4, `t()` from WP4 | screens, counter, tiers, back/edit, resume, deferred, Find-out list; English strings added to `en.ts` **only under `questionnaire.*`, `findOut.*`, `results.findOut*`** |
-| **WP4 i18n platform, translations and safety lexicons** | `components/i18n/**` (except the `questionnaire.*`/`findOut.*` blocks of `en.ts`), `public/i18n/**`, `config/locales.ts`, `scripts/i18n/**`, `public/fonts/noto/**`, `scripts/fetch-fonts.ts`, `functions/lib/safety*`, `lib/safety/**`, `app/globals.css` (logical-property and font rules), `app/privacy/**` copy, `i18n/glossary/**` | en.ts keys | C5 runtime, JSON migration, RTL lint, picker, translate script, 12 locales, lexicons, always-visible 988 line component (`components/i18n/crisis-line.tsx`, used by WP3) |
-| **WP5 Tests and eval** | `tests/e2e/**`, `scripts/eval/**`, `eval/labels.json`, `eval/RESULTS.md`, cross-package property tests in `tests/unit/questionnaire/**` | everything | §7.1 invariants, §7.2 simulator, §7.3 eval gates, §7.4-7.5 e2e/a11y |
-
-Ordering: WP2 publishes the C1-C5 type stubs on day 1 (types only, behind `enabled: false`), and then all packages run in parallel. WP1's shard regeneration lands before WP5's final eval. The only shared file is `en.ts`, and it is split by namespace as above. Merge order: WP2 → WP1 → WP4 → WP3 → WP5.
-
-### Interface contracts
 ```ts
-// C1 (WP1 -> all): config/questionnaire/index.ts
+// C1 : config/questionnaire/index.ts
 export function getCatalog(area: "cancer", group: CancerGroupId): readonly QuestionDef[];
 export function getFindOutItems(): Readonly<Record<QuestionId, FindOutDef>>; // { whatKey, whereKey, whyKey }
 export const FACT_POLICY: Readonly<Record<string, { penalize: boolean; weight: number; supportOnly?: boolean }>>;
 
-// C2 (WP2 -> WP1): lib/types/trial.ts additions (§1.4); HistologyId, DrugClassId, SubtypeId enums live in
-// config/questionnaire/ids.ts (WP1) and are imported by the schemas.
+// C2: lib/types/trial.ts additions (§1.4); HistologyId, DrugClassId, SubtypeId enums live in
+// config/questionnaire/ids.ts and are imported by the schemas.
 
-// C3 (WP2 -> WP3/WP5): lib/questionnaire/engine.ts
+// C3: lib/questionnaire/engine.ts
 export interface CandidatePool { group: CancerGroupId; trials: ReadonlyArray<{ id: string; prior: number; facts: readonly CompactFact[]; sex: "ALL"|"FEMALE"|"MALE" }> }
 export function buildCandidatePool(state: QuestionnaireState, opts?: { signal?: AbortSignal }): Promise<CandidatePool>; // hard filters + BM25 prior, no embeddings
 export type NextStep =
@@ -427,12 +415,12 @@ export function liveCount(state: QuestionnaireState, pool: CandidatePool, catalo
 export function findOutList(state: QuestionnaireState, catalog: readonly QuestionDef[]): FindOutEntry[]; // { question, whatKey, whereKey, whyKey, deferred }
 export function saveSession(state: QuestionnaireState): void; export function loadSession(): QuestionnaireState | null; export function clearSession(): void;
 
-// C4 (WP2 -> WP3/WP5): lib/match
+// C4: lib/match
 export function evaluateAnswers(state: QuestionnaireState, catalog: readonly QuestionDef[], facts: readonly Fact[]): PrecheckNote[];
 export function searchTrials(answers: IntakeAnswers /* with questionnaire */, opts?: SearchOptions): Promise<SearchOutcome>; // signature unchanged
 export function minimizeProfile(answers: IntakeAnswers): MinimizedProfile; // v2 fields when questionnaire present
 
-// C5 (WP4 -> WP3/WP2): components/i18n, config/locales.ts
+// C5: components/i18n, config/locales.ts
 export function useT(): { t: (key: MessageKey, vars?: Record<string, string | number>) => string; lang: string; dir: "ltr"|"rtl"; status: LocaleStatus; formatNumber(n: number): string; formatDate(d: Date): string };
 export const LOCALES: readonly LocaleDef[]; export const AI_LANGUAGE_TAGS: readonly [string, ...string[]];
 export function CrisisLine(): JSX.Element;
@@ -446,7 +434,7 @@ export function CrisisLine(): JSX.Element;
 | Risk | Mitigation |
 |---|---|
 | New fact extraction is imprecise (historical 66%), so new penalties hurt real fits | per-family precision gate (≥ 85%) before `penalize: true`; support-only otherwise; `mentioned` for lists and "or" clauses; LLM layer marks disagreements needsReview |
-| A mention rate overstates gating (the regex counts any mention) | IG uses directional facts only, so questions with weak facts self-demote; re-measure after WP1 |
+| A mention rate overstates gating (the regex counts any mention) | IG uses directional facts only, so questions with weak facts self-demote; re-measure after the fact extraction changes |
 | Patients can't answer clinical questions (ECOG, lines, platinum timing) | plain-language options, cost weighting, P(unknown) priors, Find-out list; unknown is never penalized |
 | Sensitive questions (HIV, hepatitis) deter or upset users | Deep-dive only, prefer-not option, inline note on how the answer is used; v7: definite answers go to the AI judge as categories (prefer-not never) |
 | sessionStorage resume changes the privacy promise | copy update in all locales, Clear button, tab scope, zod validation, 12 h expiry |
