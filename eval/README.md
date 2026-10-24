@@ -13,7 +13,7 @@ patients are synthetic profiles or the public TREC topics, and labels are hand r
 | `REGRESSION.md` | retrieval, hard-filter safety, fact precision, mock AI checks | `npm run eval` (`scripts/eval/run.ts`) | live |
 | `results.json` | machine-readable form of `REGRESSION.md` | `npm run eval` | live |
 | `rrf-k.md` | rank-fusion constant sweep | `npm run eval` | live |
-| `v9-baseline.json` | v9 phase 0 baseline numbers (vignette dev, TREC dev, regression) | phase 0 runs, recorded by hand | historical |
+| `v9-baseline.json` | v9 starting numbers (vignette dev, TREC dev, regression), measured before the v9 changes | runs recorded by hand | historical |
 
 ## Benchmarks
 

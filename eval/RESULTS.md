@@ -1,6 +1,6 @@
 # Evaluation results: v9
 
-Hand-written summary (2026-10-23, branch v9; the v8 and v7 sections below are kept for comparison). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or AI-reader labels, and no real patient was evaluated.
+Hand-written summary (2026-10-23; the v8 and v7 sections below are kept for comparison). Every number was measured by a script in this repo; nothing is imputed. Nothing here is a clinical-accuracy claim: TREC labels are human relevance judgements for a research benchmark, the other labels are synthetic, rule-derived or model-assigned labels, and no real patient was evaluated.
 
 Detailed, generated reports:
 - `eval/matching/RESULTS.md` (+ `dev.json`, `test.json`, `test-runs-v7.json`): TREC criterion-matching eval, `npm run eval:matching`.
@@ -11,9 +11,9 @@ Detailed, generated reports:
 Intervals are bootstrap 95% CIs over topics (TREC) or profiles (regression). "Distinguishable" means the paired-difference CI excludes 0.
 
 
-## 0v9. v9 (2026-10-23): wrong-disease and wrong-stage demotion, resolver pool 20
+## v9 (2026-10-23): wrong-disease and wrong-stage demotion, resolver pool 20
 
-Changes (each its own commit on branch v9, decided on dev only): (M1) sibling-disease subtype tags read from the trial's own title and conditions (non-Hodgkin for a Hodgkin patient, brain metastases for a primary brain tumor, melanoma for other skin cancers, soft-tissue for bone sarcoma, colorectal for anal cancer), subtype conflict weight -0.18 -> -0.35, and a case bug that kept "Follicular Lymphoma" from ever matching; (M2) a soft penalty (-0.6) when the trial's own title names only an extent the patient's definite `spread` answer contradicts (early-stage-only trials for spread far, metastatic-only trials for not spread or removed); (M3) receptor pairs and HER2 score ranges are one attribute, not options; (M6) the resolver re-ranks the top 20 instead of 15. Tried and reverted: cohort-level treated status (each cohort is its own split item, so failing one wrongly failed the trial; Tier B precision fell to 0.946). Not done: new questionnaire questions (M5) and re-pooling (M10). Code frozen at tag `v9-code-freeze` (1010ca7) before the test run.
+Changes (decided on dev only): sibling-disease subtype tags read from the trial's own title and conditions (non-Hodgkin for a Hodgkin patient, brain metastases for a primary brain tumor, melanoma for other skin cancers, soft-tissue for bone sarcoma, colorectal for anal cancer), subtype conflict weight -0.18 -> -0.35, and a case bug that kept "Follicular Lymphoma" from ever matching; a soft penalty (-0.6) when the trial's own title names only an extent the patient's definite `spread` answer contradicts (early-stage-only trials for spread far, metastatic-only trials for not spread or removed); receptor pairs and HER2 score ranges are one attribute, not options; the resolver re-ranks the top 20 instead of 15. Tried and reverted: cohort-level treated status (each cohort is its own split item, so failing one wrongly failed the trial; Tier B precision fell to 0.946). Not done: new questionnaire questions and re-pooling. The code was frozen before the test run.
 
 | what (pipeline + resolver) | v8 | v9 |
 | --- | --- | --- |
@@ -137,7 +137,7 @@ Baselines (dev / test nDCG@10): BM25 0.219 / 0.256, embeddings 0.194 / 0.217, Cl
 | component | v6 | v7 | source |
 | --- | --- | --- | --- |
 | Cached judge completions the parser reads fully | 3 rejected, 6 silently losing trials | 51/53 ok, 2 empty (re-asked), 0 rejected | `scripts/eval/matching/replay-cache.ts` |
-| Items the resolver settles, every question answered (1,000 trials) | 5.3% | 6.1% (plan target 12% not reached) | `scripts/eval/resolve-share.ts` |
+| Items the resolver settles, every question answered (1,000 trials) | 5.3% | 6.1% (target of 12% not reached) | `scripts/eval/resolve-share.ts` |
 | Held-out v1 rule-fact precision (100 items, AI-reader labels) | not measured | prior_* 0-60%, metastatic 70%, newly_diagnosed 50%, previously_treated 60%, pregnancy 90%, concurrent_trial 90% | `eval/facts-labels-v3.json` |
 | Criterion items checked at screening (not sent to the judge) | n/a | 15.8% | `lib/match/screening.ts` |
 

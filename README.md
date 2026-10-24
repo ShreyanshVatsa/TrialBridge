@@ -107,7 +107,7 @@ Full summary with confidence intervals and caveats: [`eval/RESULTS.md`](eval/RES
 | What | Result | Source |
 | --- | --- | --- |
 | TREC Clinical Trials, held-out cancer topics (human judgments): full pipeline vs retrieval baseline (v7, frozen; run once) | nDCG@10 **+0.069** [0.015, 0.120]; P@10 +0.057; excluded trials shown in the top tier of the top 10 **40.0% to 22.9%** | `eval/RESULTS.md` section 1 |
-| Vignette benchmark, held-out test split (v9 vs v8, run once): share of the top 10 the gold says rule the patient out | **45.5% to 38.6%**, paired -0.069 [-0.104, -0.035]; nDCG@10 not distinguishable (0.285 vs 0.296) | `eval/RESULTS.md` section 0v9 |
+| Vignette benchmark, held-out test split (v9 vs v8, run once): share of the top 10 the gold says rule the patient out | **45.5% to 38.6%**, paired -0.069 [-0.104, -0.035]; nDCG@10 not distinguishable (0.285 vs 0.296) | `eval/RESULTS.md` section v9 |
 | Vignette benchmark, 164 synthetic patients, 5,389 labelled pairs (LLM-judged, second-judge kappa 0.841) | Beats BM25, embeddings and the ClinicalTrials.gov search on both splits (v8) | `eval/RESULTS.md` section 3 |
 | Hard filters vs an independent oracle on raw registry fields, national data | 0 violations in 800 top-20 results (v9) | `eval/REGRESSION.md` section 2 |
 | Criteria splitter vs a public gold standard | 95.6% of trials split into exactly the right number of items; boundary F1 0.986 | `eval/trialgpt/README.md` |

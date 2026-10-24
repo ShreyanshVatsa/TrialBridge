@@ -1,5 +1,5 @@
 {
-  "note": "v9 phase 0 baseline = v8 code on branch cac-2026 (f130d94), dev splits only, measured 2026-10-22.",
+  "note": "Numbers for the v8 code before the v9 changes, dev splits only, measured 2026-10-22.",
   "vignetteDev": {
     "command": "npx tsx scripts/eval/vignettes/live.ts --split=dev --audit",
     "n": 94,
