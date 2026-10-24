@@ -65,11 +65,11 @@ function Select({ label, value, onChange, children }: { label: string; value: st
 /** Raised stat tile: leans toward the pointer, and its number rolls to each new value as filters change. */
 function Stat({ value, label, sub }: { value: string; label: string; sub?: string }) {
   return (
-    <div data-tilt className="tb-surface tb-spec flex flex-col rounded-3xl p-5 sm:p-6">
-      <p className="font-heading text-[3.25rem] leading-none font-extrabold text-primary [font-stretch:62%]">
+    <div data-tilt className="tb-surface tb-spec flex flex-col rounded-3xl p-4 sm:p-6">
+      <p className="font-heading text-[2.5rem] leading-none sm:text-[3.25rem] font-extrabold text-primary [font-stretch:62%]">
         <Ticker value={value} />
       </p>
-      <p className="mt-4 font-medium leading-snug">{label}</p>
+      <p className="mt-3 font-medium leading-snug sm:mt-4">{label}</p>
       {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
     </div>
   );
@@ -134,12 +134,12 @@ export function AccessPage() {
         <div role="status" className="space-y-6 pt-4">
           <span className="sr-only">{m.access.loading}</span>
           <Skeleton className="h-[6.5rem] w-full rounded-3xl sm:h-[5.25rem]" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-44 rounded-3xl" />
             ))}
           </div>
-          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
             <Skeleton className="h-[34rem] rounded-3xl" />
             <Skeleton className="h-[34rem] rounded-3xl" />
           </div>
@@ -187,7 +187,7 @@ export function AccessPage() {
             )}
           </section>
 
-          <div aria-live="polite" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div aria-live="polite" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Stat value={n(view.summary.trials)} label={m.access.statTrials} />
             <Stat
               value={`${pct(view.summary.anyBarrier, view.summary.trials)}%`}
@@ -206,7 +206,7 @@ export function AccessPage() {
             />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
             <Card title={`${m.access.mapTitle}: ${m.access.metrics[metric]}`} id="map-title">
               <p className="mb-4 text-sm text-muted-foreground">{m.access.mapNote}</p>
               <UsTileMap rates={view.rates} selected={usState} onSelect={setUsState} />

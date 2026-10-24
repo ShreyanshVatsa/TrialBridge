@@ -79,7 +79,7 @@ export function SiteHeader() {
   const isActive = (href: string) => (pathname ?? "").replace(/\/?$/, "/") === href;
   const linkClass = (href: string) =>
     cn(
-      "relative z-10 rounded-full px-2 py-2 whitespace-nowrap text-muted-foreground 2xl:px-3.5 transition-colors hover:text-foreground",
+      "relative z-10 rounded-full px-2 py-2 whitespace-nowrap text-muted-foreground 2xl:px-2.5 transition-colors hover:text-foreground",
       isActive(href) && "font-medium text-foreground",
     );
 
@@ -90,7 +90,7 @@ export function SiteHeader() {
       data-hidden="false"
       className="group/header no-print sticky top-0 z-30 [view-transition-name:site-header] px-3 pt-3 transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] data-[hidden=true]:not-focus-within:-translate-y-[calc(100%+0.75rem)] sm:px-6 motion-reduce:transition-none"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 rounded-full border border-transparent ps-3 pe-2 transition-[background-color,border-color,box-shadow] duration-500 group-data-[scrolled=true]/header:border-border group-data-[scrolled=true]/header:bg-background/90 group-data-[scrolled=true]/header:shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_10px_30px_-18px_oklch(0.2_0.06_295/0.35)] dark:group-data-[scrolled=true]/header:shadow-[0_1px_0_oklch(1_0_0/0.08)_inset,0_14px_34px_-18px_oklch(0_0_0/0.7)] group-data-[scrolled=true]/header:backdrop-blur-xl group-data-[scrolled=true]/header:backdrop-saturate-150 supports-[backdrop-filter]:group-data-[scrolled=true]/header:bg-background/88 sm:ps-4">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-full border border-transparent ps-3 pe-2 transition-[background-color,border-color,box-shadow] duration-500 group-data-[scrolled=true]/header:border-border group-data-[scrolled=true]/header:bg-background/90 group-data-[scrolled=true]/header:shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_10px_30px_-18px_oklch(0.2_0.06_295/0.35)] dark:group-data-[scrolled=true]/header:shadow-[0_1px_0_oklch(1_0_0/0.08)_inset,0_14px_34px_-18px_oklch(0_0_0/0.7)] group-data-[scrolled=true]/header:backdrop-blur-xl group-data-[scrolled=true]/header:backdrop-saturate-150 supports-[backdrop-filter]:group-data-[scrolled=true]/header:bg-background/88 sm:ps-4">
         <Link href="/" className="flex items-center gap-2.5 rounded-full font-heading text-2xl font-extrabold tracking-tight [font-stretch:70%]">
           <LogoMark />
           <span className="sr-only min-[400px]:not-sr-only">{m.common.brand}</span>

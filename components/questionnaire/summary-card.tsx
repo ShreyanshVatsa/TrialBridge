@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ClipboardList, Loader2, Search, ShieldCheck } from "lucide-react";
+import { ChevronDown, Clock, ClipboardList, Loader2, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { format, useMessages } from "@/components/i18n";
 import { inputClass } from "@/components/chat/primitives";
@@ -149,13 +149,16 @@ export function SummaryCard({
         <label htmlFor={langId} className="block font-medium">
           {t("questionnaire.ui.studyLanguage")}
         </label>
-        <select id={langId} value={language} onChange={(e) => onLanguage(e.target.value as Language)} className={`${inputClass} max-w-sm`}>
-          {LANGUAGES.map((l) => (
-            <option key={l} value={l}>
-              {m.options.language[l]}
-            </option>
-          ))}
-        </select>
+        <div className="relative max-w-sm">
+          <select id={langId} value={language} onChange={(e) => onLanguage(e.target.value as Language)} className={`${inputClass} cursor-pointer appearance-none pe-10`}>
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {m.options.language[l]}
+              </option>
+            ))}
+          </select>
+          <ChevronDown aria-hidden className="pointer-events-none absolute end-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
