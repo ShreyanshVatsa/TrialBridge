@@ -74,6 +74,7 @@ export function ProsePage({
   draft = false,
   children,
   before,
+  extraTitles = [],
 }: {
   title: string;
   intro: string;
@@ -81,9 +82,11 @@ export function ProsePage({
   draft?: boolean;
   children?: ReactNode;
   before?: ReactNode;
+  /** Titles of sections passed as children after the structured ones; they get rail entries with ids section-N. */
+  extraTitles?: readonly string[];
 }) {
   const m = useMessages();
-  const items = sections.map((s, i) => ({ id: `section-${i + 1}`, label: s.title }));
+  const items = [...sections.map((s) => s.title), ...extraTitles].map((label, i) => ({ id: `section-${i + 1}`, label }));
   return (
     <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 pt-10 pb-24 sm:px-6 sm:pt-16 sm:pb-32">
       {draft && (

@@ -84,7 +84,7 @@ export function LanguagePicker({ className = "" }: { className?: string }) {
         <span lang={current.tag}>{current.nativeName}</span>
       </button>
       {open && (
-        <div role="dialog" aria-label={t("i18n.pickerLabel")} className="tb-glass-panel tb-pop-in absolute end-0 z-40 mt-3 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-3xl p-2 rtl:origin-top-left" onKeyDown={onKeyDown}>
+        <div role="dialog" aria-label={t("i18n.pickerLabel")} className="tb-glass-panel tb-pop-in absolute end-0 z-40 bg-popover mt-3 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-3xl p-2 rtl:origin-top-left" onKeyDown={onKeyDown}>
           <input
             ref={inputRef}
             role="combobox"

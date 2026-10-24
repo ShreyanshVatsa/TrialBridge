@@ -54,8 +54,8 @@ export function ForSitesPage() {
 export function MethodologyPage() {
   const m = useMessages().pages.methodology;
   return (
-    <ProsePage title={m.title} intro={m.intro} sections={m.sections}>
-      <section className="tb-reveal border-t border-foreground/12 pt-8">
+    <ProsePage title={m.title} intro={m.intro} sections={m.sections} extraTitles={[m.evalTitle]}>
+      <section id={`section-${m.sections.length + 1}`} className="tb-reveal scroll-mt-28 border-t border-foreground/12 pt-8">
         <ProseHeading n={m.sections.length + 1}>{m.evalTitle}</ProseHeading>
         <p className="mt-5 text-[1.0625rem] leading-relaxed">{m.evalBody}</p>
         <EvalSummary />
@@ -68,9 +68,9 @@ export function AboutPage() {
   const m = useMessages().pages.about;
   const story = FOUNDER_STORY.filter((p) => p.trim() !== "");
   return (
-    <ProsePage title={m.title} intro={m.intro} sections={m.sections}>
+    <ProsePage title={m.title} intro={m.intro} sections={m.sections} extraTitles={story.length > 0 ? [m.founderTitle] : []}>
       {story.length > 0 && (
-        <section className="tb-reveal border-t border-foreground/12 pt-8">
+        <section id={`section-${m.sections.length + 1}`} className="tb-reveal scroll-mt-28 border-t border-foreground/12 pt-8">
           <ProseHeading n={m.sections.length + 1}>{m.founderTitle}</ProseHeading>
           <div className="mt-5 space-y-4 text-[1.0625rem] leading-relaxed">
             {story.map((p, i) => (
