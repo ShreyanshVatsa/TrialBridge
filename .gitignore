@@ -21,12 +21,6 @@ data/build/
 data/cache/
 .scaffold-ready
 
-# Local tooling
-.claude/
-AGENTS.md
-CLAUDE.md
-skills-lock.json
-tsconfig.tsbuildinfo
 docs/cac/
 
 # CAC submission packet (PDFs, slides, screenshots, drafts); kept local, never committed

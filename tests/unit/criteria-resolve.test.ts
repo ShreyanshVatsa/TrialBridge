@@ -264,7 +264,7 @@ describe("resolver: items left to the judge", () => {
     expect(hasAlternatives("EGFR mutation or ALK rearrangement")).toBe(true);
     expect(hasAlternatives("ECOG performance status of 0 or 1")).toBe(false);
     expect(hasAlternatives("Histologically or cytologically confirmed NSCLC")).toBe(false);
-    // v8: every option is checked; both markers negative => not met, one unknown => unknown.
+    // every option is checked; both markers negative => not met, one unknown => unknown.
     expect(lab("inclusion", "EGFR mutation or ALK rearrangement", p)).toBe("not_met");
     expect(lab("inclusion", "EGFR mutation or ALK rearrangement", profile("lung", { biomarkers: { EGFR: "negative" } }))).toBe("unknown");
   });
